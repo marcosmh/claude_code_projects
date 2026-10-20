@@ -30,3 +30,4 @@ Claude Code Projects
 
 * /config
 
+* /rewind
