@@ -12,8 +12,11 @@ const LINKS = [
 export function Sidebar() {
   const pathname = usePathname();
   return (
-    <aside className="flex items-center justify-between gap-4 border-b border-zinc-200 px-4 py-3 md:sticky md:top-0 md:h-screen md:w-56 md:flex-col md:items-stretch md:justify-start md:border-r md:border-b-0 md:py-6">
-      <p className="font-semibold md:mb-6 md:px-2">Facturas</p>
+    <aside
+      id="main-menu"
+      className="flex items-center justify-between gap-4 border-b border-zinc-200 px-4 py-3 [.menu-collapsed_&]:hidden md:sticky md:top-12 md:h-[calc(100vh-3rem)] md:w-56 md:flex-col md:items-stretch md:justify-start md:border-r md:border-b-0 md:py-6"
+    >
+      <p className="font-semibold md:mb-6 md:px-2">Menú</p>
       <nav className="flex gap-1 md:flex-1 md:flex-col" aria-label="Principal">
         {LINKS.map((l) => {
           const current = pathname === l.href || pathname.startsWith(`${l.href}/`);
