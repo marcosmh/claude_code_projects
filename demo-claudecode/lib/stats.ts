@@ -20,6 +20,11 @@ export type InvoiceLike = {
 
 export type StatusSummary = Record<Status, { count: number; totalCents: number }>;
 
+/** "Vencida" no es un estado: es una factura enviada cuya fecha de vencimiento ya pasó. */
+export function isOverdue(inv: { status: string; dueDate: Date }, now: Date) {
+  return inv.status === "SENT" && inv.dueDate < now;
+}
+
 export function summarize(invoices: InvoiceLike[], now: Date) {
   const byStatus = Object.fromEntries(
     STATUSES.map((s) => [s, { count: 0, totalCents: 0 }]),
@@ -32,7 +37,7 @@ export function summarize(invoices: InvoiceLike[], now: Date) {
     const bucket = byStatus[inv.status as Status];
     bucket.count += 1;
     bucket.totalCents += totalCents;
-    if (inv.status === "SENT" && inv.dueDate < now) {
+    if (isOverdue(inv, now)) {
       overdue.count += 1;
       overdue.totalCents += totalCents;
     }

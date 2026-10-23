@@ -31,3 +31,12 @@ Claude Code Projects
 * /config
 
 * /rewind
+
+
+## Skills
+
+* https://www.skills.sh/
+
+* https://www.skills.sh/anthropics/skills/frontend-design
+
+

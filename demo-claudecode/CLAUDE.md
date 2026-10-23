@@ -28,7 +28,9 @@ Setup: `cp .env.example .env` (`DATABASE_URL="file:./dev.db"`), then `npx prisma
 
 ## Architecture
 
-**Data flow.** Server Components query Prisma directly. Mutations are Server Actions in `lib/actions/invoices.ts` (`createInvoice`, `updateInvoice`, `deleteInvoice`) called from the client `components/InvoiceForm.tsx` (React Hook Form + `invoiceFormSchema` in `lib/validators.ts`, which converts the text inputs to `invoiceSchema` input and shows errors before submitting; sub-pieces in `components/invoice-form/`); they take `unknown`, validate with `invoiceSchema` (`lib/validators.ts`), return `{ errors }` on failure, and `redirect()` on success. There is no REST API; the only route handler is `app/invoices/[id]/pdf/route.ts`.
+**Data flow.** Server Components query Prisma directly. Mutations are Server Actions in `lib/actions/invoices.ts` (`createInvoice`, `updateInvoice`, `deleteInvoice`) called from the client `components/InvoiceForm.tsx` (React Hook Form + `invoiceFormSchema` in `lib/validators.ts`, which converts the text inputs to `invoiceSchema` input and shows errors before submitting; sub-pieces in `components/invoice-form/`); they take `unknown`, validate with `invoiceSchema` (`lib/validators.ts`), return `{ errors }` on failure, and `redirect()` on success. There is no REST API; the only route handlers are `app/invoices/[id]/pdf/route.ts` and `app/flash/route.ts` (see Flash messages).
+
+**Flash messages.** Actions call `setFlash()` (`lib/flash.ts`, short-lived httpOnly cookie) just before `redirect()`. The invoice list and detail pages render `<Flash />`, which reads the cookie and shows `FlashAlert` (auto-closes after 5 s, pauses on hover/focus, close button). The client then calls `DELETE /flash` so the message lives for a single request. Not verified end to end in a browser.
 
 **Prisma 7 specifics.**
 - Client is generated to `app/generated/prisma` (gitignored) and imported from `@/app/generated/prisma/client`; it needs the `better-sqlite3` driver adapter, wired once in `lib/prisma.ts` (singleton).
@@ -55,7 +57,16 @@ Vitest (`vitest.config.mts`, `@` alias) covers only pure logic in `lib/` (`total
 ## Available skills
 
 - `react-rules` (`.claude/skills/react-rules/SKILL.md`): React + TypeScript best practices (Zustand, Zod + React Hook Form, effects, hooks, React Query/SWR).
+- `frontend-design` (`.agents/skills/frontend-design/SKILL.md`, linked from `.claude/skills/frontend-design`): distinctive visual design for new or existing UI (palette, typography, layout, UX writing, responsive and accessible by default).
 
 ## Skill trigger rules
 
 - `react-rules`: invoke it whenever the user asks to create a React application or component, or to add/modify components, hooks, state, forms or UI logic in React.
+- `frontend-design`: invoke it automatically whenever the user asks to improve, redesign or change the visual interface of the app. This includes:
+  - Improving or changing the visual design of the app.
+  - Optimizing UI/UX and the user experience.
+  - Redesigning React components, pages or layouts.
+  - Improving styles, typography, colors, spacing, animations and responsive design.
+  - Modernizing the look of an interface or improving its usability.
+
+  Use it for every request that implies visual, design or UX improvements in the frontend. When a request also touches React component logic, use it together with `react-rules`.

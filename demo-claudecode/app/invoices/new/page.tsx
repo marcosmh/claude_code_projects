@@ -1,5 +1,6 @@
 import { connection } from "next/server";
 import { InvoiceForm } from "@/components/InvoiceForm";
+import { PageHeader } from "@/components/PageHeader";
 import { createInvoice } from "@/lib/actions/invoices";
 import { toDateInput } from "@/lib/format";
 
@@ -9,7 +10,7 @@ export default async function NewInvoicePage() {
   const due = new Date(today.getTime() + 30 * 86400000);
   return (
     <>
-      <h1 className="mb-6 text-2xl font-semibold">Nueva factura</h1>
+      <PageHeader title="Nueva factura" trail={[{ label: "Facturas", href: "/invoices" }, { label: "Nueva" }]} />
       <InvoiceForm
         action={createInvoice}
         cancelHref="/invoices"

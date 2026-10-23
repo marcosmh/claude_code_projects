@@ -1,3 +1,5 @@
+import { PageSkeleton } from "@/components/Skeleton";
+
 export default function Loading() {
-  return <p className="text-zinc-500">Cargando…</p>;
+  return <PageSkeleton />;
 }

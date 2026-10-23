@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist_Mono, Noto_Sans } from "next/font/google";
 import { Suspense } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { TopBar } from "@/components/TopBar";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const notoSans = Noto_Sans({
+  variable: "--font-noto-sans",
   subsets: ["latin"],
 });
 
@@ -25,7 +25,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="es"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${notoSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
         <script
@@ -40,7 +40,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <Suspense fallback={<aside className="md:w-56 md:border-r md:border-zinc-200" />}>
             <Sidebar />
           </Suspense>
-          <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 md:px-8">{children}</main>
+          <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 md:px-10 md:py-10">{children}</main>
         </div>
       </body>
     </html>

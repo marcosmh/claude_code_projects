@@ -1,10 +1,12 @@
 "use server";
 
 import { randomUUID } from "node:crypto";
+import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { setFlash } from "@/lib/flash";
 import { prisma } from "@/lib/prisma";
-import { invoiceSchema } from "@/lib/validators";
+import { invoiceSchema, STATUS_LABELS, STATUSES } from "@/lib/validators";
 
 export type ActionState = { errors: string[] } | undefined;
 
@@ -42,6 +44,7 @@ export async function createInvoice(input: unknown): Promise<ActionState> {
     });
   });
 
+  await setFlash("success", `Factura ${invoice.number} creada correctamente.`);
   revalidatePath("/invoices");
   redirect(`/invoices/${invoice.id}`);
 }
@@ -50,17 +53,29 @@ export async function updateInvoice(id: number, input: unknown): Promise<ActionS
   const { data, errors } = parse(input);
   if (!data) return { errors };
 
-  await prisma.invoice.update({
+  const invoice = await prisma.invoice.update({
     where: { id },
     data: { ...toRecord(data), items: { deleteMany: {}, create: data.items } },
   });
 
+  await setFlash("success", `Factura ${invoice.number} actualizada.`);
   revalidatePath("/invoices");
   redirect(`/invoices/${id}`);
 }
 
 export async function deleteInvoice(id: number) {
-  await prisma.invoice.delete({ where: { id } });
+  const invoice = await prisma.invoice.delete({ where: { id } });
+  await setFlash("success", `Factura ${invoice.number} eliminada.`);
   revalidatePath("/invoices");
   redirect("/invoices");
+}
+
+export async function setInvoiceStatus(id: number, status: unknown) {
+  const parsed = z.enum(STATUSES).safeParse(status);
+  if (!parsed.success) return;
+
+  const invoice = await prisma.invoice.update({ where: { id }, data: { status: parsed.data } });
+  await setFlash("success", `Factura ${invoice.number} marcada como ${STATUS_LABELS[parsed.data].toLowerCase()}.`);
+  revalidatePath("/invoices");
+  redirect(`/invoices/${id}`);
 }

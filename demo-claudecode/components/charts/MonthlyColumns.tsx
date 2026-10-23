@@ -105,7 +105,7 @@ export function MonthlyColumns({ months }: { months: MonthBucket[] }) {
 
         {hovered && active !== null && (
           <div
-            className="pointer-events-none absolute top-0 z-10 w-48 -translate-x-1/2 rounded-md border border-zinc-200 bg-background px-3 py-2 text-xs shadow-md"
+            className="pointer-events-none absolute top-0 z-10 w-48 -translate-x-1/2 rounded-md border border-zinc-300 bg-surface px-3 py-2 text-xs shadow-sm"
             style={{ left: `${Math.min(80, Math.max(20, ((M.left + band * active + band / 2) / W) * 100))}%` }}
           >
             <p className="mb-1 capitalize text-zinc-500">{hovered.title}</p>

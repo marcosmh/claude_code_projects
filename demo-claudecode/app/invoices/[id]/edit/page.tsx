@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { InvoiceForm } from "@/components/InvoiceForm";
+import { PageHeader } from "@/components/PageHeader";
 import { updateInvoice } from "@/lib/actions/invoices";
 import { toDateInput } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
@@ -13,7 +14,10 @@ export default async function EditInvoicePage({ params }: PageProps<"/invoices/[
 
   return (
     <>
-      <h1 className="mb-6 text-2xl font-semibold">Editar {invoice.number}</h1>
+      <PageHeader
+        title={`Editar ${invoice.number}`}
+        trail={[{ label: "Facturas", href: "/invoices" }, { label: invoice.number, href: `/invoices/${invoice.id}` }, { label: "Editar" }]}
+      />
       <InvoiceForm
         action={updateInvoice.bind(null, invoice.id)}
         cancelHref={`/invoices/${invoice.id}`}

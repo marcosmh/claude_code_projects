@@ -39,7 +39,7 @@ export function StatusBar({ summary }: { summary: StatusSummary }) {
           ))}
         </div>
         {hovered && (
-          <div className="pointer-events-none absolute -top-14 left-0 z-10 rounded-md border border-zinc-200 bg-background px-3 py-2 text-xs shadow-md">
+          <div className="pointer-events-none absolute -top-14 left-0 z-10 rounded-md border border-zinc-300 bg-surface px-3 py-2 text-xs shadow-sm">
             <p className="text-base font-semibold leading-tight tabular-nums">{summary[hovered].count} facturas</p>
             <p className="text-zinc-500">
               {STATUS_LABELS[hovered]} · {formatMoney(summary[hovered].totalCents)}
@@ -48,7 +48,7 @@ export function StatusBar({ summary }: { summary: StatusSummary }) {
         )}
       </div>
 
-      <ul className="mt-4 grid gap-x-6 gap-y-2 text-sm sm:grid-cols-3">
+      <ul className="mt-4 grid gap-y-2 text-sm">
         {STATUSES.map((s) => (
           <li key={s} className="flex items-center gap-2">
             <span aria-hidden className="size-2.5 rounded-sm" style={{ background: STATUS_COLOR[s] }} />

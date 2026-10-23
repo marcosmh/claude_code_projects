@@ -13,6 +13,7 @@ import {
   type InvoiceFormValues,
   type InvoiceInput,
 } from "@/lib/validators";
+import { button, sheet } from "@/components/ui";
 import { Field, inputClass } from "./invoice-form/Field";
 import { LineItemsEditor } from "./invoice-form/LineItemsEditor";
 import { TotalsSummary } from "./invoice-form/TotalsSummary";
@@ -66,14 +67,15 @@ export function InvoiceForm({
   return (
     <form onSubmit={submit} noValidate className="space-y-6">
       {serverErrors.length > 0 && (
-        <ul role="alert" className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-700">
+        <ul role="alert" className="border-l-4 border-red-600 bg-red-50 px-4 py-2.5 text-sm text-red-700">
           {serverErrors.map((m) => (
             <li key={m}>{m}</li>
           ))}
         </ul>
       )}
 
-      <section className="grid gap-4 sm:grid-cols-2">
+      <div className={`${sheet} divide-y divide-zinc-200`}>
+      <section className="grid gap-4 p-6 sm:grid-cols-2">
         <Field label="Cliente *" error={errors.clientName?.message}>
           {(a) => <input {...a} className={inputClass} {...register("clientName")} />}
         </Field>
@@ -113,17 +115,22 @@ export function InvoiceForm({
         onAdd={() => append({ description: "", quantity: "1", price: "" })}
       />
 
-      <Field label="Notas" error={errors.notes?.message}>
-        {(a) => <textarea {...a} className={inputClass} rows={3} {...register("notes")} />}
-      </Field>
+      <div className="p-6">
+        <Field label="Notas" error={errors.notes?.message}>
+          {(a) => <textarea {...a} className={inputClass} rows={3} {...register("notes")} />}
+        </Field>
+      </div>
 
-      <TotalsSummary totals={totals} />
+      <div className="p-6">
+        <TotalsSummary totals={totals} />
+      </div>
+      </div>
 
       <div className="flex gap-3">
-        <button disabled={pending} className="rounded-md bg-zinc-900 px-4 py-2 text-sm text-zinc-50 hover:bg-zinc-700 disabled:opacity-50">
+        <button disabled={pending} className={button("primary")}>
           {pending ? "Guardando…" : "Guardar"}
         </button>
-        <Link href={cancelHref} className="rounded-md border border-zinc-300 px-4 py-2 text-sm hover:bg-zinc-50">
+        <Link href={cancelHref} className={button("secondary")}>
           Cancelar
         </Link>
       </div>

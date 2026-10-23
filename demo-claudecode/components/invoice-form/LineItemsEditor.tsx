@@ -18,17 +18,17 @@ export function LineItemsEditor({
   onAdd: () => void;
 }) {
   return (
-    <section>
-      <h2 className="mb-2 text-sm font-semibold text-zinc-900">Líneas</h2>
+    <section className="p-6">
+      <h2 className="mb-3 text-base">Líneas</h2>
       <div className="space-y-2">
         {fields.map((f, i) => {
           // El servidor valida el precio en centavos; en el formulario es `price`.
           const e = (errors?.[i] ?? {}) as LineError;
           return (
             <div key={f.id}>
-              <div className="grid grid-cols-[1fr_5rem_7rem_auto] items-center gap-2">
+              <div className="grid grid-cols-[1fr_1fr_auto] items-center gap-2 sm:grid-cols-[1fr_5rem_7rem_auto]">
                 <input
-                  className={inputClass}
+                  className={`${inputClass} col-span-3 sm:col-span-1`}
                   aria-label={`Descripción de la línea ${i + 1}`}
                   aria-invalid={!!e.description}
                   placeholder="Descripción"
@@ -74,7 +74,7 @@ export function LineItemsEditor({
         })}
       </div>
       {errors?.root?.message && <p className="mt-1 text-xs text-red-700">{errors.root.message}</p>}
-      <button type="button" onClick={onAdd} className="mt-2 text-sm text-blue-700 hover:underline">
+      <button type="button" onClick={onAdd} className="mt-3 text-sm font-medium text-brand hover:underline">
         + Agregar línea
       </button>
     </section>
