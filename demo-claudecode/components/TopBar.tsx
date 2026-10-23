@@ -1,29 +1,9 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
-
-const CLASS = "menu-collapsed";
-
-function subscribe(onChange: () => void) {
-  const observer = new MutationObserver(onChange);
-  observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
-  return () => observer.disconnect();
-}
+import { useHtmlClass } from "@/hooks/useHtmlClass";
 
 export function TopBar() {
-  const collapsed = useSyncExternalStore(
-    subscribe,
-    () => document.documentElement.classList.contains(CLASS),
-    () => false,
-  );
-
-  function toggle() {
-    const next = !collapsed;
-    document.documentElement.classList.toggle(CLASS, next);
-    try {
-      localStorage.setItem("menu", next ? "collapsed" : "open");
-    } catch {}
-  }
+  const [collapsed, toggle] = useHtmlClass("menu-collapsed", "menu", { on: "collapsed", off: "open" });
 
   return (
     <header className="sticky top-0 z-10 flex h-12 items-center gap-3 border-b border-zinc-200 bg-zinc-50 px-4">

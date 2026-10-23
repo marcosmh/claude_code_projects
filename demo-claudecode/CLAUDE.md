@@ -28,7 +28,7 @@ Setup: `cp .env.example .env` (`DATABASE_URL="file:./dev.db"`), then `npx prisma
 
 ## Architecture
 
-**Data flow.** Server Components query Prisma directly. Mutations are Server Actions in `lib/actions/invoices.ts` (`createInvoice`, `updateInvoice`, `deleteInvoice`) called from the client `components/InvoiceForm.tsx`; they take `unknown`, validate with `invoiceSchema` (`lib/validators.ts`), return `{ errors }` on failure, and `redirect()` on success. There is no REST API; the only route handler is `app/invoices/[id]/pdf/route.ts`.
+**Data flow.** Server Components query Prisma directly. Mutations are Server Actions in `lib/actions/invoices.ts` (`createInvoice`, `updateInvoice`, `deleteInvoice`) called from the client `components/InvoiceForm.tsx` (React Hook Form + `invoiceFormSchema` in `lib/validators.ts`, which converts the text inputs to `invoiceSchema` input and shows errors before submitting; sub-pieces in `components/invoice-form/`); they take `unknown`, validate with `invoiceSchema` (`lib/validators.ts`), return `{ errors }` on failure, and `redirect()` on success. There is no REST API; the only route handler is `app/invoices/[id]/pdf/route.ts`.
 
 **Prisma 7 specifics.**
 - Client is generated to `app/generated/prisma` (gitignored) and imported from `@/app/generated/prisma/client`; it needs the `better-sqlite3` driver adapter, wired once in `lib/prisma.ts` (singleton).
@@ -50,4 +50,12 @@ Setup: `cp .env.example .env` (`DATABASE_URL="file:./dev.db"`), then `npx prisma
 
 ## Tests
 
-Vitest (`vitest.config.mts`, `@` alias) covers only pure logic in `lib/` (`totals`, `stats`). UI and actions have no automated tests; verify them by running the app.
+Vitest (`vitest.config.mts`, `@` alias) covers only pure logic in `lib/` (`totals`, `stats`, `validators`). UI and actions have no automated tests; verify them by running the app.
+
+## Available skills
+
+- `react-rules` (`.claude/skills/react-rules/SKILL.md`): React + TypeScript best practices (Zustand, Zod + React Hook Form, effects, hooks, React Query/SWR).
+
+## Skill trigger rules
+
+- `react-rules`: invoke it whenever the user asks to create a React application or component, or to add/modify components, hooks, state, forms or UI logic in React.

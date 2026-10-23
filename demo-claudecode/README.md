@@ -7,7 +7,7 @@ Aplicación web para crear, consultar, editar y eliminar facturas, con un panel 
 - **Next.js 16.4** (App Router, `cacheComponents`) y **React 19.3**, en TypeScript 5
 - **Tailwind CSS v4**
 - **Prisma 7.10** con SQLite (adaptador `better-sqlite3`)
-- **Zod 4** para validación
+- **Zod 4** para validación y **React Hook Form** para el formulario de facturas
 - **@react-pdf/renderer 4.9** para generar PDF
 - **Vitest 5** y ESLint
 
@@ -51,13 +51,14 @@ npm run dev                   # http://localhost:3000
 app/            páginas y rutas
   dashboard/    panel con gráficos
   invoices/     listado, nueva, detalle, edición y [id]/pdf (genera el PDF)
-components/     InvoiceForm, Sidebar, TopBar, ThemeToggle, StatusBadge, DeleteButton
+components/     InvoiceForm (+ invoice-form/), Sidebar, TopBar, ThemeToggle, StatusBadge, DeleteButton
   charts/       StatusBar, MonthlyColumns, DataTable
   pdf/          InvoiceDocument
+hooks/          useHtmlClass (tema y menú)
 lib/            totals, stats, validators, format, prisma
   actions/      Server Actions de facturas
 prisma/         schema, migraciones y seed
-tests/          pruebas de totals y stats
+tests/          pruebas de totals, stats y validators
 ```
 
 ## Arquitectura

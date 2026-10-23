@@ -33,3 +33,33 @@ export const invoiceSchema = z
   });
 
 export type InvoiceInput = z.infer<typeof invoiceSchema>;
+
+/**
+ * Esquema del formulario: recibe los valores como texto (inputs) y los convierte
+ * al formato de `invoiceSchema` (números, centavos). Es la misma validación que
+ * repite el servidor, así los errores se ven sin viajar a la Server Action.
+ */
+export const invoiceFormSchema = z
+  .object({
+    clientName: z.string(),
+    clientEmail: z.string(),
+    clientAddress: z.string(),
+    issueDate: z.string(),
+    dueDate: z.string(),
+    status: z.string(),
+    taxRate: z.string(),
+    notes: z.string(),
+    items: z.array(z.object({ description: z.string(), quantity: z.string(), price: z.string() })),
+  })
+  .transform(({ taxRate, items, ...rest }) => ({
+    ...rest,
+    taxRate: Number(taxRate || 0),
+    items: items.map((l) => ({
+      description: l.description,
+      quantity: Number(l.quantity),
+      unitPriceCents: Math.round(Number(l.price || 0) * 100),
+    })),
+  }))
+  .pipe(invoiceSchema);
+
+export type InvoiceFormValues = z.input<typeof invoiceFormSchema>;
