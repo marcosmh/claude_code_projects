@@ -4,7 +4,7 @@ type Size = "md" | "sm";
 const base =
   "inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors disabled:opacity-50";
 const variants: Record<Variant, string> = {
-  primary: "bg-primary text-white hover:bg-primary-dark",
+  primary: "bg-primary text-on-primary hover:bg-primary-dark",
   secondary: "border border-zinc-300 bg-surface hover:bg-zinc-100",
   danger: "border border-red-300 bg-surface text-red-700 hover:bg-red-50",
 };

@@ -36,7 +36,7 @@ export function Sidebar() {
               aria-current={current ? "page" : undefined}
               className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors ${
                 current
-                  ? "bg-primary font-medium text-white"
+                  ? "bg-primary font-medium text-on-primary"
                   : "text-zinc-700 hover:bg-zinc-100"
               }`}
             >

@@ -32,7 +32,7 @@ export function StatCard({
           {badge && <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${TONES[tone]}`}>{badge}</span>}
         </div>
       </div>
-      <svg aria-hidden viewBox="0 0 24 24" className="size-10 shrink-0 text-primary" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <svg aria-hidden viewBox="0 0 24 24" className="size-10 shrink-0 text-brand" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         {icon}
       </svg>
     </div>

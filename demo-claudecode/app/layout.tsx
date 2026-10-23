@@ -30,7 +30,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{var t=localStorage.getItem("theme");if(t==="dark"||(!t&&matchMedia("(prefers-color-scheme: dark)").matches))document.documentElement.classList.add("dark");if(localStorage.getItem("menu")==="collapsed")document.documentElement.classList.add("menu-collapsed")}catch(e){}`,
+            __html: `try{var t=localStorage.getItem("theme");if(t!=="light")document.documentElement.classList.add("dark");if(localStorage.getItem("menu")==="collapsed")document.documentElement.classList.add("menu-collapsed")}catch(e){}`,
           }}
         />
       </head>

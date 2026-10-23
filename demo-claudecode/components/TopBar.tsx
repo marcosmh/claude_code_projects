@@ -19,7 +19,7 @@ export function TopBar() {
           <path d="M3 5.5h14M3 10h14M3 14.5h14" />
         </svg>
       </button>
-      <span aria-hidden className="flex size-6 items-center justify-center rounded-md bg-primary text-white">
+      <span aria-hidden className="flex size-6 items-center justify-center rounded-md bg-primary text-on-primary">
         <svg viewBox="0 0 20 20" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           <path d="M5 2.5h7l3 3v12H5z" />
           <path d="M8 10h4M8 13h4" />
