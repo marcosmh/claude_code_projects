@@ -40,3 +40,8 @@ Claude Code Projects
 * https://www.skills.sh/anthropics/skills/frontend-design
 
 
+## Docs
+
+* https://code.claude.com/docs/en/overview
+
+* https://code.claude.com/docs/en/skills
