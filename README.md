@@ -32,6 +32,7 @@ Claude Code Projects
 
 * /rewind
 
+* /hooks
 
 ## Skills
 
