@@ -37,6 +37,22 @@ describe("InvoiceForm", () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
+  it("asocia los errores a sus campos para los lectores de pantalla", async () => {
+    const user = setup(emptyInvoiceForm(), vi.fn());
+    const client = screen.getByLabelText("Cliente *");
+    expect(client).toHaveAttribute("aria-required", "true");
+    expect(screen.getByLabelText("Email")).not.toHaveAttribute("aria-required");
+
+    await user.click(screen.getByRole("button", { name: "Guardar" }));
+
+    const message = await screen.findByText("El cliente es obligatorio");
+    expect(client).toHaveAttribute("aria-describedby", message.id);
+    const description = screen.getByLabelText("Descripción de la línea 1");
+    const lineError = screen.getByText("La descripción es obligatoria");
+    expect(description).toHaveAttribute("aria-describedby", lineError.id);
+    expect(description).toHaveAttribute("aria-invalid", "true");
+  });
+
   it("envía el cuerpo de la API con centavos y nulos", async () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);
     const user = setup(filled(), onSubmit);

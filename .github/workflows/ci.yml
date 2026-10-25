@@ -41,3 +41,32 @@ jobs:
       - run: npm run lint
       - run: npm run test:coverage
       - run: npm run build
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    defaults:
+      run:
+        working-directory: demo-claudecode/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            demo-claudecode/backend/package-lock.json
+            demo-claudecode/frontend/package-lock.json
+      - run: npm ci
+      - run: npm ci
+        working-directory: demo-claudecode/backend
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            demo-claudecode/frontend/playwright-report
+            demo-claudecode/frontend/test-results
+          retention-days: 7

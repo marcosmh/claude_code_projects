@@ -4,6 +4,8 @@ import { failure } from "./utils/http";
 import { LIMITS, RateLimiter, classify, clientKey } from "./utils/rateLimit";
 
 const limiter = new RateLimiter();
+// Test-only switch (the E2E suite fires far more than 30 writes/min from one IP). Never honoured in production.
+const rateLimitDisabled = process.env.RATE_LIMIT_DISABLED === "1" && process.env.NODE_ENV !== "production";
 
 // Next 16 renamed `middleware` to `proxy`. Handles CORS (incl. preflight) and rate limiting for the API.
 export function proxy(request: NextRequest) {
@@ -11,6 +13,12 @@ export function proxy(request: NextRequest) {
 
   if (request.method === "OPTIONS") {
     return new NextResponse(null, { status: 204, headers });
+  }
+
+  if (rateLimitDisabled) {
+    const passthrough = NextResponse.next();
+    for (const [key, value] of Object.entries(headers)) passthrough.headers.set(key, value);
+    return passthrough;
   }
 
   const routeClass = classify(request.method, request.nextUrl.pathname);

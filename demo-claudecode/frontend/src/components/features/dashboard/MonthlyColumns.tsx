@@ -46,7 +46,7 @@ export function MonthlyColumns({ months }: { months: MonthBucket[] }) {
   return (
     <div>
       <div className="relative">
-        <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="Importe facturado por mes y estado">
+        <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="group" aria-label="Importe facturado por mes y estado">
           {Array.from({ length: TICKS + 1 }, (_, i) => {
             const v = (max / TICKS) * i;
             return (
@@ -89,6 +89,7 @@ export function MonthlyColumns({ months }: { months: MonthBucket[] }) {
                   width={band}
                   height={PLOT_H + M.bottom}
                   fill="transparent"
+                  role="img"
                   tabIndex={0}
                   aria-label={`${m.title}: ${formatMoney(monthTotal(m))}`}
                   onPointerEnter={() => setActive(i)}

@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { config, proxy } from "../src/proxy";
 import { LIMITS } from "../src/utils/rateLimit";
 
@@ -72,5 +72,34 @@ describe("proxy: rate limiting", () => {
     const res = proxy(req("GET", "/api/v1/invoices", { "x-forwarded-for": freshIp() }));
     expect(res.headers.get("ratelimit-limit")).toBe(String(LIMITS.read));
     expect(res.headers.get("ratelimit-remaining")).toBe(String(LIMITS.read - 1));
+  });
+});
+
+describe("proxy: RATE_LIMIT_DISABLED (solo E2E)", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  const loadProxy = async () => (await import("../src/proxy")).proxy;
+
+  it("con RATE_LIMIT_DISABLED=1 no limita pero mantiene CORS", async () => {
+    vi.stubEnv("RATE_LIMIT_DISABLED", "1");
+    vi.stubEnv("NODE_ENV", "development");
+    vi.resetModules();
+    const p = await loadProxy();
+    const headers = { origin: ORIGIN, "x-forwarded-for": freshIp() };
+    for (let i = 0; i < LIMITS.write + 5; i++) expect(p(req("POST", "/api/v1/invoices", headers)).status).toBe(200);
+    expect(p(req("POST", "/api/v1/invoices", headers)).headers.get("access-control-allow-origin")).toBe(ORIGIN);
+  });
+
+  it("en producción se ignora", async () => {
+    vi.stubEnv("RATE_LIMIT_DISABLED", "1");
+    vi.stubEnv("NODE_ENV", "production");
+    vi.resetModules();
+    const p = await loadProxy();
+    const headers = { "x-forwarded-for": freshIp() };
+    for (let i = 0; i < LIMITS.write; i++) p(req("POST", "/api/v1/invoices", headers));
+    expect(p(req("POST", "/api/v1/invoices", headers)).status).toBe(429);
   });
 });

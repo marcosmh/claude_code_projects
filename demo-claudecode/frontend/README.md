@@ -12,6 +12,8 @@ npm run build            # tsc --noEmit + vite build (salida en dist/)
 npm run preview          # sirve dist/ en el puerto 5173
 npm run lint
 npm test                 # vitest + Testing Library (jsdom)
+npm run test:coverage    # igual, con umbrales de cobertura
+npm run test:e2e         # Playwright + axe en un navegador real (ver "Pruebas E2E")
 ```
 
 El backend permite por CORS el origen `http://localhost:5173` (variable `FRONTEND_ORIGIN` del backend).
@@ -52,3 +54,11 @@ Decisiones:
 ## Pruebas
 
 Cliente HTTP (ApiError, envoltura, red, abort), hook `useInvoices`, formulario (validación, cuerpo enviado, errores del servidor), avisos (roles, 5 s, pausa, cierre) y mapeo de errores del servidor.
+
+## Pruebas E2E y accesibilidad
+
+`e2e/` contiene pruebas con Playwright (Chromium) y `@axe-core/playwright` (reglas WCAG 2.0 a 2.2 nivel AA) sobre la aplicación real: flujos completos (crear, editar, cambiar estado, borrar con diálogo, buscar y filtrar, PDF, tema, menú, foco y teclado) y un barrido de axe en cada pantalla, en tema claro y oscuro, con el formulario con errores, el diálogo abierto y la vista móvil.
+
+`npm run test:e2e` levanta su **propia pila**, aislada de `start_apps` y de `prisma/dev.db`: backend en el puerto 4100 con la base `backend/prisma/e2e.db` (se recrea en cada ejecución), build en `.next-e2e` y rate limiting desactivado (`RATE_LIMIT_DISABLED=1`, ignorado con `NODE_ENV=production`), y frontend en el puerto 5174. Cada prueba parte de una base vacía y crea sus datos por la API.
+
+Primera vez: `npx playwright install chromium` (en Linux sin dependencias del sistema, `npx playwright install --with-deps chromium`). Informe tras un fallo: `npm run test:e2e:report`.

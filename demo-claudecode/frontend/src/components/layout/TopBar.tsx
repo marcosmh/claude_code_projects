@@ -1,4 +1,5 @@
 import { useUiStore } from "@/store/uiStore";
+import { ThemeToggle } from "./ThemeToggle";
 
 export function TopBar() {
   const collapsed = useUiStore((s) => s.menuCollapsed);
@@ -25,6 +26,9 @@ export function TopBar() {
         </svg>
       </span>
       <span className="text-lg font-bold">Facturas</span>
+      <div className="ml-auto">
+        <ThemeToggle />
+      </div>
     </header>
   );
 }

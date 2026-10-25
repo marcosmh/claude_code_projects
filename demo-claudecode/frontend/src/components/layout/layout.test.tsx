@@ -58,6 +58,13 @@ describe("TopBar", () => {
     expect(screen.getByRole("button", { name: "Mostrar menú" })).toHaveAttribute("aria-expanded", "false");
     expect(document.documentElement).toHaveClass("menu-collapsed");
   });
+
+  it("aloja el interruptor de tema, que sigue accesible con el menú plegado", async () => {
+    render(<TopBar />);
+    await userEvent.click(screen.getByRole("button", { name: "Ocultar menú" }));
+
+    expect(screen.getByRole("switch", { name: "Tema oscuro" })).toBeInTheDocument();
+  });
 });
 
 describe("Sidebar", () => {
@@ -70,7 +77,7 @@ describe("Sidebar", () => {
     expect(screen.getByRole("link", { name: "Dashboard" })).toHaveAttribute("href", "/dashboard");
     expect(screen.getByRole("link", { name: "Facturas" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("link", { name: "Dashboard" })).not.toHaveAttribute("aria-current");
-    expect(screen.getByRole("switch", { name: "Tema oscuro" })).toBeInTheDocument();
+    expect(screen.queryByRole("switch")).not.toBeInTheDocument();
   });
 });
 
@@ -81,6 +88,17 @@ describe("AppShell", () => {
     expect(screen.getByRole("link", { name: "Saltar al contenido" })).toHaveAttribute("href", "#contenido");
     expect(screen.getByRole("main")).toHaveTextContent("Pantalla dashboard");
     expect(screen.getByRole("button", { name: "Ocultar menú" })).toBeInTheDocument();
+  });
+
+  it("mueve el foco al contenido al cambiar de ruta, pero no al cargar la primera", async () => {
+    renderRoutes("/dashboard");
+    const main = screen.getByRole("main");
+    expect(main).not.toHaveFocus();
+
+    await userEvent.click(screen.getByRole("link", { name: "Facturas" }));
+    await screen.findByText("Pantalla facturas");
+
+    expect(main).toHaveFocus();
   });
 
   it("navega entre secciones sin recargar", async () => {

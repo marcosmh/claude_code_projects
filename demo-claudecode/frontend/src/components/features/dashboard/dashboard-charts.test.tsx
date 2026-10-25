@@ -35,7 +35,7 @@ describe("MonthlyColumns", () => {
 
   it("expone una zona enfocable por mes con su total", () => {
     render(<MonthlyColumns months={months} />);
-    expect(screen.getByRole("img", { name: "Importe facturado por mes y estado" })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Importe facturado por mes y estado" })).toBeInTheDocument();
     expect(screen.getByLabelText(/septiembre de 2026: .*175,00/)).toBeInTheDocument();
     expect(screen.getByLabelText(/octubre de 2026: .*1000,00/)).toBeInTheDocument();
   });

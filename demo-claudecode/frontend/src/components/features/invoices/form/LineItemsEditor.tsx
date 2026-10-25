@@ -1,3 +1,4 @@
+import { useId } from "react";
 import type { FieldArrayWithId, FieldErrors, UseFormRegister } from "react-hook-form";
 import type { InvoiceFormValues } from "@/utils/invoiceForm";
 import { inputClass } from "./Field";
@@ -17,6 +18,7 @@ export function LineItemsEditor({
   onRemove: (index: number) => void;
   onAdd: () => void;
 }) {
+  const baseId = useId();
   return (
     <section className="p-6">
       <h2 className="mb-3 text-base">Líneas</h2>
@@ -24,6 +26,7 @@ export function LineItemsEditor({
         {fields.map((f, i) => {
           const e = (errors?.[i] ?? {}) as LineError;
           const messages = [e.description, e.quantity, e.price].map((x) => x?.message).filter(Boolean);
+          const errorId = messages.length > 0 ? `${baseId}-line-${i}-error` : undefined;
           return (
             <div key={f.id}>
               <div className="grid grid-cols-[1fr_1fr_auto] items-center gap-2 sm:grid-cols-[1fr_5rem_7rem_auto]">
@@ -31,6 +34,7 @@ export function LineItemsEditor({
                   className={`${inputClass} col-span-3 sm:col-span-1`}
                   aria-label={`Descripción de la línea ${i + 1}`}
                   aria-invalid={!!e.description}
+                  aria-describedby={e.description ? errorId : undefined}
                   placeholder="Descripción"
                   {...register(`items.${i}.description`)}
                 />
@@ -38,6 +42,7 @@ export function LineItemsEditor({
                   className={inputClass}
                   aria-label={`Cantidad de la línea ${i + 1}`}
                   aria-invalid={!!e.quantity}
+                  aria-describedby={e.quantity ? errorId : undefined}
                   type="number"
                   min="0"
                   step="any"
@@ -48,6 +53,7 @@ export function LineItemsEditor({
                   className={inputClass}
                   aria-label={`Precio de la línea ${i + 1}`}
                   aria-invalid={!!e.price}
+                  aria-describedby={e.price ? errorId : undefined}
                   type="number"
                   min="0"
                   step="0.01"
@@ -59,13 +65,13 @@ export function LineItemsEditor({
                   aria-label={`Quitar línea ${i + 1}`}
                   disabled={fields.length === 1}
                   onClick={() => onRemove(i)}
-                  className="px-2 text-zinc-500 hover:text-red-600 disabled:opacity-30"
+                  className="flex size-9 items-center justify-center text-zinc-500 hover:text-red-600 disabled:opacity-30"
                 >
                   ✕
                 </button>
               </div>
               {messages.length > 0 && (
-                <p role="alert" className="mt-1 text-xs text-red-700">
+                <p id={errorId} role="alert" className="mt-1 text-xs text-red-700">
                   {messages.join(" · ")}
                 </p>
               )}

@@ -71,7 +71,7 @@ export function InvoiceForm({ initial, onSubmit, cancelTo }: InvoiceFormProps) {
 
       <div className={`${sheet} divide-y divide-zinc-200`}>
         <section className="grid gap-4 p-6 sm:grid-cols-2">
-          <Field label="Cliente *" error={errors.clientName?.message}>
+          <Field label="Cliente *" required error={errors.clientName?.message}>
             {(a) => <input {...a} className={inputClass} {...register("clientName")} />}
           </Field>
           <Field label="Email" error={errors.clientEmail?.message}>

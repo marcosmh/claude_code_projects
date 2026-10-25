@@ -37,7 +37,7 @@ export function DeleteInvoiceDialog({
               dialog.current?.close();
               onConfirm();
             }}
-            className="inline-flex items-center rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700"
+            className="inline-flex items-center rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-surface hover:bg-red-700"
           >
             Eliminar factura
           </button>

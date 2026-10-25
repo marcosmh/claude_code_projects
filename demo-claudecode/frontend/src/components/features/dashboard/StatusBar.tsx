@@ -17,10 +17,11 @@ export function StatusBar({ summary }: { summary: StatsSummary["byStatus"] }) {
   return (
     <div>
       <div className="relative">
-        <div className="flex h-6 gap-0.5" role="img" aria-label="Facturas por estado">
+        <div className="flex h-6 gap-0.5" role="group" aria-label="Facturas por estado">
           {visible.map(({ s, i }) => (
             <div
               key={s}
+              role="img"
               tabIndex={0}
               aria-label={`${STATUS_LABELS[s]}: ${summary[s].count} (${pct(summary[s].count)}%)`}
               onPointerEnter={() => setActive(i)}

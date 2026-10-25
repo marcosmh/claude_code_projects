@@ -1,5 +1,4 @@
 import { NavLink } from "react-router";
-import { ThemeToggle } from "./ThemeToggle";
 
 const LINKS = [
   { to: "/dashboard", label: "Dashboard", icon: <path d="M3 3h6v6H3zM11 3h6v3.5h-6zM11 9h6v8h-6zM3 11h6v6H3z" /> },
@@ -19,7 +18,7 @@ export function Sidebar() {
   return (
     <aside
       id="main-menu"
-      className="flex items-center justify-between gap-4 border-b border-zinc-200 px-4 py-3 [.menu-collapsed_&]:hidden md:sticky md:top-12 md:h-[calc(100vh-3rem)] md:w-56 md:flex-col md:items-stretch md:justify-start md:border-r md:border-b-0 md:py-5"
+      className="flex items-center gap-4 border-b border-zinc-200 px-4 py-3 [.menu-collapsed_&]:hidden md:sticky md:top-12 md:h-[calc(100vh-3rem)] md:w-56 md:flex-col md:items-stretch md:justify-start md:border-r md:border-b-0 md:py-5"
     >
       <nav className="flex gap-1 md:flex-1 md:flex-col" aria-label="Principal">
         {LINKS.map((l) => (
@@ -39,10 +38,6 @@ export function Sidebar() {
           </NavLink>
         ))}
       </nav>
-      <div className="flex items-center justify-between md:border-t md:border-zinc-200 md:px-2 md:pt-4">
-        <span className="hidden text-xs text-zinc-500 md:inline">Tema oscuro</span>
-        <ThemeToggle />
-      </div>
     </aside>
   );
 }

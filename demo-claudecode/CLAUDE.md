@@ -42,6 +42,7 @@ npm run dev              # http://localhost:5173 (backend must be on 4000)
 npm run build            # tsc -b + vite build
 npm run lint
 npm test                 # vitest + Testing Library (jsdom)
+npm run test:e2e         # Playwright + axe; starts its own backend (4100, e2e.db) and frontend (5174)
 ```
 
 Mandatory flow: components -> hooks -> services -> REST API. TanStack Query holds server data; Zustand only holds global UI state (`uiStore`, `toastStore`); filters live in the URL. Business rules (totals, `isOverdue`, invoice number, dashboard aggregates) come from the backend; the only exception is the informative `utils/totalsPreview.ts`. See `frontend/README.md` for details.
@@ -62,7 +63,7 @@ The root `tsconfig.json` excludes `backend/` and `frontend/` so root tooling doe
 
 ## Audit
 
-A read-only audit (quality, testing, architecture, security) was done on 2026-10-24. Known open gaps in the active app: `backend/` has not been security-audited yet (the audit covered the legacy root app), and there is no authentication or CI. Re-verify findings against `backend/` and `frontend/` before acting on them.
+A read-only audit (quality, testing, architecture, security) was done on 2026-10-24. Since then: backend hardening (limits, headers, rate limiting), unit tests with coverage ratchets, CI (`.github/workflows/ci.yml`) and Playwright + axe E2E. Known open gaps: **no authentication or authorization** (anyone who reaches port 4000 can read and change every invoice) and the `isOverdue` rule for invoices due today. Re-verify findings against `backend/` and `frontend/` before acting on them.
 
 ## Available skills
 

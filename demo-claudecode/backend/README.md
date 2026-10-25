@@ -39,3 +39,5 @@ Ejecutar siempre desde `backend/`: la `DATABASE_URL` relativa se resuelve contra
 
 - `DATABASE_URL` (por defecto `file:./prisma/dev.db`)
 - `FRONTEND_ORIGIN` origen(es) CORS permitidos, separados por comas (por defecto `http://localhost:5173`)
+- `RATE_LIMIT_DISABLED=1` desactiva el rate limiting (solo para la suite E2E; se ignora con `NODE_ENV=production`)
+- `NEXT_DIST_DIR` directorio de build de Next (por defecto `.next`; la suite E2E usa `.next-e2e` para no chocar con `npm run dev`)

@@ -56,8 +56,8 @@ describe("DashboardPage", () => {
     expect(screen.getByText("1 pagada")).toBeInTheDocument();
     expect(screen.getByText("Borradores").nextElementSibling).toHaveTextContent("200,00");
     expect(screen.getByText("Facturas", { selector: "p" }).nextElementSibling).toHaveTextContent("6");
-    expect(await screen.findByRole("img", { name: "Importe facturado por mes y estado" })).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: "Facturas por estado" })).toBeInTheDocument();
+    expect(await screen.findByRole("group", { name: "Importe facturado por mes y estado" })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Facturas por estado" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Nueva factura" })).toHaveAttribute("href", "/invoices/new");
     expect(document.title).toBe("Dashboard · Facturas");
   });
@@ -96,7 +96,7 @@ describe("DashboardPage", () => {
     expect(await screen.findByText(/No pudimos cargar el gráfico mensual/)).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Dashboard" })).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Reintentar" }));
-    await waitFor(() => expect(screen.getByRole("img", { name: "Importe facturado por mes y estado" })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("group", { name: "Importe facturado por mes y estado" })).toBeInTheDocument());
   });
 
   it("muestra el esqueleto del gráfico mientras cargan los meses", async () => {

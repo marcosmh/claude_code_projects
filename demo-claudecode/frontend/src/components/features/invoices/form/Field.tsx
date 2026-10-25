@@ -7,12 +7,14 @@ export function Field({
   label,
   error,
   className,
+  required,
   children,
 }: {
   label: string;
   error?: string;
   className?: string;
-  children: (props: { id: string; "aria-invalid": boolean; "aria-describedby"?: string }) => ReactNode;
+  required?: boolean;
+  children: (props: { id: string; "aria-invalid": boolean; "aria-describedby"?: string; "aria-required"?: boolean }) => ReactNode;
 }) {
   const id = useId();
   const errorId = `${id}-error`;
@@ -21,7 +23,7 @@ export function Field({
       <label htmlFor={id} className="mb-1 block text-sm font-medium text-zinc-700">
         {label}
       </label>
-      {children({ id, "aria-invalid": !!error, "aria-describedby": error ? errorId : undefined })}
+      {children({ id, "aria-invalid": !!error, "aria-describedby": error ? errorId : undefined, "aria-required": required || undefined })}
       {error && (
         <p id={errorId} className="mt-1 text-xs text-red-700">
           {error}
