@@ -1,6 +1,7 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { createPrismaClient } from "../src/lib/prisma";
 import { PrismaInvoiceRepository } from "../src/repositories";
+import { errorResponse } from "../src/utils/http";
 import type { InvoiceData } from "../src/types";
 
 const url = process.env.TEST_DATABASE_URL;
@@ -108,6 +109,31 @@ describe("PrismaInvoiceRepository", () => {
 
   it("update returns null for a missing invoice", async () => {
     expect(await repo.update(123456, build())).toBeNull();
+  });
+
+  it("updateStatus changes only the status: item ids are stable and updatedAt moves", async () => {
+    const created = await make({ items: [
+      { description: "A", quantity: 1, unitPriceCents: 100 },
+      { description: "B", quantity: 2, unitPriceCents: 200 },
+    ] });
+    await new Promise((r) => setTimeout(r, 15));
+    const updated = await repo.updateStatus(created.id, "PAID");
+    expect(updated?.status).toBe("PAID");
+    expect(updated?.items.map((i) => i.id)).toEqual(created.items.map((i) => i.id));
+    expect(updated?.clientName).toBe(created.clientName);
+    expect(updated!.updatedAt.getTime()).toBeGreaterThan(created.updatedAt.getTime());
+  });
+
+  it("updateStatus returns null for a missing invoice", async () => {
+    expect(await repo.updateStatus(123456, "PAID")).toBeNull();
+  });
+
+  it("a real duplicate-number error becomes a 409, not a 500", async () => {
+    await repo.create({ ...build(), number: "DUP-409" });
+    const error = await repo.create({ ...build(), number: "DUP-409" }).catch((e) => e);
+    const res = errorResponse(error);
+    expect(res.status).toBe(409);
+    expect((await res.json()).error.code).toBe("CONFLICT");
   });
 
   it("delete removes the invoice and cascades to items", async () => {

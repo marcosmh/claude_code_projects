@@ -13,8 +13,8 @@ export default defineConfig({
       include: ["src/**/*.{ts,tsx}"],
       exclude: ["src/generated/**", "src/types/**", "src/app/**/*.d.ts"],
       reporter: ["text-summary", "text", "lcov"],
-      // Floor just under the 2026-10-25 baseline (stmts 93.9, branches 86.2, funcs 96.8, lines 95.1).
-      thresholds: { statements: 90, branches: 80, functions: 90, lines: 90 },
+      // Ratchet: floor just under the 2026-10-25 baseline (stmts 98.6, branches 92.1, funcs ~99, lines 99.2). Never lower.
+      thresholds: { statements: 95, branches: 88, functions: 95, lines: 95 },
     },
   },
 });

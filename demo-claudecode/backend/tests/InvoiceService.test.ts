@@ -81,11 +81,13 @@ describe("InvoiceService lectura/modificación", () => {
   });
 
   it("updateStatus solo cambia el estado", async () => {
-    const { id, totalCents } = await service.create(request());
+    const created = await service.create(request());
+    const { id, totalCents } = created;
     const r = await service.updateStatus(id, "PAID");
     expect(r.status).toBe("PAID");
     expect(r.totalCents).toBe(totalCents);
     expect(r.items).toHaveLength(2);
+    expect(r.items.map((i) => i.id)).toEqual(created.items.map((i) => i.id));
     await expect(service.updateStatus(999, "PAID")).rejects.toBeInstanceOf(NotFoundError);
   });
 

@@ -69,6 +69,14 @@ export class FakeInvoiceRepository implements InvoiceRepository {
     return invoice;
   }
 
+  async updateStatus(id: number, status: Invoice["status"]) {
+    const current = this.rows.get(id);
+    if (!current) return null;
+    const invoice = { ...current, status, updatedAt: new Date() };
+    this.rows.set(id, invoice);
+    return invoice;
+  }
+
   async delete(id: number) {
     return this.rows.delete(id);
   }

@@ -111,6 +111,12 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
     });
   }
 
+  async updateStatus(id: number, status: InvoiceStatus): Promise<Invoice | null> {
+    // updateMany + findUnique instead of update(): a missing row is a normal outcome, not a P2025.
+    const { count } = await this.db.invoice.updateMany({ where: { id }, data: { status } });
+    return count > 0 ? this.findById(id) : null;
+  }
+
   async delete(id: number): Promise<boolean> {
     const { count } = await this.db.invoice.deleteMany({ where: { id } });
     return count > 0;

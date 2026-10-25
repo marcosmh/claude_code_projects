@@ -9,7 +9,7 @@ Base URL por defecto: `http://localhost:4000/api/v1`. Todas las respuestas JSON 
 - **Estados** (`status`): `DRAFT` | `SENT` | `PAID`. "Vencida" NO es un estado: es `isOverdue: true` (estado `SENT` y `dueDate` anterior a ahora).
 - **Totales**: siempre calculados por el backend por factura: `subtotalCents`, `taxCents`, `totalCents`; cada línea trae `amountCents` (`round(quantity * unitPriceCents)`). `taxCents = round(subtotalCents * taxRate / 100)`.
 - **Número**: `FAC-` + id con 4 dígitos (`FAC-0007`), asignado por el servidor; no se envía ni se puede modificar. No se reutiliza tras borrar.
-- **IDs de líneas** (`items[].id`): PUT y PATCH status reemplazan las líneas, por lo que sus ids cambian. No usarlos como clave estable entre ediciones.
+- **IDs de líneas** (`items[].id`): PUT reemplaza las líneas, por lo que sus ids cambian. PATCH status solo modifica el estado y conserva los ids. No usarlos como clave estable entre ediciones con PUT.
 - **CORS**: se permite el origen definido en `FRONTEND_ORIGIN` (lista separada por comas; por defecto `http://localhost:5173`). Métodos: GET, POST, PUT, PATCH, DELETE, OPTIONS. Cabeceras: `Content-Type`, `Authorization`. Expuestas: `Content-Disposition`, `Location`. Los preflight OPTIONS responden 204.
 - Las peticiones con cuerpo deben enviar `Content-Type: application/json` (admite `; charset=...`). Cualquier otro valor, o su ausencia, devuelve 400 `VALIDATION_ERROR`.
 - Límites de entrada (400 si se superan): `clientName` 200 caracteres, `clientEmail` 254, `clientAddress` 500, `notes` 2000, `items[].description` 500, máximo 100 líneas, `quantity` ≤ 100000, `unitPriceCents` ≤ 100000000, `page` ≤ 100000.
@@ -43,11 +43,14 @@ Error:
 | --- | --- | --- |
 | 400 | `VALIDATION_ERROR` | JSON inválido, tipos/formatos incorrectos (zod), id no numérico, query params inválidos |
 | 404 | `NOT_FOUND` | La factura no existe |
-| 409 | `CONFLICT` | Reservado para conflictos de estado/unicidad (hoy ningún endpoint lo emite) |
+| 409 | `CONFLICT` | Conflicto de unicidad detectado en la base de datos (Prisma P2002) |
+| 429 | `RATE_LIMITED` | Se superó el límite de peticiones (ver abajo); incluye `Retry-After` |
 | 422 | `UNPROCESSABLE_ENTITY` | Petición bien formada que incumple reglas de negocio |
-| 500 | `INTERNAL_ERROR` | Error inesperado (mensaje genérico, sin stack) |
+| 500 | `INTERNAL_ERROR` | Error inesperado (mensaje genérico, sin stack). La cabecera `X-Request-Id` permite localizarlo en los logs del servidor |
 
 Los `message` están en español, listos para mostrar al usuario.
+
+**Límite de peticiones** (por IP y minuto, en memoria de una sola instancia): 120 lecturas, 30 escrituras (POST/PUT/PATCH/DELETE) y 10 PDF. Las respuestas incluyen `RateLimit-Limit` y `RateLimit-Remaining`; al superarlo, 429 con `Retry-After` en segundos. La IP sale de `X-Forwarded-For` (o `X-Real-IP`), por lo que solo es fiable detrás de un proxy inverso que la fije. Los preflight OPTIONS no cuentan.
 
 Reglas de negocio (422): `dueDate >= issueDate`; al menos una línea; `quantity > 0` en cada línea.
 
@@ -181,7 +184,7 @@ Cambio rápido de estado.
 { "status": "PAID" }
 ```
 
-200 `{ "data": Invoice }`. 400 si el estado es inválido, 404 si no existe.
+200 `{ "data": Invoice }`. 400 si el estado es inválido, 404 si no existe. Solo cambia `status` (y `updatedAt`); las líneas no se tocan.
 
 ### DELETE /invoices/:id
 

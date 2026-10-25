@@ -2,6 +2,7 @@ import type {
   CreateInvoiceInput,
   FindAllInvoicesOptions,
   Invoice,
+  InvoiceStatus,
   PaginatedInvoices,
   UpdateInvoiceInput,
 } from "../types";
@@ -21,6 +22,11 @@ export interface InvoiceRepository {
   ): Promise<Invoice>;
   /** Replaces all fields and all items. Returns null if the invoice does not exist. */
   update(id: number, input: UpdateInvoiceInput): Promise<Invoice | null>;
+  /**
+   * Changes only `status` in a single statement (items and their ids are untouched, no
+   * read-modify-write). Returns null if the invoice does not exist.
+   */
+  updateStatus(id: number, status: InvoiceStatus): Promise<Invoice | null>;
   /** Returns true if a row was deleted. */
   delete(id: number): Promise<boolean>;
 }

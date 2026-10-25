@@ -47,22 +47,7 @@ export class InvoiceService {
   }
 
   async updateStatus(id: number, status: InvoiceStatus): Promise<InvoiceResponse> {
-    const current = await this.findOrFail(id);
-    const invoice = await this.repository.update(id, {
-      clientName: current.clientName,
-      clientEmail: current.clientEmail,
-      clientAddress: current.clientAddress,
-      issueDate: current.issueDate,
-      dueDate: current.dueDate,
-      status,
-      taxRate: current.taxRate,
-      notes: current.notes,
-      items: current.items.map(({ description, quantity, unitPriceCents }) => ({
-        description,
-        quantity,
-        unitPriceCents,
-      })),
-    });
+    const invoice = await this.repository.updateStatus(id, status);
     if (!invoice) throw new NotFoundError(`Factura ${id} no encontrada`);
     return toInvoiceResponse(invoice, this.now());
   }

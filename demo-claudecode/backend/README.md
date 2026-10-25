@@ -11,7 +11,7 @@ src/app/api/v1/**/route.ts   handler HTTP (solo enruta, envuelto con withErrorHa
         -> src/repositories  único acceso a Prisma
 ```
 
-Otros: `src/validators` (zod), `src/dto` (contratos y mapper), `src/domain` (totales, overdue, número), `src/middleware` (manejo de errores), `src/proxy.ts` (CORS; en Next 16 `middleware` se llama `proxy`), `src/container.ts` (composición), `src/utils`.
+Otros: `src/validators` (zod), `src/dto` (contratos y mapper), `src/domain` (totales, overdue, número), `src/middleware` (manejo de errores), `src/proxy.ts` (CORS y rate limiting; en Next 16 `middleware` se llama `proxy`), `src/container.ts` (composición), `src/utils`.
 
 ## Puesta en marcha
 
