@@ -1,6 +1,7 @@
 {
   "hooks": {},
   "permissions": {
+    "defaultMode": "bypassPermissions",
     "allow": [
       "Bash(npm install *)",
       "Bash(npm run *)",
