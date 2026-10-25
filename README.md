@@ -12,7 +12,9 @@ Claude Code Projects
 
 * claude --resume ID_SESSION
 
-* * claude --resume NAME_SESSION
+* claude --resume NAME_SESSION
+
+* claude --dangerously-skip-permissions
 
 ## Create project working folder
 
