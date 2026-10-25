@@ -11,6 +11,12 @@ export function parseQuery<T>(schema: ZodType<T>, request: Request): T {
 }
 
 export async function parseBody<T>(schema: ZodType<T>, request: Request): Promise<T> {
+  // Without this check a cross-site "simple" request (text/plain) is parsed as JSON,
+  // skips the CORS preflight and could mutate data blindly.
+  const contentType = request.headers.get("content-type") ?? "";
+  if (!/^application\/json\s*(;|$)/i.test(contentType)) {
+    throw new BadRequestError("El Content-Type debe ser application/json");
+  }
   let json: unknown;
   try {
     json = await request.json();

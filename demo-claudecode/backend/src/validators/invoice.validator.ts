@@ -6,12 +6,28 @@ const isoDate = (label: string) =>
     error: `${label} inválida (use ISO 8601)`,
   });
 
+// Input caps keep payloads, PDFs and line totals within safe integer range:
+// 100 lines * (1e5 qty * 1e8 cents) stays below Number.MAX_SAFE_INTEGER.
+export const LIMITS = {
+  clientName: 200,
+  clientEmail: 254,
+  clientAddress: 500,
+  notes: 2000,
+  description: 500,
+  items: 100,
+  quantity: 100_000,
+  unitPriceCents: 100_000_000,
+  page: 100_000,
+} as const;
+
 /** "" and null both normalise to null. */
-const optionalText = z
-  .string()
-  .trim()
-  .nullish()
-  .transform((v) => v || null);
+const optionalText = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max, `Máximo ${max} caracteres`)
+    .nullish()
+    .transform((v) => v || null);
 
 const optionalEmail = z
   .union([z.literal(""), z.email("Email inválido")])
@@ -21,12 +37,19 @@ const optionalEmail = z
 export const statusSchema = z.enum(STATUSES, { error: "Estado inválido (DRAFT, SENT o PAID)" });
 
 export const invoiceItemSchema = z.object({
-  description: z.string().trim().min(1, "La descripción es obligatoria"),
-  quantity: z.number("La cantidad debe ser un número"),
+  description: z
+    .string()
+    .trim()
+    .min(1, "La descripción es obligatoria")
+    .max(LIMITS.description, `Máximo ${LIMITS.description} caracteres`),
+  quantity: z
+    .number("La cantidad debe ser un número")
+    .max(LIMITS.quantity, `La cantidad no puede superar ${LIMITS.quantity}`),
   unitPriceCents: z
     .number("El precio debe ser un número")
     .int("El precio debe estar en centavos enteros")
-    .min(0, "Precio inválido"),
+    .min(0, "Precio inválido")
+    .max(LIMITS.unitPriceCents, "Precio demasiado alto"),
 });
 
 /**
@@ -34,15 +57,21 @@ export const invoiceItemSchema = z.object({
  * dueDate >= issueDate) live in InvoiceService.
  */
 export const invoiceBodySchema = z.object({
-  clientName: z.string("El cliente es obligatorio").trim().min(1, "El cliente es obligatorio"),
+  clientName: z
+    .string("El cliente es obligatorio")
+    .trim()
+    .min(1, "El cliente es obligatorio")
+    .max(LIMITS.clientName, `Máximo ${LIMITS.clientName} caracteres`),
   clientEmail: optionalEmail,
-  clientAddress: optionalText,
+  clientAddress: optionalText(LIMITS.clientAddress),
   issueDate: isoDate("Fecha de emisión"),
   dueDate: isoDate("Fecha de vencimiento"),
   status: statusSchema.default("DRAFT"),
   taxRate: z.number().min(0, "Impuesto inválido").max(100, "Impuesto inválido").default(0),
-  notes: optionalText,
-  items: z.array(invoiceItemSchema, "Las líneas deben ser una lista"),
+  notes: optionalText(LIMITS.notes),
+  items: z
+    .array(invoiceItemSchema, "Las líneas deben ser una lista")
+    .max(LIMITS.items, `Máximo ${LIMITS.items} líneas`),
 });
 
 export const statusBodySchema = z.object({ status: statusSchema });
@@ -56,7 +85,7 @@ export const idParamSchema = z
 export const listQuerySchema = z.object({
   status: statusSchema.optional(),
   search: z.string().trim().max(100).optional(),
-  page: z.coerce.number().int("page inválido").min(1, "page debe ser >= 1").default(1),
+  page: z.coerce.number().int("page inválido").min(1, "page debe ser >= 1").max(LIMITS.page, "page demasiado alto").default(1),
   pageSize: z.coerce
     .number()
     .int("pageSize inválido")

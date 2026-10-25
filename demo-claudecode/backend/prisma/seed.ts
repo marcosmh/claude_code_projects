@@ -4,6 +4,14 @@ import { resolve } from "node:path";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { PrismaClient } from "../src/generated/prisma/client";
 
+// Safety: never run in production, and require --force because it wipes all invoices.
+if (process.env.NODE_ENV === "production") {
+  throw new Error("Seed is disabled when NODE_ENV=production");
+}
+if (!process.argv.includes("--force")) {
+  throw new Error("Seed deletes ALL invoices. Re-run with --force: npm run db:seed -- --force");
+}
+
 // Safety: the seed deletes invoices, so it only runs against backend/prisma/dev.db.
 const url = process.env.DATABASE_URL ?? "file:./prisma/dev.db";
 const expected = resolve(process.cwd(), "prisma/dev.db");

@@ -46,3 +46,10 @@ next-env.d.ts
 /app/generated
 *.db
 *.db-journal
+
+# personal data / editor swap files
+users.json
+*.swp
+
+# start_apps/stop_apps runtime files
+scripts/.run/

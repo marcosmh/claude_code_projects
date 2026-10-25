@@ -2,57 +2,67 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-Invoice (facturas) app: Next.js 16 App Router + Tailwind v4 + Prisma 7 (SQLite) + Zod + `@react-pdf/renderer`. UI text is in Spanish. The git root is the parent directory (`claude_code_projects`); this app lives in `demo-claudecode/`.
+Invoice (facturas) app, UI text in Spanish. The git root is the parent directory (`claude_code_projects`); the project lives in `demo-claudecode/`.
 
-## Commands
+## Active app: `backend/` + `frontend/`
+
+The active app is the layered rewrite introduced in commit `de8b5fe` ("refactor using agents"): a REST API in `backend/` and a Vite SPA in `frontend/`. **New work goes there.** The Next.js app in the repo root (`app/`, `components/`, `lib/`, `prisma/`, `tests/`) is the **legacy** version; see "Legacy root app" below. Decision recorded 2026-10-24.
+
+Each sub-project has its own `package.json`, `node_modules` and `README.md`; run commands from inside its directory (the relative `DATABASE_URL` resolves against the cwd).
+
+### Backend (`backend/`)
+
+Next.js 16 route handlers only (no pages) + TypeScript + Prisma 7 (SQLite) + Zod. Contract: `backend/docs/api.md`.
 
 ```bash
-npm run dev                       # http://localhost:3000
-npm run build                     # also type-checks; run before declaring work done
-npm run lint
-npm test                          # vitest run (all tests in tests/**)
-npx vitest run tests/stats.test.ts -t "agrupa por estado"   # single file / test
-npx prisma migrate dev            # apply schema changes (regenerates client)
-npm run db:seed                   # WARNING: deletes ALL invoices first
+cd backend
+cp .env.example .env     # DATABASE_URL (default file:./prisma/dev.db), FRONTEND_ORIGIN (default http://localhost:5173)
+npm install
+npm run db:migrate       # apply migrations
+npm run db:seed -- --force   # WARNING: deletes ALL invoices first; refuses without --force or with NODE_ENV=production
+npm run dev              # http://localhost:4000
+npm test                 # vitest; temp SQLite + fake repository, never prisma/dev.db
+npm run typecheck
+npm run build
 ```
 
-Setup: `cp .env.example .env` (`DATABASE_URL="file:./dev.db"`), then `npx prisma migrate dev`. `postinstall` runs `prisma generate`.
+Flow: `src/app/api/v1/**/route.ts` (routing only, wrapped in `withErrorHandler`) -> `src/controllers` (parse request, build HTTP response) -> `src/services` (all business logic, depends on the `InvoiceRepository` interface) -> `src/repositories` (the only Prisma access). Wiring is in `src/container.ts`. Also: `src/validators` (Zod), `src/dto` (contracts + mapper), `src/domain` (totals, overdue, invoice number), `src/proxy.ts` (CORS; in Next 16 `middleware` is called `proxy`).
 
-## Next.js version caveat
+`backend/AGENTS.md` applies: this Next.js (16.x) differs from older versions; read `node_modules/next/dist/docs/` before using an API.
 
-`AGENTS.md` is right: this Next.js (16.4) differs from older versions. Read the relevant guide in `node_modules/next/dist/docs/01-app/` before using an API. The project runs with `cacheComponents: true`, which has concrete consequences:
+### Frontend (`frontend/`)
 
-- Route segment config like `export const dynamic = "force-dynamic"` is a **build error**. Pages that read the DB or `new Date()` must call `await connection()` (from `next/server`) first, otherwise prerendering fails with "unstable value `new Date()`". See `app/invoices/page.tsx`, `app/dashboard/page.tsx`, `app/invoices/new/page.tsx`.
-- `usePathname` in the layout's `Sidebar` is wrapped in `<Suspense>`.
-- Route params use the generated helper types (`PageProps<"/invoices/[id]">`, `RouteContext<...>`); run `npx next typegen` if they're missing.
+React 19 + TypeScript + Vite + React Router + Tailwind v4 + TanStack Query + Zustand + React Hook Form + Zod. Consumes the backend REST API.
 
-## Architecture
+```bash
+cd frontend
+cp .env.example .env     # optional: VITE_API_URL (default http://localhost:4000/api/v1)
+npm install
+npm run dev              # http://localhost:5173 (backend must be on 4000)
+npm run build            # tsc -b + vite build
+npm run lint
+npm test                 # vitest + Testing Library (jsdom)
+```
 
-**Data flow.** Server Components query Prisma directly. Mutations are Server Actions in `lib/actions/invoices.ts` (`createInvoice`, `updateInvoice`, `deleteInvoice`) called from the client `components/InvoiceForm.tsx` (React Hook Form + `invoiceFormSchema` in `lib/validators.ts`, which converts the text inputs to `invoiceSchema` input and shows errors before submitting; sub-pieces in `components/invoice-form/`); they take `unknown`, validate with `invoiceSchema` (`lib/validators.ts`), return `{ errors }` on failure, and `redirect()` on success. There is no REST API; the only route handlers are `app/invoices/[id]/pdf/route.ts` and `app/flash/route.ts` (see Flash messages).
+Mandatory flow: components -> hooks -> services -> REST API. TanStack Query holds server data; Zustand only holds global UI state (`uiStore`, `toastStore`); filters live in the URL. Business rules (totals, `isOverdue`, invoice number, dashboard aggregates) come from the backend; the only exception is the informative `utils/totalsPreview.ts`. See `frontend/README.md` for details.
 
-**Flash messages.** Actions call `setFlash()` (`lib/flash.ts`, short-lived httpOnly cookie) just before `redirect()`. The invoice list and detail pages render `<Flash />`, which reads the cookie and shows `FlashAlert` (auto-closes after 5 s, pauses on hover/focus, close button). The client then calls `DELETE /flash` so the message lives for a single request. Not verified end to end in a browser.
+### Domain rules to preserve
 
-**Prisma 7 specifics.**
-- Client is generated to `app/generated/prisma` (gitignored) and imported from `@/app/generated/prisma/client`; it needs the `better-sqlite3` driver adapter, wired once in `lib/prisma.ts` (singleton).
-- `prisma.config.ts` (not `schema.prisma`) holds the datasource URL.
-- A relative `file:./dev.db` resolves against the **process cwd**, i.e. the project root `dev.db` — the `prisma/dev.db` file is a stray, not the live DB.
-- `prisma/seed.ts` builds its own client; it does not import `lib/prisma.ts`.
-
-**Domain rules to preserve.**
-- Money is stored as integer cents (`unitPriceCents`); the form converts from decimal input. Totals are never stored — always derived via `calcTotals` in `lib/totals.ts` (shared by list, detail, form, dashboard and PDF).
-- `status` is a plain string (`DRAFT|SENT|PAID`) validated by Zod, not a Prisma enum (SQLite-friendly, easy Postgres migration later). Status labels live in `lib/validators.ts`.
+- Money is integer cents (`unitPriceCents`); totals are never stored, always derived.
+- `status` is a plain string (`DRAFT|SENT|PAID`) validated by Zod, not a Prisma enum.
 - Invoice `number` is `FAC-` + id padded to 4 digits, assigned in a transaction right after insert, so it never repeats after deletes. Client data is embedded in the invoice (no Client model).
-- "Overdue" is not a status; it is computed as `SENT` with `dueDate < now` in `lib/stats.ts`.
+- "Overdue" is not a status; it is computed as `SENT` with `dueDate < now`.
+- Dark mode is a `dark` class on `<html>` set by an inline script in `frontend/index.html`; `src/globals.css` remaps the zinc palette under `:root.dark`, so use plain palette classes (avoid `text-white` on remapped dark buttons).
 
-**Dashboard.** `lib/stats.ts` holds the pure aggregation (`summarize`, `monthlyTotals`) and `STATUS_COLOR`; charts in `components/charts/` are hand-written SVG/HTML client components with hover tooltips and a "Ver como tabla" fallback (no chart library). Status colors must stay consistent between charts and `StatusBadge` (color follows the entity).
+## Legacy root app
 
-**Theming.** Dark mode is a `dark` class on `<html>` (set by an inline script in `app/layout.tsx` before paint, toggled by `components/ThemeToggle.tsx`). Instead of `dark:` variants, `app/globals.css` remaps the `--color-zinc-*`/blue/green/red variables under `:root.dark`, so components use plain Tailwind palette classes (e.g. `bg-zinc-900 text-zinc-50` inverts correctly; avoid `text-white` on zinc-900 buttons). Chart series colors are `--series-1..3` CSS variables, validated for CVD safety in both modes.
+The Next.js monolith in the root (Server Actions + Prisma, `npm run dev|build|lint|test` from `demo-claudecode/`) is **not maintained** and **does not build**: `components/ThemeToggle.tsx` and `components/TopBar.tsx` import `@/hooks/useHtmlClass`, which was deleted in commit `55371f3`. Do not add features to it. It is kept only for reference until the owner removes it; its root `dev.db`, `prisma/` and `users.json` are not used by the active app.
 
-**PDF.** `components/pdf/InvoiceDocument.tsx` is called as a plain function (not via `createElement`) inside the route handler, because `renderToBuffer` rejects the wrapped element type. Currency strings have NBSP replaced since the built-in Helvetica lacks it.
+The root `tsconfig.json` excludes `backend/` and `frontend/` so root tooling does not mix them (they have their own `@/` aliases).
 
-## Tests
+## Audit
 
-Vitest (`vitest.config.mts`, `@` alias) covers only pure logic in `lib/` (`totals`, `stats`, `validators`). UI and actions have no automated tests; verify them by running the app.
+A read-only audit (quality, testing, architecture, security) was done on 2026-10-24. Known open gaps in the active app: `backend/` has not been security-audited yet (the audit covered the legacy root app), and there is no authentication or CI. Re-verify findings against `backend/` and `frontend/` before acting on them.
 
 ## Available skills
 

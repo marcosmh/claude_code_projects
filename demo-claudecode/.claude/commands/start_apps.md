@@ -1,0 +1,1 @@
+Levanta backend (puerto 4000) y frontend (puerto 5173) ejecutando `scripts/start_apps` con Bash. Muestra al final las URLs y, si algún servidor falla, las últimas líneas de `scripts/.run/<nombre>.log`.

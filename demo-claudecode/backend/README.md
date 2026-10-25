@@ -19,7 +19,7 @@ Otros: `src/validators` (zod), `src/dto` (contratos y mapper), `src/domain` (tot
 cp .env.example .env     # DATABASE_URL y FRONTEND_ORIGIN
 npm install
 npm run db:migrate       # aplica migraciones
-npm run db:seed          # ATENCIÓN: borra las facturas y siembra 20
+npm run db:seed -- --force   # ATENCIÓN: borra las facturas y siembra 20 (no corre con NODE_ENV=production)
 npm run dev              # http://localhost:4000
 ```
 

@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Starts backend (http://localhost:4000) and frontend (http://localhost:5173) in the background.
+# Logs and PIDs live in scripts/.run/. Stop with scripts/stop_apps.
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+RUN="$ROOT/scripts/.run"
+mkdir -p "$RUN"
+
+start() { # name dir port command...
+  local name=$1 dir=$2 port=$3; shift 3
+  if [[ -f "$RUN/$name.pid" ]] && kill -0 "$(cat "$RUN/$name.pid")" 2>/dev/null; then
+    echo "$name ya está en ejecución (PID $(cat "$RUN/$name.pid"))"; return
+  fi
+  if ss -ltn | grep -qE ":$port\b"; then
+    echo "ERROR: el puerto $port ya está en uso; $name no se inició" >&2; return 1
+  fi
+  (cd "$ROOT/$dir" && setsid nohup "$@" >"$RUN/$name.log" 2>&1 & echo $! >"$RUN/$name.pid")
+  for _ in $(seq 1 40); do
+    ss -ltn | grep -qE ":$port\b" && { echo "$name listo en http://localhost:$port (PID $(cat "$RUN/$name.pid"))"; return; }
+    sleep 0.5
+  done
+  echo "ERROR: $name no abrió el puerto $port; revisa $RUN/$name.log" >&2; return 1
+}
+
+start backend backend 4000 npx next dev -p 4000
+start frontend frontend 5173 npx vite --port 5173 --strictPort

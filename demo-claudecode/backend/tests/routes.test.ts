@@ -68,6 +68,29 @@ describe("invoices routes", () => {
     expect((await res.json()).error.code).toBe("VALIDATION_ERROR");
   });
 
+  it.each(["text/plain", "application/x-www-form-urlencoded", ""])(
+    "POST con Content-Type %j -> 400 sin procesar el cuerpo",
+    async (contentType) => {
+      const req = new Request(`${BASE}/invoices`, {
+        method: "POST",
+        headers: contentType ? { "Content-Type": contentType } : undefined,
+        body: JSON.stringify(body()),
+      });
+      const res = await listRoute.POST(req);
+      expect(res.status).toBe(400);
+      expect((await res.json()).error.message).toMatch(/application\/json/);
+    },
+  );
+
+  it("POST acepta application/json con charset", async () => {
+    const req = new Request(`${BASE}/invoices`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json; charset=utf-8" },
+      body: JSON.stringify(body()),
+    });
+    expect((await listRoute.POST(req)).status).toBe(201);
+  });
+
   it("POST que viola regla de negocio -> 422", async () => {
     const res = await listRoute.POST(json("POST", "/invoices", body({ dueDate: "2026-08-01" })));
     expect(res.status).toBe(422);
