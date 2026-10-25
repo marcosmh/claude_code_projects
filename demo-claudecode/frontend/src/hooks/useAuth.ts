@@ -36,6 +36,15 @@ export function useLogin() {
   });
 }
 
+export function useChangePassword() {
+  const push = useToastStore((s) => s.push);
+  return useMutation({
+    mutationFn: ({ currentPassword, newPassword }: { currentPassword: string; newPassword: string }) =>
+      authService.changePassword(currentPassword, newPassword),
+    onSuccess: () => push("success", "Contraseña actualizada. Se cerró la sesión en tus otros dispositivos."),
+  });
+}
+
 export function useLogout() {
   const queryClient = useQueryClient();
   const push = useToastStore((s) => s.push);

@@ -16,6 +16,7 @@ vi.mock("../src/repositories", async () => {
 import * as loginRoute from "@/app/api/v1/auth/login/route";
 import * as logoutRoute from "@/app/api/v1/auth/logout/route";
 import * as meRoute from "@/app/api/v1/auth/me/route";
+import * as passwordRoute from "@/app/api/v1/auth/password/route";
 import { container } from "@/container";
 import * as listRoute from "@/app/api/v1/invoices/route";
 import * as itemRoute from "@/app/api/v1/invoices/[id]/route";
@@ -204,6 +205,7 @@ describe("autenticación y autorización", () => {
     ["GET /stats/summary", () => summaryRoute.GET(json("GET", "/stats/summary"))],
     ["GET /stats/monthly", () => monthlyRoute.GET(json("GET", "/stats/monthly"))],
     ["GET /auth/me", () => meRoute.GET(json("GET", "/auth/me"))],
+    ["POST /auth/password", () => passwordRoute.POST(json("POST", "/auth/password", { currentPassword: "x", newPassword: "y".repeat(12) }))],
   ];
 
   it.each(routes)("%s sin sesión -> 401 UNAUTHENTICATED", async (_name, call) => {
@@ -329,5 +331,50 @@ describe("autenticación y autorización", () => {
       cookie = anaCookie;
       expect((await meRoute.GET(json("GET", "/auth/me"))).status).toBe(200);
     });
+  });
+});
+
+describe("bloqueo y cambio de contraseña (HTTP)", () => {
+  const login = (email: string, password: string) =>
+    loginRoute.POST(
+      new Request(`${BASE}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      }),
+    );
+
+  it("cinco intentos fallidos bloquean la cuenta; la contraseña correcta deja de valer", async () => {
+    for (let i = 0; i < 5; i++) expect((await login("ana@example.com", "wrong password!!")).status).toBe(401);
+    const res = await login("ana@example.com", PASSWORD);
+    expect(res.status).toBe(401);
+    expect(res.headers.get("Set-Cookie")).toBeNull();
+    expect((await res.json()).error.message).toMatch(/5 intentos fallidos/);
+  });
+
+  it("cambiar la contraseña: 204, la sesión actual sigue y la antigua deja de servir", async () => {
+    const res = await passwordRoute.POST(json("POST", "/auth/password", { currentPassword: PASSWORD, newPassword: "a brand new passphrase" }));
+    expect(res.status).toBe(204);
+    expect((await meRoute.GET(json("GET", "/auth/me"))).status).toBe(200);
+    expect((await login("ana@example.com", PASSWORD)).status).toBe(401);
+    expect((await login("ana@example.com", "a brand new passphrase")).status).toBe(200);
+  });
+
+  it("revoca las otras sesiones de la cuenta", async () => {
+    const current = cookie;
+    const other = sessionCookieOf(await login("ana@example.com", PASSWORD));
+    await passwordRoute.POST(json("POST", "/auth/password", { currentPassword: PASSWORD, newPassword: "a brand new passphrase" }));
+    cookie = other;
+    expect((await meRoute.GET(json("GET", "/auth/me"))).status).toBe(401);
+    cookie = current;
+    expect((await meRoute.GET(json("GET", "/auth/me"))).status).toBe(200);
+  });
+
+  it("contraseña actual incorrecta -> 422 con error en currentPassword; nueva corta -> 400", async () => {
+    const wrong = await passwordRoute.POST(json("POST", "/auth/password", { currentPassword: "nope", newPassword: "a brand new passphrase" }));
+    expect(wrong.status).toBe(422);
+    expect((await wrong.json()).error.details[0].field).toBe("currentPassword");
+    const short = await passwordRoute.POST(json("POST", "/auth/password", { currentPassword: PASSWORD, newPassword: "short" }));
+    expect(short.status).toBe(400);
   });
 });

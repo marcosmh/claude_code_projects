@@ -41,7 +41,7 @@ test.describe("autenticación", () => {
     await page.getByLabel("Contraseña").fill("contraseña-equivocada");
     await page.getByRole("button", { name: "Iniciar sesión" }).click();
 
-    await expect(page.getByRole("alert")).toHaveText("El email o la contraseña no son correctos.");
+    await expect(page.getByRole("alert")).toContainText("Email o contraseña incorrectos");
     await expect(page).toHaveURL(/\/login$/);
   });
 
@@ -84,5 +84,48 @@ test.describe("autenticación", () => {
     await page.getByRole("button", { name: "Iniciar sesión" }).click();
     await expect(page.getByText("Escribe tu email")).toBeVisible();
     await expectNoA11yViolations(page, "login con errores");
+  });
+});
+
+test.describe("cambio de contraseña", () => {
+  test("se cambia desde la cuenta, se puede entrar con la nueva y no con la antigua", async ({ page }) => {
+    const NEW = "una-contraseña-nueva-123";
+    const signIn = async (password: string) => {
+      await page.goto("/login");
+      await page.getByLabel("Email").fill(E2E_USER.email);
+      await page.getByLabel("Contraseña").fill(password);
+      await page.getByRole("button", { name: "Iniciar sesión" }).click();
+    };
+    await signIn(E2E_USER.password);
+    await expect(page).toHaveURL(/\/dashboard$/);
+
+    try {
+      await page.getByRole("link", { name: "Cambiar contraseña" }).click();
+      await expect(page.getByRole("heading", { level: 1, name: "Cambiar contraseña" })).toBeVisible();
+      await expectNoA11yViolations(page, "cambiar contraseña");
+
+      await page.getByLabel("Contraseña actual").fill("no-es-esta-contraseña");
+      await page.getByLabel("Nueva contraseña", { exact: true }).fill(NEW);
+      await page.getByLabel("Repite la nueva contraseña").fill(NEW);
+      await page.getByRole("button", { name: "Guardar contraseña" }).click();
+      await expect(page.getByText("La contraseña actual no es correcta")).toBeVisible();
+
+      await page.getByLabel("Contraseña actual").fill(E2E_USER.password);
+      await page.getByRole("button", { name: "Guardar contraseña" }).click();
+      await expect(page).toHaveURL(/\/dashboard$/);
+      await expect(page.getByText("Contraseña actualizada")).toBeVisible();
+
+      await page.getByRole("button", { name: "Cerrar sesión" }).click();
+      await signIn(E2E_USER.password);
+      await expect(page.getByRole("alert")).toContainText("Email o contraseña incorrectos");
+      await signIn(NEW);
+      await expect(page).toHaveURL(/\/dashboard$/);
+    } finally {
+      // Deja la cuenta como estaba para el resto de la suite, falle lo que falle arriba.
+      const res = await page.request.post(`${API}/auth/password`, {
+        data: { currentPassword: NEW, newPassword: E2E_USER.password },
+      });
+      expect([204, 422]).toContain(res.status());
+    }
   });
 });

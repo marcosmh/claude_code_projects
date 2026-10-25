@@ -6,7 +6,7 @@ export const WINDOW_MS = 60_000;
 
 export function classify(method: string, pathname: string): RouteClass {
   // Login is the brute-force target: its own, stricter bucket.
-  if (method === "POST" && pathname.endsWith("/auth/login")) return "auth";
+  if (method === "POST" && (pathname.endsWith("/auth/login") || pathname.endsWith("/auth/password"))) return "auth";
   if (method === "GET" && pathname.endsWith("/pdf")) return "pdf";
   return method === "GET" || method === "HEAD" ? "read" : "write";
 }

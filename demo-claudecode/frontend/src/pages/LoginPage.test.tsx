@@ -1,7 +1,7 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { createMemoryRouter, RouterProvider } from "react-router";
+import { createMemoryRouter, MemoryRouter, RouterProvider } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { queryKeys } from "@/hooks/queryKeys";
 import { createQueryClient } from "@/queryClient";
@@ -49,15 +49,18 @@ describe("LoginPage", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("credenciales incorrectas: muestra un aviso sin revelar qué campo falló y conserva el email", async () => {
-    vi.stubGlobal("fetch", reply({ error: { code: "UNAUTHENTICATED", message: "Email o contraseña incorrectos" } }, 401));
+  it("credenciales incorrectas: muestra el aviso del servidor (con la regla de bloqueo) y conserva el email", async () => {
+    vi.stubGlobal(
+      "fetch",
+      reply({ error: { code: "UNAUTHENTICATED", message: "Email o contraseña incorrectos. Tras 5 intentos fallidos la cuenta se bloquea 15 minutos." } }, 401),
+    );
     const { user, router } = renderLogin();
 
     await user.type(screen.getByLabelText("Email"), "ana@example.com");
     await user.type(screen.getByLabelText("Contraseña"), "mala");
     await user.click(screen.getByRole("button", { name: "Iniciar sesión" }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("El email o la contraseña no son correctos.");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Email o contraseña incorrectos. Tras 5 intentos fallidos la cuenta se bloquea 15 minutos.");
     expect(screen.getByLabelText("Email")).toHaveValue("ana@example.com");
     expect(router.state.location.pathname).toBe("/login");
   });
@@ -106,7 +109,9 @@ describe("UserMenu", () => {
     client.setQueryData(queryKeys.session, { id: 1, email: "ana@example.com" });
     render(
       <QueryClientProvider client={client}>
-        <UserMenu />
+        <MemoryRouter>
+          <UserMenu />
+        </MemoryRouter>
       </QueryClientProvider>,
     );
 
@@ -121,7 +126,9 @@ describe("UserMenu", () => {
     client.setQueryData(queryKeys.session, null);
     render(
       <QueryClientProvider client={client}>
-        <UserMenu />
+        <MemoryRouter>
+          <UserMenu />
+        </MemoryRouter>
       </QueryClientProvider>,
     );
     expect(screen.queryByRole("button")).not.toBeInTheDocument();

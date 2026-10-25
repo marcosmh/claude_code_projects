@@ -1,9 +1,9 @@
-import { describe, expect, it } from "vitest";
-import { AuthService, SESSION_TTL_MS, hashToken } from "../src/services/AuthService";
+import { beforeEach, describe, expect, it } from "vitest";
+import { AuthService, LOCK_MS, MAX_FAILED_LOGINS, SESSION_TTL_MS, hashToken } from "../src/services/AuthService";
 import { SESSION_COOKIE, clearedSessionCookie, readCookie, sessionCookie } from "../src/utils/cookies";
-import { ConflictError, UnauthorizedError } from "../src/utils/errors";
+import { ConflictError, UnauthorizedError, ValidationError } from "../src/utils/errors";
 import { hashPassword, verifyPassword } from "../src/utils/password";
-import { loginBodySchema, newUserSchema } from "../src/validators/auth.validator";
+import { changePasswordSchema, loginBodySchema, newUserSchema } from "../src/validators/auth.validator";
 import { FakeAuthRepository } from "./helpers/FakeAuthRepository";
 import { FakeInvoiceRepository, sampleData } from "./helpers/FakeInvoiceRepository";
 
@@ -140,5 +140,133 @@ describe("AuthService", () => {
     const second = await service.createUser("bea@example.com", PASSWORD);
     expect(second.claimedInvoices).toBe(0);
     await expect(service.createUser("ana@example.com", PASSWORD)).rejects.toBeInstanceOf(ConflictError);
+  });
+});
+
+describe("AuthService: bloqueo de cuenta", () => {
+  const NOW = new Date("2026-10-10T12:00:00Z");
+  let t = NOW;
+  let repo: FakeAuthRepository;
+  let service: AuthService;
+  const bad = (email = "ana@example.com") => service.login(email, "wrong password!!").catch((e) => e);
+  const userId = () => repo.users[0].id;
+
+  beforeEach(async () => {
+    t = NOW;
+    repo = new FakeAuthRepository();
+    service = new AuthService(repo, () => t);
+    await service.createUser("ana@example.com", PASSWORD);
+  });
+
+  it(`tras ${MAX_FAILED_LOGINS} fallos seguidos bloquea la cuenta aunque luego llegue la contraseña correcta`, async () => {
+    for (let i = 0; i < MAX_FAILED_LOGINS; i++) expect(await bad()).toBeInstanceOf(UnauthorizedError);
+    expect(repo.users[0].lockedUntil).toEqual(new Date(NOW.getTime() + LOCK_MS));
+
+    await expect(service.login("ana@example.com", PASSWORD)).rejects.toBeInstanceOf(UnauthorizedError);
+    expect(repo.sessions.size).toBe(0);
+  });
+
+  it("un intento durante el bloqueo no lo alarga ni cuenta como fallo", async () => {
+    for (let i = 0; i < MAX_FAILED_LOGINS; i++) await bad();
+    const lockedUntil = repo.users[0].lockedUntil;
+    t = new Date(NOW.getTime() + 60_000);
+    await bad();
+    expect(repo.users[0].lockedUntil).toEqual(lockedUntil);
+    expect(repo.failures.get(userId())).toBe(0);
+  });
+
+  it("pasado el bloqueo se puede entrar, y los fallos no se arrastran", async () => {
+    for (let i = 0; i < MAX_FAILED_LOGINS; i++) await bad();
+    t = new Date(NOW.getTime() + LOCK_MS + 1);
+    await expect(service.login("ana@example.com", PASSWORD)).resolves.toMatchObject({ user: { email: "ana@example.com" } });
+    expect(repo.users[0].lockedUntil).toBeNull();
+    for (let i = 0; i < MAX_FAILED_LOGINS - 1; i++) await bad();
+    expect(repo.users[0].lockedUntil).toBeNull();
+  });
+
+  it("un login correcto reinicia la cuenta de fallos", async () => {
+    for (let i = 0; i < MAX_FAILED_LOGINS - 1; i++) await bad();
+    await service.login("ana@example.com", PASSWORD);
+    expect(repo.failures.has(userId())).toBe(false);
+    await bad();
+    expect(repo.users[0].lockedUntil).toBeNull();
+  });
+
+  it("la respuesta es idéntica para email desconocido, contraseña errónea y cuenta bloqueada", async () => {
+    const unknown = await bad("nadie@example.com");
+    const wrong = await bad();
+    for (let i = 0; i < MAX_FAILED_LOGINS; i++) await bad();
+    const locked = await service.login("ana@example.com", PASSWORD).catch((e) => e);
+    expect(new Set([unknown.message, wrong.message, locked.message]).size).toBe(1);
+    expect(unknown.status).toBe(locked.status);
+  });
+});
+
+describe("AuthService.changePassword", () => {
+  const NOW = new Date("2026-10-10T12:00:00Z");
+  const NEW = "another long passphrase";
+  let t = NOW;
+  let repo: FakeAuthRepository;
+  let service: AuthService;
+  let counter = 0;
+
+  beforeEach(async () => {
+    t = NOW;
+    repo = new FakeAuthRepository();
+    service = new AuthService(repo, () => t, () => `token-${++counter}`);
+    await service.createUser("ana@example.com", PASSWORD);
+  });
+
+  it("cambia la contraseña, revoca las demás sesiones y conserva la actual", async () => {
+    const mine = await service.login("ana@example.com", PASSWORD);
+    const other = await service.login("ana@example.com", PASSWORD);
+    const revoked = await service.changePassword(mine.user.id, mine.token, PASSWORD, NEW);
+    expect(revoked).toBe(1);
+    await expect(service.authenticate(mine.token)).resolves.toEqual(mine.user);
+    await expect(service.authenticate(other.token)).rejects.toBeInstanceOf(UnauthorizedError);
+    await expect(service.login("ana@example.com", PASSWORD)).rejects.toBeInstanceOf(UnauthorizedError);
+    await expect(service.login("ana@example.com", NEW)).resolves.toBeDefined();
+  });
+
+  it("no toca las sesiones de otros usuarios", async () => {
+    await service.createUser("bea@example.com", PASSWORD);
+    const bea = await service.login("bea@example.com", PASSWORD);
+    const ana = await service.login("ana@example.com", PASSWORD);
+    await service.changePassword(ana.user.id, ana.token, PASSWORD, NEW);
+    await expect(service.authenticate(bea.token)).resolves.toEqual(bea.user);
+  });
+
+  it("rechaza una contraseña actual incorrecta con error de campo y la cuenta como fallo", async () => {
+    const { user, token } = await service.login("ana@example.com", PASSWORD);
+    const error = await service.changePassword(user.id, token, "not my password", NEW).catch((e) => e);
+    expect(error).toBeInstanceOf(ValidationError);
+    expect(error.details).toEqual([{ field: "currentPassword", message: "La contraseña actual no es correcta" }]);
+    expect(repo.failures.get(user.id)).toBe(1);
+    await expect(service.login("ana@example.com", PASSWORD)).resolves.toBeDefined();
+  });
+
+  it("adivinar la contraseña actual con una sesión robada acaba bloqueando la cuenta", async () => {
+    const { user, token } = await service.login("ana@example.com", PASSWORD);
+    for (let i = 0; i < MAX_FAILED_LOGINS; i++) await service.changePassword(user.id, token, "guess", NEW).catch(() => {});
+    expect(repo.users[0].lockedUntil).not.toBeNull();
+    await expect(service.changePassword(user.id, token, PASSWORD, NEW)).rejects.toBeInstanceOf(ValidationError);
+  });
+
+  it("exige que la nueva sea distinta y no cambia nada si falla", async () => {
+    const { user, token } = await service.login("ana@example.com", PASSWORD);
+    const before = repo.users[0].passwordHash;
+    const error = await service.changePassword(user.id, token, PASSWORD, PASSWORD).catch((e) => e);
+    expect(error.details[0].field).toBe("newPassword");
+    expect(repo.users[0].passwordHash).toBe(before);
+  });
+
+  it("sin sesión o con un usuario inexistente -> 401", async () => {
+    await expect(service.changePassword(1, null, PASSWORD, NEW)).rejects.toBeInstanceOf(UnauthorizedError);
+    await expect(service.changePassword(999, "tok", PASSWORD, NEW)).rejects.toBeInstanceOf(UnauthorizedError);
+  });
+
+  it("el esquema pide al menos 12 caracteres en la nueva", () => {
+    expect(changePasswordSchema.safeParse({ currentPassword: "x", newPassword: "short" }).success).toBe(false);
+    expect(changePasswordSchema.safeParse({ currentPassword: "x", newPassword: NEW }).success).toBe(true);
   });
 });

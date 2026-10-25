@@ -6,6 +6,7 @@ import { authRepository, invoiceRepository } from "./repositories";
 import type { AuthRepository } from "./repositories/AuthRepository";
 import type { InvoiceRepository } from "./repositories/InvoiceRepository";
 import { AuthService } from "./services/AuthService";
+import { ReactPdfRenderer } from "./pdf/ReactPdfRenderer";
 import { InvoicePdfService } from "./services/InvoicePdfService";
 import { InvoiceService } from "./services/InvoiceService";
 import { StatsService } from "./services/StatsService";
@@ -21,7 +22,7 @@ export function createContainer(
   return {
     authService,
     authController: new AuthController(authService),
-    invoiceController: new InvoiceController(invoiceService, new InvoicePdfService(invoiceService)),
+    invoiceController: new InvoiceController(invoiceService, new InvoicePdfService(invoiceService, new ReactPdfRenderer())),
     statsController: new StatsController(new StatsService(repository, now)),
     withAuth: createWithAuth((token) => authService.authenticate(token)),
   };

@@ -1,4 +1,16 @@
-const money = new Intl.NumberFormat("es-ES", { style: "currency", currency: "USD" });
+/** Código ISO 4217 de la moneda de las facturas; configurable con `VITE_CURRENCY` (por defecto USD). */
+export const CURRENCY = import.meta.env.VITE_CURRENCY?.trim().toUpperCase() || "USD";
+
+export const moneyFormatter = (currency: string) => {
+  try {
+    return new Intl.NumberFormat("es-ES", { style: "currency", currency });
+  } catch {
+    // Código de moneda inválido en la configuración: se usa USD en lugar de romper toda la pantalla.
+    return new Intl.NumberFormat("es-ES", { style: "currency", currency: "USD" });
+  }
+};
+
+const money = moneyFormatter(CURRENCY);
 const date = new Intl.DateTimeFormat("es-ES", { dateStyle: "medium", timeZone: "UTC" });
 
 /** Formato de presentación de centavos (la aritmética de dinero vive en el backend). */

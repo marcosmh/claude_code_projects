@@ -7,7 +7,6 @@ import { Field, inputClass } from "@/components/features/invoices/form/Field";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { useLogin, useSession } from "@/hooks/useAuth";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
-import { ApiError } from "@/services/apiClient";
 import { errorMessage } from "@/utils/apiErrors";
 import { loginSchema, safeReturnPath, type LoginValues } from "@/utils/loginForm";
 
@@ -34,11 +33,8 @@ export function LoginPage() {
       await login.mutateAsync(values);
       void navigate(returnTo, { replace: true });
     } catch (error) {
-      setFormError(
-        error instanceof ApiError && error.status === 401
-          ? "El email o la contraseña no son correctos."
-          : errorMessage(error),
-      );
+      // El mensaje del servidor es el mismo para email desconocido, contraseña errónea y cuenta bloqueada.
+      setFormError(errorMessage(error));
     }
   });
 

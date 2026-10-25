@@ -18,6 +18,17 @@ export const loginBodySchema = z.object({
     .max(AUTH_LIMITS.passwordMax, `Máximo ${AUTH_LIMITS.passwordMax} caracteres`),
 });
 
+export const changePasswordSchema = z.object({
+  currentPassword: z
+    .string("Escribe tu contraseña actual")
+    .min(1, "Escribe tu contraseña actual")
+    .max(AUTH_LIMITS.passwordMax, `Máximo ${AUTH_LIMITS.passwordMax} caracteres`),
+  newPassword: z
+    .string("Escribe la nueva contraseña")
+    .min(AUTH_LIMITS.passwordMin, `La contraseña debe tener al menos ${AUTH_LIMITS.passwordMin} caracteres`)
+    .max(AUTH_LIMITS.passwordMax, `Máximo ${AUTH_LIMITS.passwordMax} caracteres`),
+});
+
 /** Used when an account is created (npm run user:create). */
 export const newUserSchema = z.object({
   email,

@@ -27,6 +27,7 @@ export const routes: RouteObject[] = [
       { path: "invoices/new", lazy: async () => ({ Component: (await import("@/pages/NewInvoicePage")).NewInvoicePage }) },
       { path: "invoices/:id", lazy: async () => ({ Component: (await import("@/pages/InvoiceDetailPage")).InvoiceDetailPage }) },
       { path: "invoices/:id/edit", lazy: async () => ({ Component: (await import("@/pages/EditInvoicePage")).EditInvoicePage }) },
+      { path: "account/password", lazy: async () => ({ Component: (await import("@/pages/ChangePasswordPage")).ChangePasswordPage }) },
       { path: "*", element: <NotFoundPage /> },
         ],
       },

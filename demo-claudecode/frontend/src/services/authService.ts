@@ -10,6 +10,10 @@ export const authService = {
     await request<void>("/auth/logout", { method: "POST" });
   },
 
+  async changePassword(currentPassword: string, newPassword: string): Promise<void> {
+    await request<void>("/auth/password", { method: "POST", body: { currentPassword, newPassword } });
+  },
+
   /** Usuario de la sesión actual, o `null` si no hay sesión (no es un error: es el estado "sin iniciar"). */
   async me(signal?: AbortSignal): Promise<AuthUser | null> {
     try {

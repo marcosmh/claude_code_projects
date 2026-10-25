@@ -2,6 +2,8 @@ import type { PrismaClient } from "../generated/prisma/client";
 import type { CreateSessionInput, SessionRecord, UserRecord } from "../types";
 import type { AuthRepository } from "./AuthRepository";
 
+const userSelect = { id: true, email: true, passwordHash: true, lockedUntil: true } as const;
+
 export class PrismaAuthRepository implements AuthRepository {
   constructor(private readonly db: PrismaClient) {}
 
@@ -10,17 +12,41 @@ export class PrismaAuthRepository implements AuthRepository {
   }
 
   findUserByEmail(email: string): Promise<UserRecord | null> {
-    return this.db.user.findUnique({
-      where: { email },
-      select: { id: true, email: true, passwordHash: true },
-    });
+    return this.db.user.findUnique({ where: { email }, select: userSelect });
+  }
+
+  findUserById(id: number): Promise<UserRecord | null> {
+    return this.db.user.findUnique({ where: { id }, select: userSelect });
   }
 
   createUser(input: { email: string; passwordHash: string }): Promise<UserRecord> {
-    return this.db.user.create({
-      data: input,
-      select: { id: true, email: true, passwordHash: true },
+    return this.db.user.create({ data: input, select: userSelect });
+  }
+
+  async registerFailedLogin(userId: number, maxAttempts: number, lockUntil: Date): Promise<void> {
+    await this.db.$transaction(async (tx) => {
+      const { failedLogins } = await tx.user.update({
+        where: { id: userId },
+        data: { failedLogins: { increment: 1 } },
+        select: { failedLogins: true },
+      });
+      if (failedLogins >= maxAttempts) {
+        await tx.user.update({ where: { id: userId }, data: { failedLogins: 0, lockedUntil: lockUntil } });
+      }
     });
+  }
+
+  async clearLoginFailures(userId: number): Promise<void> {
+    await this.db.user.update({ where: { id: userId }, data: { failedLogins: 0, lockedUntil: null } });
+  }
+
+  async updatePassword(userId: number, passwordHash: string): Promise<void> {
+    await this.db.user.update({ where: { id: userId }, data: { passwordHash, failedLogins: 0, lockedUntil: null } });
+  }
+
+  async deleteOtherSessions(userId: number, keepTokenHash: string): Promise<number> {
+    const { count } = await this.db.session.deleteMany({ where: { userId, tokenHash: { not: keepTokenHash } } });
+    return count;
   }
 
   async claimOrphanInvoices(userId: number): Promise<number> {

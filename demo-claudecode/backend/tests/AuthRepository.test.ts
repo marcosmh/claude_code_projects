@@ -65,6 +65,53 @@ describe("PrismaAuthRepository", () => {
     expect((await db.invoice.findUnique({ where: { id: created.id } }))?.ownerId).toBeNull();
   });
 
+  it("registerFailedLogin cuenta, bloquea al llegar al máximo y reinicia el contador", async () => {
+    const user = await repo.createUser({ email: "ana@example.com", passwordHash: "h" });
+    const until = new Date("2026-12-01T00:00:00Z");
+    for (let i = 0; i < 2; i++) await repo.registerFailedLogin(user.id, 3, until);
+    expect(await db.user.findUnique({ where: { id: user.id }, select: { failedLogins: true, lockedUntil: true } })).toEqual({
+      failedLogins: 2,
+      lockedUntil: null,
+    });
+    await repo.registerFailedLogin(user.id, 3, until);
+    expect(await db.user.findUnique({ where: { id: user.id }, select: { failedLogins: true, lockedUntil: true } })).toEqual({
+      failedLogins: 0,
+      lockedUntil: until,
+    });
+    expect((await repo.findUserById(user.id))?.lockedUntil).toEqual(until);
+  });
+
+  it("los intentos concurrentes se cuentan todos", async () => {
+    const user = await repo.createUser({ email: "ana@example.com", passwordHash: "h" });
+    await Promise.all(Array.from({ length: 4 }, () => repo.registerFailedLogin(user.id, 100, new Date())));
+    expect((await db.user.findUnique({ where: { id: user.id } }))?.failedLogins).toBe(4);
+  });
+
+  it("clearLoginFailures y updatePassword quitan fallos y bloqueo", async () => {
+    const user = await repo.createUser({ email: "ana@example.com", passwordHash: "old" });
+    await repo.registerFailedLogin(user.id, 1, new Date("2099-01-01"));
+    await repo.clearLoginFailures(user.id);
+    expect((await repo.findUserById(user.id))?.lockedUntil).toBeNull();
+
+    await repo.registerFailedLogin(user.id, 1, new Date("2099-01-01"));
+    await repo.updatePassword(user.id, "new");
+    expect(await repo.findUserById(user.id)).toMatchObject({ passwordHash: "new", lockedUntil: null });
+    expect(await repo.findUserById(user.id + 999)).toBeNull();
+  });
+
+  it("deleteOtherSessions conserva solo la indicada y solo de ese usuario", async () => {
+    const ana = await repo.createUser({ email: "ana@example.com", passwordHash: "h" });
+    const bea = await repo.createUser({ email: "bea@example.com", passwordHash: "h" });
+    const expiresAt = new Date("2027-01-01");
+    for (const [tokenHash, userId] of [["a1", ana.id], ["a2", ana.id], ["a3", ana.id], ["b1", bea.id]] as const) {
+      await repo.createSession({ tokenHash, userId, expiresAt });
+    }
+    expect(await repo.deleteOtherSessions(ana.id, "a2")).toBe(2);
+    expect(await repo.findSession("a2")).not.toBeNull();
+    expect(await repo.findSession("a1")).toBeNull();
+    expect(await repo.findSession("b1")).not.toBeNull();
+  });
+
   it("claimOrphanInvoices assigns only unowned invoices", async () => {
     const ana = await repo.createUser({ email: "ana@example.com", passwordHash: "h" });
     const bea = await repo.createUser({ email: "bea@example.com", passwordHash: "h" });

@@ -1,5 +1,4 @@
-import { renderToBuffer } from "@react-pdf/renderer";
-import { InvoiceDocument } from "../pdf/InvoiceDocument";
+import type { PdfRenderer } from "../pdf/ReactPdfRenderer";
 import type { InvoiceService } from "./InvoiceService";
 
 export interface InvoicePdf {
@@ -8,11 +7,13 @@ export interface InvoicePdf {
 }
 
 export class InvoicePdfService {
-  constructor(private readonly invoices: Pick<InvoiceService, "getById">) {}
+  constructor(
+    private readonly invoices: Pick<InvoiceService, "getById">,
+    private readonly renderer: PdfRenderer,
+  ) {}
 
   async generate(ownerId: number, id: number): Promise<InvoicePdf> {
     const invoice = await this.invoices.getById(ownerId, id);
-    const buffer = await renderToBuffer(InvoiceDocument({ invoice }));
-    return { filename: `${invoice.number}.pdf`, content: new Uint8Array(buffer) };
+    return { filename: `${invoice.number}.pdf`, content: await this.renderer.render(invoice) };
   }
 }

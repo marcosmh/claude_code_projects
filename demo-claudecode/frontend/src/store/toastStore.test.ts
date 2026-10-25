@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { useToastStore } from "./toastStore";
+import { MAX_TOASTS, useToastStore } from "./toastStore";
 
 beforeEach(() => useToastStore.setState({ toasts: [] }));
 
@@ -30,5 +30,10 @@ describe("toastStore", () => {
     useToastStore.getState().push("success", "Uno");
     useToastStore.getState().dismiss(-1);
     expect(useToastStore.getState().toasts).toHaveLength(1);
+  });
+
+  it(`conserva como máximo ${MAX_TOASTS} avisos y descarta los más antiguos`, () => {
+    for (const n of [1, 2, 3, 4, 5]) useToastStore.getState().push("success", `Aviso ${n}`);
+    expect(useToastStore.getState().toasts.map((t) => t.message)).toEqual(["Aviso 3", "Aviso 4", "Aviso 5"]);
   });
 });

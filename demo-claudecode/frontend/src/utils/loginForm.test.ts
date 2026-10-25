@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { loginSchema, safeReturnPath } from "./loginForm";
+import { loginSchema, passwordSchema, safeReturnPath } from "./loginForm";
 
 describe("loginSchema", () => {
   it("acepta credenciales bien formadas y recorta el email", () => {
@@ -28,4 +28,23 @@ describe("safeReturnPath", () => {
       expect(safeReturnPath(value)).toBe("/dashboard");
     },
   );
+});
+
+describe("passwordSchema", () => {
+  const ok = { currentPassword: "actual", newPassword: "una contraseña larga", confirm: "una contraseña larga" };
+
+  it("acepta una contraseña nueva de 12 o más caracteres repetida igual", () => {
+    expect(passwordSchema.safeParse(ok).success).toBe(true);
+  });
+
+  it.each([
+    [{ ...ok, currentPassword: "" }, "Escribe tu contraseña actual"],
+    [{ ...ok, newPassword: "corta", confirm: "corta" }, "Usa al menos 12 caracteres"],
+    [{ ...ok, confirm: "" }, "Repite la nueva contraseña"],
+    [{ ...ok, confirm: "otra distinta pero larga" }, "Las contraseñas no coinciden"],
+  ])("rechaza %j", (input, message) => {
+    const result = passwordSchema.safeParse(input);
+    expect(result.success).toBe(false);
+    expect(result.error?.issues.map((i) => i.message)).toContain(message);
+  });
 });

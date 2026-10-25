@@ -4,6 +4,8 @@ import type { FakeInvoiceRepository } from "./FakeInvoiceRepository";
 
 export class FakeAuthRepository implements AuthRepository {
   readonly users: UserRecord[] = [];
+  /** user id -> consecutive failed logins */
+  readonly failures = new Map<number, number>();
   readonly sessions = new Map<string, { userId: number; expiresAt: Date }>();
   private nextId = 1;
 
@@ -16,10 +18,38 @@ export class FakeAuthRepository implements AuthRepository {
   async findUserByEmail(email: string) {
     return this.users.find((u) => u.email === email) ?? null;
   }
+  async findUserById(id: number) {
+    return this.users.find((u) => u.id === id) ?? null;
+  }
   async createUser(input: { email: string; passwordHash: string }) {
-    const user = { id: this.nextId++, ...input };
+    const user: UserRecord = { id: this.nextId++, ...input, lockedUntil: null };
     this.users.push(user);
     return user;
+  }
+  async registerFailedLogin(userId: number, maxAttempts: number, lockUntil: Date) {
+    const count = (this.failures.get(userId) ?? 0) + 1;
+    if (count >= maxAttempts) {
+      this.failures.set(userId, 0);
+      this.users.find((u) => u.id === userId)!.lockedUntil = lockUntil;
+    } else this.failures.set(userId, count);
+  }
+  async clearLoginFailures(userId: number) {
+    this.failures.delete(userId);
+    this.users.find((u) => u.id === userId)!.lockedUntil = null;
+  }
+  async updatePassword(userId: number, passwordHash: string) {
+    this.users.find((u) => u.id === userId)!.passwordHash = passwordHash;
+    await this.clearLoginFailures(userId);
+  }
+  async deleteOtherSessions(userId: number, keepTokenHash: string) {
+    let count = 0;
+    for (const [hash, s] of this.sessions) {
+      if (s.userId === userId && hash !== keepTokenHash) {
+        this.sessions.delete(hash);
+        count++;
+      }
+    }
+    return count;
   }
   async claimOrphanInvoices(userId: number) {
     let count = 0;

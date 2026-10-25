@@ -8,7 +8,10 @@ const BORDER: Record<Toast["type"], string> = {
   error: "border-red-600",
 };
 
-/** Aviso flash: se cierra solo a los 5 s, se pausa con hover/foco y tiene botón de cierre. */
+/**
+ * Aviso flash: se cierra solo a los 5 s, se pausa con hover/foco y tiene botón de cierre.
+ * No lleva `role`: lo anuncia la región en vivo persistente de `ToastViewport`.
+ */
 export function ToastItem({ toast, onClose }: { toast: Toast; onClose: (id: number) => void }) {
   const [paused, setPaused] = useState(false);
   const success = toast.type === "success";
@@ -21,7 +24,6 @@ export function ToastItem({ toast, onClose }: { toast: Toast; onClose: (id: numb
 
   return (
     <div
-      role={success ? "status" : "alert"}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)}

@@ -12,6 +12,10 @@ model User {
   email        String    @unique
   // scrypt$N$r$p$salt$hash (see src/utils/password.ts)
   passwordHash String
+  // Consecutive failed logins; reset on success and when the account gets locked
+  failedLogins Int       @default(0)
+  // While in the future the account rejects every login, even with the right password
+  lockedUntil  DateTime?
   createdAt    DateTime  @default(now())
   sessions     Session[]
   invoices     Invoice[]

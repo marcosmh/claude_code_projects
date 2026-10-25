@@ -170,3 +170,27 @@ test.describe("tema, menú y teclado", () => {
     await expect(page.getByText("1 facturas")).toBeVisible();
   });
 });
+
+test.describe("tema según el sistema", () => {
+  test.describe("sistema en claro", () => {
+    test.use({ colorScheme: "light" });
+    test("sin elección guardada, la app sigue la preferencia del sistema (claro)", async ({ page }) => {
+      await page.goto("/dashboard");
+      await expect(page.locator("html")).not.toHaveClass(/dark/);
+    });
+  });
+
+  test.describe("sistema en oscuro", () => {
+    test.use({ colorScheme: "dark" });
+    test("sin elección guardada, la app sigue la preferencia del sistema (oscuro)", async ({ page }) => {
+      await page.goto("/dashboard");
+      await expect(page.locator("html")).toHaveClass(/dark/);
+    });
+
+    test("una elección guardada manda sobre el sistema", async ({ page }) => {
+      await page.addInitScript(() => localStorage.setItem("theme", "light"));
+      await page.goto("/dashboard");
+      await expect(page.locator("html")).not.toHaveClass(/dark/);
+    });
+  });
+});

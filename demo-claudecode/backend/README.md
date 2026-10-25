@@ -54,6 +54,8 @@ Ejecutar siempre desde `backend/`: la `DATABASE_URL` relativa se resuelve contra
 - **Autorización**: cada factura tiene `ownerId`. Un usuario solo ve y modifica las suyas; las de otro responden 404, igual que un id inexistente. Estadísticas y PDF también están acotados.
 - **Facturas anteriores a la autenticación** (`ownerId` nulo): las reclama el primer usuario que se crea. Mientras no tengan dueño nadie puede verlas.
 - **CSRF**: además de `SameSite`, `src/proxy.ts` devuelve 403 a cualquier escritura cuyo `Origin` no esté en `FRONTEND_ORIGIN`, y las escrituras exigen `Content-Type: application/json`.
-- **Login**: límite propio de 10 intentos por minuto y por IP, y el mismo 401 para email desconocido y contraseña errónea.
+- **Login**: límite propio de 10 intentos por minuto y por IP (compartido con el cambio de contraseña), y el mismo 401 para email desconocido, contraseña errónea y cuenta bloqueada.
+- **Bloqueo de cuenta**: 5 fallos seguidos bloquean la cuenta 15 minutos (`failedLogins` / `lockedUntil` en `User`); un login correcto reinicia el contador. Es un compromiso: protege de adivinar contraseñas desde varias IP, pero permite a un tercero que conozca el email bloquear esa cuenta temporalmente.
+- **Cambio de contraseña**: `POST /auth/password` (sesión + contraseña actual); revoca las demás sesiones del usuario.
 - Frontend y API deben compartir *site* (p. ej. `localhost:5173` y `localhost:4000`); si se despliegan en dominios distintos habrá que cambiar `SameSite` a `None; Secure`.
-- Pendiente: bloqueo por cuenta tras varios intentos fallidos, cambio de contraseña y roles (hoy no hay 403 por permisos, solo por origen).
+- Pendiente: roles (hoy no hay 403 por permisos, solo por origen), recuperación de contraseña olvidada (sin correo, se resetea con un script) y desbloqueo manual antes de los 15 minutos.

@@ -2,7 +2,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { render as rtlRender, screen } from "@testing-library/react";
 import type { ReactElement } from "react";
 import userEvent from "@testing-library/user-event";
-import { createMemoryRouter, RouterProvider } from "react-router";
+import { createMemoryRouter, MemoryRouter, RouterProvider } from "react-router";
 import { beforeEach, describe, expect, it } from "vitest";
 import { queryKeys } from "@/hooks/queryKeys";
 import { createQueryClient } from "@/queryClient";
@@ -14,11 +14,20 @@ import { ThemeToggle } from "./ThemeToggle";
 import { TopBar } from "./TopBar";
 
 // TopBar y AppShell muestran el menú de usuario: necesitan un cliente de consultas con sesión.
-function render(ui: ReactElement) {
+function withSession(ui: ReactElement) {
   const client = createQueryClient();
   client.setQueryData(queryKeys.session, { id: 1, email: "ana@example.com" });
-  return rtlRender(<QueryClientProvider client={client}>{ui}</QueryClientProvider>);
+  return <QueryClientProvider client={client}>{ui}</QueryClientProvider>;
 }
+
+/** Componentes sueltos (sin router propio): se montan dentro de un MemoryRouter. */
+function render(ui: ReactElement) {
+  return rtlRender(withSession(<MemoryRouter>{ui}</MemoryRouter>));
+}
+
+/** Árboles que ya traen su RouterProvider. */
+const renderRouter = (router: ReturnType<typeof createMemoryRouter>) =>
+  rtlRender(withSession(<RouterProvider router={router} />));
 
 beforeEach(() => {
   document.documentElement.classList.remove("dark", "menu-collapsed");
@@ -41,7 +50,7 @@ function renderRoutes(initial: string) {
     ],
     { initialEntries: [initial] },
   );
-  render(<RouterProvider router={router} />);
+  renderRouter(router);
   return router;
 }
 
@@ -81,7 +90,7 @@ describe("TopBar", () => {
 describe("Sidebar", () => {
   it("enlaza a las secciones y marca la actual", () => {
     const router = createMemoryRouter([{ path: "*", element: <Sidebar /> }], { initialEntries: ["/invoices/5"] });
-    render(<RouterProvider router={router} />);
+    renderRouter(router);
 
     const nav = screen.getByRole("navigation", { name: "Principal" });
     expect(nav).toBeInTheDocument();

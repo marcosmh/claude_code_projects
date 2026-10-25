@@ -33,6 +33,15 @@ describe("authService", () => {
     expect((fetchMock.mock.calls[0] as [string, RequestInit])[1].method).toBe("POST");
   });
 
+  it("changePassword envía ambas contraseñas y acepta el 204", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(authService.changePassword("vieja", "nueva contraseña larga")).resolves.toBeUndefined();
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("http://localhost:4000/api/v1/auth/password");
+    expect(JSON.parse(init.body as string)).toEqual({ currentPassword: "vieja", newPassword: "nueva contraseña larga" });
+  });
+
   it("me devuelve el usuario, null sin sesión y propaga otros errores", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(json({ data: { id: 2, email: "b@b.co" } })));
     expect(await authService.me()).toEqual({ id: 2, email: "b@b.co" });

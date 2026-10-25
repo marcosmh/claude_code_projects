@@ -24,4 +24,9 @@ describe("previewTotals", () => {
       totalCents: 300,
     });
   });
+
+  it("redondea igual que el backend: medio centavo hacia arriba (1.005 × 100 = 101)", () => {
+    expect(previewTotals([{ quantity: 1.005, unitPriceCents: 100 }], 0).subtotalCents).toBe(101);
+    expect(previewTotals([{ quantity: 1, unitPriceCents: 5 }], 10).taxCents).toBe(1);
+  });
 });

@@ -6,6 +6,8 @@ export interface AuthUser {
 
 export interface UserRecord extends AuthUser {
   passwordHash: string;
+  /** The account rejects every login until this instant. */
+  lockedUntil: Date | null;
 }
 
 export interface SessionRecord {

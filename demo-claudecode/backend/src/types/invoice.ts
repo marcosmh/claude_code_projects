@@ -41,7 +41,7 @@ export interface InvoiceData {
   items: InvoiceItemInput[];
 }
 
-/** Input to create an invoice. `number` is a placeholder until `assignNumber` runs (see createWithNumber). */
+/** Input to create an invoice. `number` is stored as given; use createWithNumber to derive it from the generated id. */
 export interface CreateInvoiceInput extends InvoiceData {
   number: string;
 }

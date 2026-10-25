@@ -10,11 +10,17 @@ Cada factura pertenece a un usuario y solo ese usuario puede verla, modificarla,
 
 ### POST /auth/login
 
-Cuerpo `{ "email": "ana@example.com", "password": "..." }` (el email se normaliza a minúsculas). 200 `{ "data": { "id": 1, "email": "ana@example.com" } }` y cabecera `Set-Cookie: session=...; Max-Age=604800; Path=/; HttpOnly; SameSite=Lax`. 401 con el mismo mensaje (`Email o contraseña incorrectos`) para email desconocido y contraseña errónea. 400 si el cuerpo es inválido. Límite: 10 intentos por minuto y por IP (429).
+Cuerpo `{ "email": "ana@example.com", "password": "..." }` (el email se normaliza a minúsculas). 200 `{ "data": { "id": 1, "email": "ana@example.com" } }` y cabecera `Set-Cookie: session=...; Max-Age=604800; Path=/; HttpOnly; SameSite=Lax`. 401 con el mismo mensaje para email desconocido, contraseña errónea y cuenta bloqueada (`Email o contraseña incorrectos. Tras 5 intentos fallidos la cuenta se bloquea 15 minutos.`), sin `Set-Cookie`.
+
+**Bloqueo de cuenta**: 5 intentos fallidos seguidos bloquean la cuenta 15 minutos; durante el bloqueo ni la contraseña correcta sirve y los intentos no lo alargan. Un login correcto reinicia el contador. El mensaje no distingue "no existe" de "bloqueada" para no revelar qué cuentas existen. Consecuencia asumida: quien conozca un email puede bloquear esa cuenta 15 minutos a base de intentos. 400 si el cuerpo es inválido. Límite: 10 intentos por minuto y por IP (429).
 
 ### POST /auth/logout
 
 204 y cookie vaciada (`Max-Age=0`); revoca la sesión en el servidor. Es idempotente y no exige sesión.
+
+### POST /auth/password
+
+Requiere sesión. Cuerpo `{ "currentPassword": "...", "newPassword": "..." }` (la nueva, de 12 a 200 caracteres y distinta de la actual). 204 si se cambia; **revoca todas las demás sesiones del usuario** y conserva la actual. 422 con `details[].field` = `currentPassword` (no coincide) o `newPassword` (igual a la actual); 400 si el cuerpo es inválido. Una contraseña actual incorrecta cuenta como intento fallido para el bloqueo de cuenta. Comparte el límite de 10 intentos por minuto del login.
 
 ### GET /auth/me
 

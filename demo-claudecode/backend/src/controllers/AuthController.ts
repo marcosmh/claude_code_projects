@@ -2,7 +2,7 @@ import { SESSION_TTL_MS, type AuthService } from "../services/AuthService";
 import type { AuthUser } from "../types";
 import { SESSION_COOKIE, clearedSessionCookie, readCookie, sessionCookie } from "../utils/cookies";
 import { noContent, ok } from "../utils/http";
-import { loginBodySchema } from "../validators/auth.validator";
+import { changePasswordSchema, loginBodySchema } from "../validators/auth.validator";
 import { parseBody } from "./requestParsers";
 
 export const sessionToken = (request: Request) => readCookie(request.headers.get("cookie"), SESSION_COOKIE);
@@ -23,6 +23,12 @@ export class AuthController {
     const response = noContent();
     response.headers.set("Set-Cookie", clearedSessionCookie());
     return response;
+  }
+
+  async changePassword(user: AuthUser, request: Request): Promise<Response> {
+    const { currentPassword, newPassword } = await parseBody(changePasswordSchema, request);
+    await this.auth.changePassword(user.id, sessionToken(request), currentPassword, newPassword);
+    return noContent();
   }
 
   me(user: AuthUser): Response {

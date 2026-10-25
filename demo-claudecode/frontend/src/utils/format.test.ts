@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { formatDate, formatMoney, plural, toDateInput, todayInput } from "./format";
+import { CURRENCY, formatDate, formatMoney, moneyFormatter, plural, toDateInput, todayInput } from "./format";
 
 const originalTz = process.env.TZ;
 beforeEach(() => {
@@ -56,5 +56,18 @@ describe("plural", () => {
     expect(plural(1, "vencida", "vencidas")).toBe("1 vencida");
     expect(plural(0, "vencida", "vencidas")).toBe("0 vencidas");
     expect(plural(3, "vencida", "vencidas")).toBe("3 vencidas");
+  });
+});
+
+describe("moneda", () => {
+  it("por defecto es USD", () => {
+    expect(CURRENCY).toBe("USD");
+    expect(formatMoney(123456)).toContain("US$");
+  });
+
+  it("moneyFormatter admite otras monedas y cae en USD si el código no es válido", () => {
+    expect(moneyFormatter("EUR").format(1234.5)).toContain("€");
+    expect(moneyFormatter("MXN").format(10)).toContain("MXN");
+    expect(moneyFormatter("no-existe").format(10)).toBe(moneyFormatter("USD").format(10));
   });
 });
