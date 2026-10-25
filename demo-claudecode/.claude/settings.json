@@ -1,27 +1,4 @@
 {
-  "_hooks_disabled": {
-    "PreToolUse": [
-      {
-        "matcher": "Read|Grep",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node ./hooks/block_files_hook.js"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "powershell.exe -NoProfile -Command \"Add-Type -AssemblyName PresentationFramework; [System.Windows.MessageBox]::Show('Claude terminó la tarea','Claude Code')\""
-          }
-        ]
-      }
-    ]
-  },
   "hooks": {},
   "permissions": {
     "allow": [
