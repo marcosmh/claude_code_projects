@@ -4,8 +4,10 @@ import type {
   FindAllInvoicesOptions,
   Invoice,
   InvoiceData,
+  InvoiceStatsRow,
   InvoiceStatus,
   PaginatedInvoices,
+  StatsRowsOptions,
   UpdateInvoiceInput,
 } from "../types";
 import type { InvoiceRepository } from "./InvoiceRepository";
@@ -59,6 +61,19 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
       this.db.invoice.count({ where }),
     ]);
     return { data: rows.map(toDomain), total };
+  }
+
+  async findStatsRows({ issuedFrom }: StatsRowsOptions = {}): Promise<InvoiceStatsRow[]> {
+    return this.db.invoice.findMany({
+      where: issuedFrom ? { issueDate: { gte: issuedFrom } } : undefined,
+      select: {
+        status: true,
+        taxRate: true,
+        issueDate: true,
+        dueDate: true,
+        items: { select: { quantity: true, unitPriceCents: true } },
+      },
+    });
   }
 
   async findById(id: number): Promise<Invoice | null> {

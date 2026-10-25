@@ -18,7 +18,8 @@ export function InvoicesPage() {
   const list = useInvoices(apiParams);
   const summary = useStatsSummary();
 
-  const counts = summary.data
+  // Los contadores son totales globales: con una búsqueda activa no coincidirían con la tabla, así que se ocultan.
+  const counts = summary.data && !q
     ? {
         "": summary.data.totalCount,
         DRAFT: summary.data.byStatus.DRAFT.count,

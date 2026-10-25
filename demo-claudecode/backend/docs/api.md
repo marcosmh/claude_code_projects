@@ -10,7 +10,7 @@ Base URL por defecto: `http://localhost:4000/api/v1`. Todas las respuestas JSON 
 - **Totales**: siempre calculados por el backend por factura: `subtotalCents`, `taxCents`, `totalCents`; cada línea trae `amountCents` (`round(quantity * unitPriceCents)`). `taxCents = round(subtotalCents * taxRate / 100)`.
 - **Número**: `FAC-` + id con 4 dígitos (`FAC-0007`), asignado por el servidor; no se envía ni se puede modificar. No se reutiliza tras borrar.
 - **IDs de líneas** (`items[].id`): PUT reemplaza las líneas, por lo que sus ids cambian. PATCH status solo modifica el estado y conserva los ids. No usarlos como clave estable entre ediciones con PUT.
-- **CORS**: se permite el origen definido en `FRONTEND_ORIGIN` (lista separada por comas; por defecto `http://localhost:5173`). Métodos: GET, POST, PUT, PATCH, DELETE, OPTIONS. Cabeceras: `Content-Type`, `Authorization`. Expuestas: `Content-Disposition`, `Location`. Los preflight OPTIONS responden 204.
+- **CORS**: se permite el origen definido en `FRONTEND_ORIGIN` (lista separada por comas; por defecto `http://localhost:5173`). Métodos: GET, POST, PUT, PATCH, DELETE, OPTIONS. Cabeceras: `Content-Type`, `Authorization`. Expuestas: `Content-Disposition`, `Location`, `Retry-After`, `RateLimit-Limit`, `RateLimit-Remaining`, `X-Request-Id`. Los preflight OPTIONS responden 204.
 - Las peticiones con cuerpo deben enviar `Content-Type: application/json` (admite `; charset=...`). Cualquier otro valor, o su ausencia, devuelve 400 `VALIDATION_ERROR`.
 - Límites de entrada (400 si se superan): `clientName` 200 caracteres, `clientEmail` 254, `clientAddress` 500, `notes` 2000, `items[].description` 500, máximo 100 líneas, `quantity` ≤ 100000, `unitPriceCents` ≤ 100000000, `page` ≤ 100000.
 - Las respuestas de `/api/*` incluyen `X-Content-Type-Options: nosniff`, `Cache-Control: no-store`, `Referrer-Policy: no-referrer` y `Content-Security-Policy: frame-ancestors 'none'`.
@@ -196,6 +196,8 @@ Cambio rápido de estado.
 
 ### GET /stats/summary
 
+Solo cuenta facturas con un estado válido (DRAFT, SENT, PAID): filas con un valor desconocido en la base de datos se ignoran, por lo que `totalCount` siempre coincide con la suma de `byStatus`.
+
 ```json
 {
   "data": {
@@ -213,6 +215,8 @@ Cambio rápido de estado.
 `overdue` es un subconjunto de `SENT` (facturas enviadas con vencimiento pasado); no se suma aparte. Los totales incluyen impuestos.
 
 ### GET /stats/monthly
+
+Solo consulta las facturas emitidas desde el primer mes de la ventana (`months`), no toda la tabla.
 
 Totales por mes de emisión y estado, de los últimos `months` meses (mes actual incluido, orden cronológico, meses sin datos en 0).
 

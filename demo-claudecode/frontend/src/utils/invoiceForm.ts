@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { ApiErrorDetail } from "@/types/api";
 import { STATUSES, type Invoice, type InvoiceRequest } from "@/types/invoice";
 import { todayInput, toDateInput } from "./format";
+import { LIMITS } from "./limits";
 
 /**
  * Esquema del formulario: los inputs son texto; aquí solo se valida forma y formato
@@ -10,33 +11,46 @@ import { todayInput, toDateInput } from "./format";
  */
 const dateText = (message: string) => z.string().regex(/^\d{4}-\d{2}-\d{2}$/, message);
 
+const maxText = (max: number) => `Máximo ${max} caracteres`;
+
 const lineSchema = z.object({
-  description: z.string().trim().min(1, "La descripción es obligatoria"),
+  description: z.string().trim().min(1, "La descripción es obligatoria").max(LIMITS.description, maxText(LIMITS.description)),
   quantity: z
     .string()
     .trim()
     .min(1, "Indica la cantidad")
-    .refine((v) => Number.isFinite(Number(v)), "La cantidad debe ser un número"),
+    .refine((v) => Number.isFinite(Number(v)), "La cantidad debe ser un número")
+    .refine((v) => !Number.isFinite(Number(v)) || Number(v) > 0, "La cantidad debe ser mayor que 0")
+    .refine((v) => !(Number(v) > LIMITS.quantity), `La cantidad no puede superar ${LIMITS.quantity}`),
   price: z
     .string()
     .trim()
-    .refine((v) => v === "" || Number.isFinite(Number(v)), "El precio debe ser un número"),
+    .refine((v) => v === "" || Number.isFinite(Number(v)), "El precio debe ser un número")
+    .refine((v) => v === "" || !Number.isFinite(Number(v)) || Number(v) >= 0, "El precio no puede ser negativo")
+    .refine((v) => v === "" || !(Number(v) > LIMITS.price), `El precio no puede superar ${LIMITS.price}`),
 });
 
 export const invoiceFormSchema = z
   .object({
-    clientName: z.string().trim().min(1, "El cliente es obligatorio"),
-    clientEmail: z.union([z.literal(""), z.email("Email inválido")]),
-    clientAddress: z.string(),
+    clientName: z.string().trim().min(1, "El cliente es obligatorio").max(LIMITS.clientName, maxText(LIMITS.clientName)),
+    clientEmail: z.union([z.literal(""), z.email("Email inválido").max(LIMITS.clientEmail, "Email demasiado largo")]),
+    clientAddress: z.string().max(LIMITS.clientAddress, maxText(LIMITS.clientAddress)),
     issueDate: dateText("Fecha de emisión inválida"),
     dueDate: dateText("Fecha de vencimiento inválida"),
     status: z.enum(STATUSES),
     taxRate: z
       .string()
       .trim()
-      .refine((v) => v === "" || Number.isFinite(Number(v)), "El impuesto debe ser un número"),
-    notes: z.string(),
-    items: z.array(lineSchema).min(1, "Agrega al menos una línea"),
+      .refine((v) => v === "" || Number.isFinite(Number(v)), "El impuesto debe ser un número")
+      .refine(
+        (v) => v === "" || !Number.isFinite(Number(v)) || (Number(v) >= 0 && Number(v) <= LIMITS.taxRate),
+        `El impuesto debe estar entre 0 y ${LIMITS.taxRate}`,
+      ),
+    notes: z.string().max(LIMITS.notes, maxText(LIMITS.notes)),
+    items: z
+      .array(lineSchema)
+      .min(1, "Agrega al menos una línea")
+      .max(LIMITS.items, `Máximo ${LIMITS.items} líneas`),
   })
   .transform(
     (v): InvoiceRequest => ({

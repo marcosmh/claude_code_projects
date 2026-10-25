@@ -111,6 +111,18 @@ describe("PrismaInvoiceRepository", () => {
     expect(await repo.update(123456, build())).toBeNull();
   });
 
+  it("findStatsRows returns a minimal projection and honours issuedFrom", async () => {
+    await make({ issueDate: new Date("2026-05-10"), clientName: "Vieja" });
+    await make({ issueDate: new Date("2026-09-10"), clientName: "Nueva", notes: "secreto" });
+    const all = await repo.findStatsRows();
+    expect(all).toHaveLength(2);
+    expect(Object.keys(all[0]).sort()).toEqual(["dueDate", "issueDate", "items", "status", "taxRate"]);
+    expect(Object.keys(all[0].items[0]).sort()).toEqual(["quantity", "unitPriceCents"]);
+    const recent = await repo.findStatsRows({ issuedFrom: new Date("2026-09-01") });
+    expect(recent).toHaveLength(1);
+    expect(recent[0].issueDate).toEqual(new Date("2026-09-10"));
+  });
+
   it("updateStatus changes only the status: item ids are stable and updatedAt moves", async () => {
     const created = await make({ items: [
       { description: "A", quantity: 1, unitPriceCents: 100 },

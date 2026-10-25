@@ -6,6 +6,7 @@ import { STATUS_LABELS, STATUSES } from "@/utils/status";
 interface InvoiceFiltersProps {
   q: string;
   status: Status | undefined;
+  /** Totales por estado; una pestaña sin valor no muestra contador (cargando, o no aplicable). */
   counts: Partial<Record<Status | "", number>>;
   onChange: (next: { q?: string; status?: Status | "" }) => void;
 }
@@ -42,7 +43,13 @@ export function InvoiceFilters({ q, status, counts, onChange }: InvoiceFiltersPr
                   : "border-transparent text-zinc-600 hover:text-zinc-900"
               }`}
             >
-              {t.label} <span className="tabular-nums opacity-70">{counts[t.value] ?? 0}</span>
+              {t.label}
+              {counts[t.value] !== undefined && (
+                <>
+                  {" "}
+                  <span className="tabular-nums opacity-70">{counts[t.value]}</span>
+                </>
+              )}
             </button>
           );
         })}

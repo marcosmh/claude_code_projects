@@ -7,13 +7,16 @@ export class ApiError extends Error {
   readonly status: number;
   readonly code: string;
   readonly details: ApiErrorDetail[];
+  /** Segundos de espera que pidió el servidor (cabecera `Retry-After`, p. ej. en un 429). */
+  readonly retryAfter?: number;
 
-  constructor(status: number, code: string, message: string, details: ApiErrorDetail[] = []) {
+  constructor(status: number, code: string, message: string, details: ApiErrorDetail[] = [], retryAfter?: number) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.code = code;
     this.details = details;
+    this.retryAfter = retryAfter;
   }
 }
 
@@ -47,7 +50,21 @@ function toDetails(value: unknown): ApiErrorDetail[] {
   });
 }
 
+function parseRetryAfter(response: Response): number | undefined {
+  const seconds = Number(response.headers.get("Retry-After"));
+  return Number.isFinite(seconds) && seconds > 0 ? Math.ceil(seconds) : undefined;
+}
+
+const rateLimitMessage = (retryAfter?: number) =>
+  retryAfter
+    ? `Has hecho demasiadas peticiones. Espera ${retryAfter} s e inténtalo de nuevo.`
+    : "Has hecho demasiadas peticiones. Espera unos segundos e inténtalo de nuevo.";
+
 async function toApiError(response: Response): Promise<ApiError> {
+  const retryAfter = parseRetryAfter(response);
+  if (response.status === 429) {
+    return new ApiError(429, "RATE_LIMITED", rateLimitMessage(retryAfter), [], retryAfter);
+  }
   try {
     const body: unknown = await response.json();
     if (isRecord(body) && isRecord(body.error) && typeof body.error.message === "string") {

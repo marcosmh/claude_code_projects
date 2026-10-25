@@ -10,7 +10,12 @@ export const formatDate = (iso: string) => date.format(new Date(`${iso.slice(0, 
 /** Valor para `<input type="date">`: los 10 primeros caracteres del ISO. */
 export const toDateInput = (iso: string) => iso.slice(0, 10);
 
-export const todayInput = (offsetDays = 0) =>
-  new Date(Date.now() + offsetDays * 86_400_000).toISOString().slice(0, 10);
+/** Fecha local (no UTC) de hoy + `offsetDays`, para `<input type="date">`. */
+export const todayInput = (offsetDays = 0) => {
+  const d = new Date();
+  d.setDate(d.getDate() + offsetDays);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};
 
 export const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;

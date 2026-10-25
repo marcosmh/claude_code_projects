@@ -2,8 +2,10 @@ import type {
   CreateInvoiceInput,
   FindAllInvoicesOptions,
   Invoice,
+  InvoiceStatsRow,
   InvoiceStatus,
   PaginatedInvoices,
+  StatsRowsOptions,
   UpdateInvoiceInput,
 } from "../types";
 
@@ -20,6 +22,8 @@ export interface InvoiceRepository {
     input: Omit<CreateInvoiceInput, "number">,
     buildNumber: (id: number) => string,
   ): Promise<Invoice>;
+  /** Lightweight rows for aggregates: only the fields the totals need, optionally date-bounded. */
+  findStatsRows(options?: StatsRowsOptions): Promise<InvoiceStatsRow[]>;
   /** Replaces all fields and all items. Returns null if the invoice does not exist. */
   update(id: number, input: UpdateInvoiceInput): Promise<Invoice | null>;
   /**

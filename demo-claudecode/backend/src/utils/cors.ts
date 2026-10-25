@@ -14,7 +14,8 @@ export function corsHeaders(origin: string | null, allowed = allowedOrigins()): 
     "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    "Access-Control-Expose-Headers": "Content-Disposition, Location",
+    "Access-Control-Expose-Headers":
+      "Content-Disposition, Location, Retry-After, RateLimit-Limit, RateLimit-Remaining, X-Request-Id",
     "Access-Control-Max-Age": "86400",
     Vary: "Origin",
   };

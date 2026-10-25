@@ -1,13 +1,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ApiError } from "@/services/apiClient";
 import { invoicesService } from "@/services/invoicesService";
 import { useToastStore } from "@/store/toastStore";
 import type { InvoiceRequest, Status } from "@/types/invoice";
+import { errorMessage } from "@/utils/apiErrors";
 import { STATUS_LABELS } from "@/utils/status";
 import { queryKeys } from "./queryKeys";
-
-const errorMessage = (error: unknown) =>
-  error instanceof ApiError ? error.message : "Ocurrió un error inesperado. Inténtalo de nuevo.";
 
 /** Altas, ediciones, cambios de estado y borrados; avisan con un toast y refrescan los datos. */
 export function useInvoiceMutations() {

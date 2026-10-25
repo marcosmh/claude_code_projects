@@ -33,8 +33,8 @@ export function EditInvoicePage() {
         ]}
       />
       <InvoiceForm
-        // `updatedAt` reinicia el formulario si los datos cambian (patrón de `key`).
-        key={invoice.updatedAt}
+        // `key` por id: un refetch en segundo plano (p. ej. al reconectar) no debe borrar lo que se está editando.
+        key={invoice.id}
         initial={invoiceToFormValues(invoice)}
         cancelTo={`/invoices/${invoice.id}`}
         onSubmit={async (input) => {

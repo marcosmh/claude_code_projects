@@ -4,7 +4,9 @@ import type {
   FindAllInvoicesOptions,
   Invoice,
   InvoiceData,
+  InvoiceStatsRow,
   PaginatedInvoices,
+  StatsRowsOptions,
 } from "../../src/types";
 
 export class FakeInvoiceRepository implements InvoiceRepository {
@@ -42,6 +44,22 @@ export class FakeInvoiceRepository implements InvoiceRepository {
       ? all.slice((pagination.page - 1) * pagination.pageSize, pagination.page * pagination.pageSize)
       : all;
     return { data, total: all.length };
+  }
+
+  /** Calls received by findStatsRows, to assert the service bounds its queries. */
+  readonly statsCalls: StatsRowsOptions[] = [];
+
+  async findStatsRows(options: StatsRowsOptions = {}): Promise<InvoiceStatsRow[]> {
+    this.statsCalls.push(options);
+    return [...this.rows.values()]
+      .filter((i) => !options.issuedFrom || i.issueDate >= options.issuedFrom)
+      .map(({ status, taxRate, issueDate, dueDate, items }) => ({
+        status,
+        taxRate,
+        issueDate,
+        dueDate,
+        items: items.map(({ quantity, unitPriceCents }) => ({ quantity, unitPriceCents })),
+      }));
   }
 
   async findById(id: number) {

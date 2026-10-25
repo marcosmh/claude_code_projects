@@ -65,6 +65,20 @@ export interface FindAllInvoicesOptions {
   pagination?: Pagination;
 }
 
+/** Minimal projection for aggregates. `status` is a plain string: the column is not constrained. */
+export interface InvoiceStatsRow {
+  status: string;
+  taxRate: number;
+  issueDate: Date;
+  dueDate: Date;
+  items: { quantity: number; unitPriceCents: number }[];
+}
+
+export interface StatsRowsOptions {
+  /** Only invoices issued on or after this instant. */
+  issuedFrom?: Date;
+}
+
 export interface PaginatedInvoices {
   data: Invoice[];
   total: number;

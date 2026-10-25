@@ -55,6 +55,25 @@ describe("apiClient", () => {
     });
   });
 
+  it("un 429 usa Retry-After para un mensaje con la espera exacta", async () => {
+    const body = { error: { code: "RATE_LIMITED", message: "texto del servidor" } };
+    const res = new Response(JSON.stringify(body), { status: 429, headers: { "Retry-After": "42" } });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(res));
+
+    const error = await request("/invoices").catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error).toMatchObject({ status: 429, code: "RATE_LIMITED", retryAfter: 42 });
+    expect((error as ApiError).message).toBe("Has hecho demasiadas peticiones. Espera 42 s e inténtalo de nuevo.");
+  });
+
+  it("un 429 sin Retry-After válido da un mensaje genérico de espera", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("{}", { status: 429, headers: { "Retry-After": "abc" } })));
+    const error = await request("/invoices").catch((e: unknown) => e);
+    expect((error as ApiError).retryAfter).toBeUndefined();
+    expect((error as ApiError).message).toMatch(/Espera unos segundos/);
+  });
+
   it("usa un mensaje genérico si el error no es JSON", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("boom", { status: 502 })));
     await expect(request("/x")).rejects.toMatchObject({ status: 502, code: "UNKNOWN_ERROR" });

@@ -2,6 +2,10 @@ import type { InvoiceStatus } from "../types";
 
 export const STATUSES = ["DRAFT", "SENT", "PAID"] as const satisfies readonly InvoiceStatus[];
 
+export function isInvoiceStatus(value: string): value is InvoiceStatus {
+  return (STATUSES as readonly string[]).includes(value);
+}
+
 export const STATUS_LABELS: Record<InvoiceStatus, string> = {
   DRAFT: "Borrador",
   SENT: "Enviada",

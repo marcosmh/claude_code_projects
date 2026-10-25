@@ -10,6 +10,7 @@ import { MonthlyColumns } from "@/components/features/dashboard/MonthlyColumns";
 import { StatusBar } from "@/components/features/dashboard/StatusBar";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useMonthlyStats, useStatsSummary } from "@/hooks/useStats";
+import { errorMessage } from "@/utils/apiErrors";
 import { formatMoney, plural } from "@/utils/format";
 
 const ICONS: Record<"receivable" | "paid" | "draft" | "total", ReactNode> = {
@@ -53,7 +54,7 @@ export function DashboardPage() {
   );
 
   if (summary.isPending) return <PageSkeleton rows={4} />;
-  if (summary.isError) return <ErrorState message="No pudimos leer las estadísticas." onRetry={() => void summary.refetch()} />;
+  if (summary.isError) return <ErrorState message={errorMessage(summary.error, "No pudimos leer las estadísticas.")} onRetry={() => void summary.refetch()} />;
 
   const { byStatus, overdue, totalCount } = summary.data;
 

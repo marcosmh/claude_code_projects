@@ -4,8 +4,7 @@ import { FakeInvoiceRepository, sampleData } from "./helpers/FakeInvoiceReposito
 
 const NOW = new Date("2026-10-10T12:00:00Z");
 
-async function setup() {
-  const repo = new FakeInvoiceRepository();
+async function setup(repo = new FakeInvoiceRepository()) {
   // total each: 2 * 10000 = 20000 + 10% = 22000
   await repo.create({ ...sampleData({ status: "DRAFT" }), number: "1" });
   await repo.create({ ...sampleData({ status: "SENT", dueDate: new Date("2026-10-01") }), number: "2" }); // overdue
@@ -44,5 +43,36 @@ describe("StatsService", () => {
     const m = await (await setup()).monthly(3);
     expect(m).toHaveLength(3);
     expect(m.reduce((n, b) => n + b.totalsCents.PAID, 0)).toBe(0);
+  });
+});
+
+describe("StatsService: robustez y consultas acotadas", () => {
+  it("ignora estados desconocidos en la BD sin romper (summary y monthly)", async () => {
+    const repo = new FakeInvoiceRepository();
+    const service = await setup(repo);
+    const [any] = [...repo.rows.values()];
+    repo.rows.set(999, { ...any, id: 999, number: "X", status: "ARCHIVED" as never, issueDate: new Date("2026-10-02") });
+
+    const s = await service.summary();
+    expect(s.totalCount).toBe(5);
+    expect(Object.values(s.byStatus).reduce((n, b) => n + b.count, 0)).toBe(s.totalCount);
+
+    const m = await service.monthly(6);
+    expect(m.every((b) => Object.values(b.totalsCents).every(Number.isFinite))).toBe(true);
+  });
+
+  it("monthly pide solo las facturas desde el primer mes de la ventana", async () => {
+    const repo = new FakeInvoiceRepository();
+    const service = await setup(repo);
+    await service.monthly(3);
+    expect(repo.statsCalls.at(-1)).toEqual({ issuedFrom: new Date("2026-08-01T00:00:00Z") });
+    await service.monthly(1);
+    expect(repo.statsCalls.at(-1)).toEqual({ issuedFrom: new Date("2026-10-01T00:00:00Z") });
+  });
+
+  it("summary no lleva datos de cliente: usa la proyección mínima", async () => {
+    const repo = new FakeInvoiceRepository();
+    await (await setup(repo)).summary();
+    expect(repo.statsCalls.at(-1)).toEqual({});
   });
 });
