@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="es" class="h-full antialiased">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Gestión de facturas" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>Facturas</title>
+    <script>
+      // Aplica tema y menú antes del primer pintado: oscuro por defecto salvo theme === "light".
+      try {
+        var d = document.documentElement;
+        if (localStorage.getItem("theme") !== "light") d.classList.add("dark");
+        if (localStorage.getItem("menu") === "collapsed") d.classList.add("menu-collapsed");
+      } catch (e) {
+        document.documentElement.classList.add("dark");
+      }
+    </script>
+  </head>
+  <body class="min-h-full flex flex-col">
+    <div id="root" class="flex min-h-screen flex-1 flex-col"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

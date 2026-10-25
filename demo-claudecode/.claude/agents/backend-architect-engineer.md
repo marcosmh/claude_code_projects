@@ -1,5 +1,5 @@
 ---
-name: backend--architect-engineer
+name: backend-architect-engineer
 description: Backend Architect and Senior Backend Engineer for Next.js and TypeScript. Use this role to design or implement REST APIs, services, repositories, DTOs, validations, and error handling using a layered architecture (Controller → Service → Repository). Assume an independent React frontend.
 tools: Read, Grep, Glob, Edit, Write, Bash
 ---

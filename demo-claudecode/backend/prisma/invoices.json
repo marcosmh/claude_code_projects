@@ -1,0 +1,422 @@
+[
+  {
+    "clientName": "Abarrotes La Esperanza SA de CV",
+    "clientEmail": "compras@laesperanza.com.mx",
+    "clientAddress": "Av. Juárez 120, Col. Centro, Puebla, Pue. 72000",
+    "issueDate": "2026-06-03",
+    "dueDate": "2026-07-03",
+    "status": "PAID",
+    "taxRate": 16,
+    "notes": "Pago por transferencia SPEI. Favor de incluir el número de factura en el concepto.",
+    "items": [
+      {
+        "description": "Diseño de sitio web",
+        "quantity": 1,
+        "unitPriceCents": 1800000
+      },
+      {
+        "description": "Hosting anual",
+        "quantity": 1,
+        "unitPriceCents": 360000
+      }
+    ]
+  },
+  {
+    "clientName": "Grupo Industrial Regiomontano",
+    "clientEmail": "pagos@gir.com.mx",
+    "clientAddress": "Av. Constitución 2450, Monterrey, N.L. 64000",
+    "issueDate": "2026-06-18",
+    "dueDate": "2026-07-18",
+    "status": "PAID",
+    "taxRate": 16,
+    "notes": "Anticipo del 50% recibido.",
+    "items": [
+      {
+        "description": "Mantenimiento de equipo (hora)",
+        "quantity": 16,
+        "unitPriceCents": 85000
+      }
+    ]
+  },
+  {
+    "clientName": "Tecnologías del Bajío SAPI",
+    "clientEmail": "finanzas@tecbajio.mx",
+    "clientAddress": "Blvd. Adolfo López Mateos 801, León, Gto. 37500",
+    "issueDate": "2026-07-02",
+    "dueDate": "2026-08-01",
+    "status": "PAID",
+    "taxRate": 16,
+    "notes": null,
+    "items": [
+      {
+        "description": "Desarrollo de módulo de inventarios",
+        "quantity": 1,
+        "unitPriceCents": 4500000
+      },
+      {
+        "description": "Capacitación (hora)",
+        "quantity": 8,
+        "unitPriceCents": 120000
+      },
+      {
+        "description": "Soporte mensual",
+        "quantity": 3,
+        "unitPriceCents": 250000
+      }
+    ]
+  },
+  {
+    "clientName": "Constructora Tonatiuh",
+    "clientEmail": "admin@tonatiuh.com.mx",
+    "clientAddress": "Calle Hidalgo 45, Col. Centro, Oaxaca, Oax. 68000",
+    "issueDate": "2026-07-15",
+    "dueDate": "2026-08-14",
+    "status": "SENT",
+    "taxRate": 16,
+    "notes": "Pago por transferencia SPEI. Favor de incluir el número de factura en el concepto.",
+    "items": [
+      {
+        "description": "Asesoría estructural (hora)",
+        "quantity": 20,
+        "unitPriceCents": 150000
+      },
+      {
+        "description": "Informe técnico",
+        "quantity": 1,
+        "unitPriceCents": 480000
+      }
+    ]
+  },
+  {
+    "clientName": "María Fernanda Ortega Ruiz",
+    "clientEmail": "mf.ortega@correo.mx",
+    "clientAddress": "Calle Durango 88, Col. Roma Norte, CDMX 06700",
+    "issueDate": "2026-07-28",
+    "dueDate": "2026-08-12",
+    "status": "PAID",
+    "taxRate": 16,
+    "notes": null,
+    "items": [
+      {
+        "description": "Fotografía de producto (sesión)",
+        "quantity": 2,
+        "unitPriceCents": 350000
+      }
+    ]
+  },
+  {
+    "clientName": "Restaurante El Fogón de Doña Lupe",
+    "clientEmail": "lupe@elfogon.mx",
+    "clientAddress": "Calle 60 #312, Mérida, Yuc. 97000",
+    "issueDate": "2026-08-05",
+    "dueDate": "2026-09-04",
+    "status": "SENT",
+    "taxRate": 16,
+    "notes": null,
+    "items": [
+      {
+        "description": "Impresión de menús",
+        "quantity": 200,
+        "unitPriceCents": 3500
+      },
+      {
+        "description": "Diseño de menú",
+        "quantity": 1,
+        "unitPriceCents": 280000
+      }
+    ]
+  },
+  {
+    "clientName": "Despacho Contable Hernández y Asociados",
+    "clientEmail": "contacto@hernandezcont.mx",
+    "clientAddress": "Av. Vallarta 3200, Guadalajara, Jal. 44100",
+    "issueDate": "2026-08-12",
+    "dueDate": "2026-09-11",
+    "status": "PAID",
+    "taxRate": 16,
+    "notes": "Pago por transferencia SPEI. Favor de incluir el número de factura en el concepto.",
+    "items": [
+      {
+        "description": "Auditoría contable",
+        "quantity": 1,
+        "unitPriceCents": 2200000
+      },
+      {
+        "description": "Declaración anual",
+        "quantity": 1,
+        "unitPriceCents": 650000
+      }
+    ]
+  },
+  {
+    "clientName": "José Luis Cabrera Mendoza",
+    "clientEmail": null,
+    "clientAddress": "Calle Morelos 17, Querétaro, Qro. 76000",
+    "issueDate": "2026-08-20",
+    "dueDate": "2026-09-04",
+    "status": "SENT",
+    "taxRate": 16,
+    "notes": null,
+    "items": [
+      {
+        "description": "Consultoría legal (hora)",
+        "quantity": 5,
+        "unitPriceCents": 180000
+      }
+    ]
+  },
+  {
+    "clientName": "Farmacias Del Pacífico",
+    "clientEmail": "proveedores@farmaciaspacifico.mx",
+    "clientAddress": "Blvd. Kino 410, Hermosillo, Son. 83000",
+    "issueDate": "2026-09-01",
+    "dueDate": "2026-10-01",
+    "status": "SENT",
+    "taxRate": 16,
+    "notes": null,
+    "items": [
+      {
+        "description": "Licencia de software anual",
+        "quantity": 12,
+        "unitPriceCents": 95000
+      },
+      {
+        "description": "Instalación",
+        "quantity": 1,
+        "unitPriceCents": 150000
+      },
+      {
+        "description": "Capacitación (hora)",
+        "quantity": 4,
+        "unitPriceCents": 120000
+      }
+    ]
+  },
+  {
+    "clientName": "Editorial Tinta Nueva",
+    "clientEmail": "admin@tintanueva.mx",
+    "clientAddress": "Calle Allende 9, Col. Coyoacán, CDMX 04000",
+    "issueDate": "2026-09-08",
+    "dueDate": "2026-10-08",
+    "status": "PAID",
+    "taxRate": 16,
+    "notes": "Pago por transferencia SPEI. Favor de incluir el número de factura en el concepto.",
+    "items": [
+      {
+        "description": "Corrección de estilo (cuartilla)",
+        "quantity": 180,
+        "unitPriceCents": 9000
+      }
+    ]
+  },
+  {
+    "clientName": "Transportes Peninsulares SA",
+    "clientEmail": "cuentas@transpen.com.mx",
+    "clientAddress": "Calle 21 #150, Campeche, Camp. 24000",
+    "issueDate": "2026-09-15",
+    "dueDate": "2026-10-30",
+    "status": "SENT",
+    "taxRate": 16,
+    "notes": null,
+    "items": [
+      {
+        "description": "Rastreo GPS (unidad/mes)",
+        "quantity": 25,
+        "unitPriceCents": 45000
+      },
+      {
+        "description": "Instalación de equipo",
+        "quantity": 25,
+        "unitPriceCents": 60000
+      }
+    ]
+  },
+  {
+    "clientName": "Ana Sofía Villarreal Treviño",
+    "clientEmail": "anasofia.vt@correo.mx",
+    "clientAddress": "Av. Lázaro Cárdenas 500, San Pedro Garza García, N.L. 66220",
+    "issueDate": "2026-09-22",
+    "dueDate": "2026-10-22",
+    "status": "DRAFT",
+    "taxRate": 16,
+    "notes": "Anticipo del 50% recibido.",
+    "items": [
+      {
+        "description": "Clases de inglés (hora)",
+        "quantity": 30,
+        "unitPriceCents": 40000
+      }
+    ]
+  },
+  {
+    "clientName": "Clínica Dental Sonrisa",
+    "clientEmail": "gerencia@clinicasonrisa.mx",
+    "clientAddress": "Av. 5 de Mayo 233, Toluca, Méx. 50000",
+    "issueDate": "2026-09-29",
+    "dueDate": "2026-10-29",
+    "status": "SENT",
+    "taxRate": 16,
+    "notes": "Pago por transferencia SPEI. Favor de incluir el número de factura en el concepto.",
+    "items": [
+      {
+        "description": "Marketing digital mensual",
+        "quantity": 1,
+        "unitPriceCents": 1200000
+      },
+      {
+        "description": "Campaña en redes",
+        "quantity": 1,
+        "unitPriceCents": 500000
+      }
+    ]
+  },
+  {
+    "clientName": "Muebles Artesanales de Michoacán",
+    "clientEmail": "ventas@muebleswm.mx",
+    "clientAddress": "Calle Madero 76, Pátzcuaro, Mich. 61600",
+    "issueDate": "2026-10-02",
+    "dueDate": "2026-11-01",
+    "status": "SENT",
+    "taxRate": 16,
+    "notes": null,
+    "items": [
+      {
+        "description": "Mobiliario de oficina",
+        "quantity": 6,
+        "unitPriceCents": 285000
+      },
+      {
+        "description": "Flete",
+        "quantity": 1,
+        "unitPriceCents": 180000
+      }
+    ]
+  },
+  {
+    "clientName": "Colegio Benito Juárez AC",
+    "clientEmail": "tesoreria@colegiobj.edu.mx",
+    "clientAddress": "Av. Universidad 1200, Chihuahua, Chih. 31000",
+    "issueDate": "2026-10-06",
+    "dueDate": "2026-11-05",
+    "status": "DRAFT",
+    "taxRate": 16,
+    "notes": null,
+    "items": [
+      {
+        "description": "Mantenimiento de red",
+        "quantity": 1,
+        "unitPriceCents": 780000
+      },
+      {
+        "description": "Cableado (metro)",
+        "quantity": 120,
+        "unitPriceCents": 3500
+      }
+    ]
+  },
+  {
+    "clientName": "Ricardo Alonso Domínguez Paz",
+    "clientEmail": "ricardo.dominguez@correo.mx",
+    "clientAddress": "Calle Reforma 301, Veracruz, Ver. 91700",
+    "issueDate": "2026-10-09",
+    "dueDate": "2026-10-24",
+    "status": "PAID",
+    "taxRate": 8,
+    "notes": "Pago por transferencia SPEI. Favor de incluir el número de factura en el concepto.",
+    "items": [
+      {
+        "description": "Gestión de nómina",
+        "quantity": 1,
+        "unitPriceCents": 420000
+      }
+    ]
+  },
+  {
+    "clientName": "Hotel Casa Maya",
+    "clientEmail": "reservas@casamaya.mx",
+    "clientAddress": "Av. Tulum 14, Cancún, Q. Roo 77500",
+    "issueDate": "2026-10-13",
+    "dueDate": "2026-11-12",
+    "status": "SENT",
+    "taxRate": 16,
+    "notes": "Anticipo del 50% recibido.",
+    "items": [
+      {
+        "description": "Identidad de marca",
+        "quantity": 1,
+        "unitPriceCents": 2800000
+      },
+      {
+        "description": "Manual de marca",
+        "quantity": 1,
+        "unitPriceCents": 900000
+      }
+    ]
+  },
+  {
+    "clientName": "Agroexportadora Valle Verde",
+    "clientEmail": "compras@valleverde.mx",
+    "clientAddress": "Carretera a Culiacán Km 12, Culiacán, Sin. 80000",
+    "issueDate": "2026-10-16",
+    "dueDate": "2026-11-15",
+    "status": "DRAFT",
+    "taxRate": 16,
+    "notes": null,
+    "items": [
+      {
+        "description": "Análisis de suelo",
+        "quantity": 4,
+        "unitPriceCents": 320000
+      },
+      {
+        "description": "Informe agronómico",
+        "quantity": 1,
+        "unitPriceCents": 550000
+      },
+      {
+        "description": "Muestreo (visita)",
+        "quantity": 2,
+        "unitPriceCents": 150000
+      }
+    ]
+  },
+  {
+    "clientName": "Estudio Creativo Quetzal",
+    "clientEmail": "hola@quetzal.studio",
+    "clientAddress": "Calle Génova 33, Col. Juárez, CDMX 06600",
+    "issueDate": "2026-10-20",
+    "dueDate": "2026-11-19",
+    "status": "SENT",
+    "taxRate": 16,
+    "notes": "Pago por transferencia SPEI. Favor de incluir el número de factura en el concepto.",
+    "items": [
+      {
+        "description": "Animación de logotipo",
+        "quantity": 1,
+        "unitPriceCents": 950000
+      }
+    ]
+  },
+  {
+    "clientName": "Laboratorios Clínicos Aztlán",
+    "clientEmail": "admin@labaztlan.mx",
+    "clientAddress": "Av. Revolución 640, Tijuana, B.C. 22000",
+    "issueDate": "2026-10-22",
+    "dueDate": "2026-11-21",
+    "status": "DRAFT",
+    "taxRate": 0,
+    "notes": null,
+    "items": [
+      {
+        "description": "Calibración de equipos",
+        "quantity": 10,
+        "unitPriceCents": 175000
+      },
+      {
+        "description": "Certificación",
+        "quantity": 1,
+        "unitPriceCents": 1300000
+      }
+    ]
+  }
+]

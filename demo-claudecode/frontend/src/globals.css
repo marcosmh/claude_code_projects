@@ -1,0 +1,92 @@
+@import "tailwindcss";
+
+/*
+ * Paleta inspirada en la plantilla Finza (finanzas, tema oscuro):
+ * negro #050505, tarjetas #1a1a1a, texto atenuado #9aa4b2, lima neón #66fe4c, verde muy oscuro #071605.
+ * El tema oscuro es el principal; el claro usa un verde más profundo para que el acento se lea.
+ */
+:root {
+  --background: #ffffff;
+  --foreground: #0b0f0a;
+  --canvas: #f2f4f0;
+  --surface: #ffffff;
+  --brand: #2a7d17; /* acento legible como texto o filete sobre claro */
+  /* Categórica de datos (slots 1-3): borrador, enviada, pagada. */
+  --series-1: #7b8696;
+  --series-2: #0284c7;
+  --series-3: #2fa317;
+}
+
+/* Tema oscuro: se remapea la paleta usada por los componentes (zinc → negro neutro + acentos). */
+:root.dark {
+  color-scheme: dark;
+  --background: #050505;
+  --foreground: #f5f7f4;
+  --canvas: #050505;
+  --surface: #141414;
+  --brand: #66fe4c;
+  --series-1: #9aa4b2;
+  --series-2: #38bdf8;
+  --series-3: #66fe4c;
+  --color-zinc-50: #1a1a1a;
+  --color-zinc-100: #222222;
+  --color-zinc-200: #2c2c2c;
+  --color-zinc-300: #3d3d3d;
+  --color-zinc-500: #9aa4b2;
+  --color-zinc-600: #b4bcc8;
+  --color-zinc-700: #d4dae2;
+  --color-zinc-900: #f5f7f4;
+  --color-green-100: #0f2e0a;
+  --color-green-700: #66fe4c;
+  --color-red-50: #3a0d0d;
+  --color-red-300: #991b1b;
+  --color-red-600: #f87171;
+  --color-red-700: #fca5a5;
+}
+
+/* Neutros del tema claro, con un matiz verde muy leve. */
+@theme {
+  --color-zinc-50: #f6f8f5;
+  --color-zinc-100: #eef1ec;
+  --color-zinc-200: #dde2da;
+  --color-zinc-300: #c5ccc1;
+  --color-zinc-500: #667062;
+  --color-zinc-600: #4d5749;
+  --color-zinc-700: #343c31;
+  --color-zinc-900: #0b0f0a;
+  --color-primary: #66fe4c;
+  --color-primary-dark: #4fe036;
+  --color-on-primary: #071605;
+}
+
+
+
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-brand: var(--brand);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: "Noto Sans Variable", system-ui, sans-serif;
+  --font-mono: "Geist Mono Variable", ui-monospace, monospace;
+}
+
+body {
+  background: var(--canvas);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}

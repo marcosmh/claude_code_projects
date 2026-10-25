@@ -34,6 +34,8 @@ Claude Code Projects
 
 * /hooks
 
+* /agents
+
 ## Skills
 
 * https://www.skills.sh/

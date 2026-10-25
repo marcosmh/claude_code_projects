@@ -1,0 +1,41 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Invoice {
+  id            Int           @id @default(autoincrement())
+  number        String        @unique
+  clientName    String
+  clientEmail   String?
+  clientAddress String?
+  issueDate     DateTime
+  dueDate       DateTime
+  // DRAFT | SENT | PAID (validated in the service layer, not a Prisma enum)
+  status        String        @default("DRAFT")
+  taxRate       Float         @default(0)
+  notes         String?
+  items         InvoiceItem[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([status])
+  @@index([dueDate])
+  @@index([issueDate])
+}
+
+model InvoiceItem {
+  id             Int     @id @default(autoincrement())
+  invoiceId      Int
+  invoice        Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  description    String
+  quantity       Float
+  // Money as integer cents
+  unitPriceCents Int
+
+  @@index([invoiceId])
+}
