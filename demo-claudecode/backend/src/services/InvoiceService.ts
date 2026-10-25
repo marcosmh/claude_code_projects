@@ -16,9 +16,9 @@ export class InvoiceService {
     private readonly now: () => Date = () => new Date(),
   ) {}
 
-  async list(query: ListInvoicesQuery): Promise<ListInvoicesResult> {
+  async list(ownerId: number, query: ListInvoicesQuery): Promise<ListInvoicesResult> {
     const { status, search, page, pageSize } = query;
-    const { data, total } = await this.repository.findAll({
+    const { data, total } = await this.repository.findAll(ownerId, {
       filters: { status, search },
       pagination: { page, pageSize },
     });
@@ -29,36 +29,36 @@ export class InvoiceService {
     };
   }
 
-  async getById(id: number): Promise<InvoiceResponse> {
-    return toInvoiceResponse(await this.findOrFail(id), this.now());
+  async getById(ownerId: number, id: number): Promise<InvoiceResponse> {
+    return toInvoiceResponse(await this.findOrFail(ownerId, id), this.now());
   }
 
-  async create(request: InvoiceRequest): Promise<InvoiceResponse> {
+  async create(ownerId: number, request: InvoiceRequest): Promise<InvoiceResponse> {
     const data = this.toInvoiceData(request);
-    const invoice = await this.repository.createWithNumber(data, buildInvoiceNumber);
+    const invoice = await this.repository.createWithNumber(ownerId, data, buildInvoiceNumber);
     return toInvoiceResponse(invoice, this.now());
   }
 
-  async update(id: number, request: InvoiceRequest): Promise<InvoiceResponse> {
+  async update(ownerId: number, id: number, request: InvoiceRequest): Promise<InvoiceResponse> {
     const data = this.toInvoiceData(request);
-    const invoice = await this.repository.update(id, data);
+    const invoice = await this.repository.update(ownerId, id, data);
     if (!invoice) throw new NotFoundError(`Factura ${id} no encontrada`);
     return toInvoiceResponse(invoice, this.now());
   }
 
-  async updateStatus(id: number, status: InvoiceStatus): Promise<InvoiceResponse> {
-    const invoice = await this.repository.updateStatus(id, status);
+  async updateStatus(ownerId: number, id: number, status: InvoiceStatus): Promise<InvoiceResponse> {
+    const invoice = await this.repository.updateStatus(ownerId, id, status);
     if (!invoice) throw new NotFoundError(`Factura ${id} no encontrada`);
     return toInvoiceResponse(invoice, this.now());
   }
 
-  async delete(id: number): Promise<void> {
-    const deleted = await this.repository.delete(id);
+  async delete(ownerId: number, id: number): Promise<void> {
+    const deleted = await this.repository.delete(ownerId, id);
     if (!deleted) throw new NotFoundError(`Factura ${id} no encontrada`);
   }
 
-  private async findOrFail(id: number) {
-    const invoice = await this.repository.findById(id);
+  private async findOrFail(ownerId: number, id: number) {
+    const invoice = await this.repository.findById(ownerId, id);
     if (!invoice) throw new NotFoundError(`Factura ${id} no encontrada`);
     return invoice;
   }

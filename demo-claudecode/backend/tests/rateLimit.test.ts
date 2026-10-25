@@ -43,6 +43,8 @@ describe("classify y clientKey", () => {
     ["GET", "/api/v1/invoices", "read"],
     ["GET", "/api/v1/invoices/1/pdf", "pdf"],
     ["POST", "/api/v1/invoices", "write"],
+    ["POST", "/api/v1/auth/login", "auth"],
+    ["POST", "/api/v1/auth/logout", "write"],
     ["PATCH", "/api/v1/invoices/1/status", "write"],
     ["DELETE", "/api/v1/invoices/1", "write"],
   ])("%s %s -> %s", (method, path, expected) => {

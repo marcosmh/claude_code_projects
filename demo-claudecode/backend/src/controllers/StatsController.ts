@@ -6,12 +6,12 @@ import { parseQuery } from "./requestParsers";
 export class StatsController {
   constructor(private readonly stats: StatsService) {}
 
-  async summary(): Promise<Response> {
-    return ok(await this.stats.summary());
+  async summary(ownerId: number): Promise<Response> {
+    return ok(await this.stats.summary(ownerId));
   }
 
-  async monthly(request: Request): Promise<Response> {
+  async monthly(ownerId: number, request: Request): Promise<Response> {
     const { months } = parseQuery(monthlyQuerySchema, request);
-    return ok(await this.stats.monthly(months), { months });
+    return ok(await this.stats.monthly(ownerId, months), { months });
   }
 }

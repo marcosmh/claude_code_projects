@@ -5,11 +5,15 @@ import { RouterProvider } from "react-router/dom";
 import "@fontsource-variable/noto-sans";
 import "@fontsource-variable/geist-mono";
 import "./globals.css";
+import { endSession } from "./hooks/useAuth";
 import { createQueryClient } from "./queryClient";
+import { setUnauthorizedHandler } from "./services/apiClient";
 import { createAppRouter } from "./router";
 
 const queryClient = createQueryClient();
 const router = createAppRouter();
+// Una sesión caducada o revocada (401) devuelve al inicio de sesión sin recargar la página.
+setUnauthorizedHandler(() => endSession(queryClient));
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

@@ -20,6 +20,16 @@ export class ApiError extends Error {
   }
 }
 
+let unauthorizedHandler: (() => void) | undefined;
+
+/**
+ * Se invoca cuando la API responde 401 a una petición normal (sesión caducada o revocada).
+ * Las rutas `/auth/*` quedan fuera: ahí un 401 es una respuesta esperada (credenciales erróneas, sin sesión).
+ */
+export function setUnauthorizedHandler(handler: (() => void) | undefined) {
+  unauthorizedHandler = handler;
+}
+
 type Query = Record<string, string | number | undefined>;
 
 interface RequestOptions {
@@ -87,6 +97,8 @@ export async function request<T, M = undefined>(
     response = await fetch(buildUrl(path, query), {
       method,
       signal,
+      // La sesión vive en una cookie httpOnly que el navegador envía a la API (otro origen).
+      credentials: "include",
       headers: body === undefined ? undefined : { "Content-Type": "application/json" },
       body: body === undefined ? undefined : JSON.stringify(body),
     });
@@ -95,7 +107,11 @@ export async function request<T, M = undefined>(
     throw new ApiError(0, "NETWORK_ERROR", "No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.");
   }
 
-  if (!response.ok) throw await toApiError(response);
+  if (!response.ok) {
+    const error = await toApiError(response);
+    if (error.status === 401 && !path.startsWith("/auth/")) unauthorizedHandler?.();
+    throw error;
+  }
   if (response.status === 204) return { data: undefined as T };
   return (await response.json()) as ApiEnvelope<T, M>;
 }

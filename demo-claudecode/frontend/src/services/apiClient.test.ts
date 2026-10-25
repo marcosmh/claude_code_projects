@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ApiError, buildUrl, request } from "./apiClient";
+import { ApiError, buildUrl, request, setUnauthorizedHandler } from "./apiClient";
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
@@ -93,5 +93,41 @@ describe("apiClient", () => {
     expect(buildUrl("/invoices", { status: "PAID", search: undefined, page: 2 })).toBe(
       "http://localhost:4000/api/v1/invoices?status=PAID&page=2",
     );
+  });
+});
+
+describe("request: sesión", () => {
+  afterEach(() => {
+    setUnauthorizedHandler(undefined);
+    vi.unstubAllGlobals();
+  });
+  const unauthorized = () => new Response(JSON.stringify({ error: { code: "UNAUTHENTICATED", message: "Inicia sesión" } }), { status: 401 });
+
+  it("envía siempre las cookies de la sesión", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: 1 })));
+    vi.stubGlobal("fetch", fetchMock);
+    await request("/invoices");
+    expect((fetchMock.mock.calls[0] as [string, RequestInit])[1].credentials).toBe("include");
+  });
+
+  it("un 401 en una ruta normal avisa al manejador y sigue lanzando el error", async () => {
+    const handler = vi.fn();
+    setUnauthorizedHandler(handler);
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(unauthorized()));
+    await expect(request("/invoices")).rejects.toMatchObject({ status: 401 });
+    expect(handler).toHaveBeenCalledOnce();
+  });
+
+  it("un 401 en /auth/* no avisa (es una respuesta esperada)", async () => {
+    const handler = vi.fn();
+    setUnauthorizedHandler(handler);
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(unauthorized()));
+    await expect(request("/auth/login", { method: "POST", body: {} })).rejects.toMatchObject({ status: 401 });
+    expect(handler).not.toHaveBeenCalled();
+  });
+
+  it("un 401 sin manejador registrado no rompe", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(unauthorized()));
+    await expect(request("/invoices")).rejects.toMatchObject({ status: 401 });
   });
 });

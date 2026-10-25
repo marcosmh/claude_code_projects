@@ -22,6 +22,18 @@ export class BadRequestError extends AppError {
   readonly code = "VALIDATION_ERROR";
 }
 
+/** Missing, invalid or expired session, or wrong credentials (401). */
+export class UnauthorizedError extends AppError {
+  readonly status = 401;
+  readonly code = "UNAUTHENTICATED";
+}
+
+/** Authenticated but the request is not allowed, e.g. a cross-origin write (403). */
+export class ForbiddenError extends AppError {
+  readonly status = 403;
+  readonly code = "FORBIDDEN";
+}
+
 export class NotFoundError extends AppError {
   readonly status = 404;
   readonly code = "NOT_FOUND";

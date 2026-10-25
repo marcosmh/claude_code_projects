@@ -7,8 +7,34 @@ datasource db {
   provider = "sqlite"
 }
 
+model User {
+  id           Int       @id @default(autoincrement())
+  email        String    @unique
+  // scrypt$N$r$p$salt$hash (see src/utils/password.ts)
+  passwordHash String
+  createdAt    DateTime  @default(now())
+  sessions     Session[]
+  invoices     Invoice[]
+}
+
+model Session {
+  id        Int      @id @default(autoincrement())
+  // SHA-256 of the opaque token held in the httpOnly cookie; the raw token is never stored
+  tokenHash String   @unique
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
 model Invoice {
   id            Int           @id @default(autoincrement())
+  // Nullable only for invoices that predate authentication; they are claimed by the first user created
+  ownerId       Int?
+  owner         User?         @relation(fields: [ownerId], references: [id])
   number        String        @unique
   clientName    String
   clientEmail   String?
@@ -23,6 +49,7 @@ model Invoice {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
+  @@index([ownerId])
   @@index([status])
   @@index([dueDate])
   @@index([issueDate])

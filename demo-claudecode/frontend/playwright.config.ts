@@ -18,7 +18,7 @@ export default defineConfig({
   webServer: [
     {
       cwd: "../backend",
-      command: "rm -f prisma/e2e.db prisma/e2e.db-journal && npx prisma migrate deploy && npx next dev -p " + API_PORT,
+      command: "rm -f prisma/e2e.db prisma/e2e.db-journal && npx prisma migrate deploy && npx tsx prisma/create-user.ts e2e@example.com && npx next dev -p " + API_PORT,
       url: `http://localhost:${API_PORT}/api/v1/stats/summary`,
       reuseExistingServer: false,
       timeout: 120_000,
@@ -27,6 +27,7 @@ export default defineConfig({
         FRONTEND_ORIGIN: WEB_URL,
         NEXT_DIST_DIR: ".next-e2e",
         RATE_LIMIT_DISABLED: "1",
+        USER_PASSWORD: "e2e-password-123", // cuenta desechable de e2e.db; debe coincidir con E2E_USER
       },
     },
     {

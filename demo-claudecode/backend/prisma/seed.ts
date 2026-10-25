@@ -37,6 +37,8 @@ async function main() {
   const invoices: SeedInvoice[] = JSON.parse(
     readFileSync(resolve(__dirname, "invoices.json"), "utf8"),
   );
+  // Seeded invoices go to the first user, if any; otherwise they stay unowned until user:create claims them.
+  const owner = await prisma.user.findFirst({ orderBy: { id: "asc" }, select: { id: true } });
   await prisma.invoice.deleteMany();
   // Reset autoincrement so ids (and numbers) start at 1 again.
   await prisma.$executeRaw`DELETE FROM sqlite_sequence WHERE name IN ('Invoice', 'InvoiceItem')`;
@@ -44,6 +46,7 @@ async function main() {
     await prisma.invoice.create({
       data: {
         ...inv,
+        ownerId: owner?.id ?? null,
         number: `FAC-${String(i + 1).padStart(4, "0")}`,
         issueDate: new Date(inv.issueDate),
         dueDate: new Date(inv.dueDate),
@@ -51,7 +54,7 @@ async function main() {
       },
     });
   }
-  console.log(`Seeded ${invoices.length} invoices`);
+  console.log(`Seeded ${invoices.length} invoices${owner ? ` for user ${owner.id}` : " (no users yet: run npm run user:create)"}`);
 }
 
 main().finally(() => prisma.$disconnect());

@@ -11,6 +11,8 @@ import type {
 
 export class FakeInvoiceRepository implements InvoiceRepository {
   readonly rows = new Map<number, Invoice>();
+  /** invoice id -> owner id (the domain Invoice does not carry it). */
+  readonly owners = new Map<number, number>();
   private nextId = 1;
   private nextItemId = 1;
 
@@ -32,9 +34,13 @@ export class FakeInvoiceRepository implements InvoiceRepository {
     };
   }
 
-  async findAll({ filters, pagination }: FindAllInvoicesOptions = {}): Promise<PaginatedInvoices> {
+  private owned(ownerId: number): Invoice[] {
+    return [...this.rows.values()].filter((i) => this.owners.get(i.id) === ownerId);
+  }
+
+  async findAll(ownerId: number, { filters, pagination }: FindAllInvoicesOptions = {}): Promise<PaginatedInvoices> {
     const term = filters?.search?.trim().toLowerCase();
-    const all = [...this.rows.values()]
+    const all = this.owned(ownerId)
       .filter((i) => !filters?.status || i.status === filters.status)
       .filter(
         (i) => !term || i.clientName.toLowerCase().includes(term) || i.number.toLowerCase().includes(term),
@@ -49,9 +55,9 @@ export class FakeInvoiceRepository implements InvoiceRepository {
   /** Calls received by findStatsRows, to assert the service bounds its queries. */
   readonly statsCalls: StatsRowsOptions[] = [];
 
-  async findStatsRows(options: StatsRowsOptions = {}): Promise<InvoiceStatsRow[]> {
+  async findStatsRows(ownerId: number, options: StatsRowsOptions = {}): Promise<InvoiceStatsRow[]> {
     this.statsCalls.push(options);
-    return [...this.rows.values()]
+    return this.owned(ownerId)
       .filter((i) => !options.issuedFrom || i.issueDate >= options.issuedFrom)
       .map(({ status, taxRate, issueDate, dueDate, items }) => ({
         status,
@@ -62,40 +68,48 @@ export class FakeInvoiceRepository implements InvoiceRepository {
       }));
   }
 
-  async findById(id: number) {
-    return this.rows.get(id) ?? null;
+  async findById(ownerId: number, id: number) {
+    return this.owners.get(id) === ownerId ? (this.rows.get(id) ?? null) : null;
   }
 
-  async create(input: CreateInvoiceInput) {
+  async create(ownerId: number, input: CreateInvoiceInput) {
     const invoice = this.build(this.nextId++, input.number, input);
     this.rows.set(invoice.id, invoice);
+    this.owners.set(invoice.id, ownerId);
     return invoice;
   }
 
-  async createWithNumber(input: Omit<CreateInvoiceInput, "number">, buildNumber: (id: number) => string) {
+  async createWithNumber(
+    ownerId: number,
+    input: Omit<CreateInvoiceInput, "number">,
+    buildNumber: (id: number) => string,
+  ) {
     const id = this.nextId++;
     const invoice = this.build(id, buildNumber(id), input);
     this.rows.set(id, invoice);
+    this.owners.set(id, ownerId);
     return invoice;
   }
 
-  async update(id: number, input: InvoiceData) {
-    const current = this.rows.get(id);
+  async update(ownerId: number, id: number, input: InvoiceData) {
+    const current = await this.findById(ownerId, id);
     if (!current) return null;
     const invoice = this.build(id, current.number, input, current.createdAt);
     this.rows.set(id, invoice);
     return invoice;
   }
 
-  async updateStatus(id: number, status: Invoice["status"]) {
-    const current = this.rows.get(id);
+  async updateStatus(ownerId: number, id: number, status: Invoice["status"]) {
+    const current = await this.findById(ownerId, id);
     if (!current) return null;
     const invoice = { ...current, status, updatedAt: new Date() };
     this.rows.set(id, invoice);
     return invoice;
   }
 
-  async delete(id: number) {
+  async delete(ownerId: number, id: number) {
+    if (this.owners.get(id) !== ownerId) return false;
+    this.owners.delete(id);
     return this.rows.delete(id);
   }
 }

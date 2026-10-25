@@ -1,4 +1,3 @@
 import { container } from "@/container";
-import { withErrorHandler } from "@/middleware/withErrorHandler";
 
-export const GET = withErrorHandler((request: Request) => container.statsController.monthly(request));
+export const GET = container.withAuth((user, request: Request) => container.statsController.monthly(user.id, request));

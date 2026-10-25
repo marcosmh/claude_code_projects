@@ -2,6 +2,8 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test as base, type APIRequestContext, type Page } from "@playwright/test";
 
 export const API = "http://localhost:4100/api/v1";
+/** Cuenta de pruebas que crea playwright.config.ts en la base e2e.db (desechable). */
+export const E2E_USER = { email: "e2e@example.com", password: "e2e-password-123" };
 
 export interface SeedInvoice {
   id: number;
@@ -36,10 +38,21 @@ async function resetData(request: APIRequestContext) {
   }
 }
 
-export const test = base.extend<{ api: APIRequestContext }>({
-  api: async ({ request }, provide) => {
-    await resetData(request);
-    await provide(request);
+export const test = base.extend<{ api: APIRequestContext; session: void }>({
+  // Cada test arranca con la sesión iniciada: la cookie se guarda en el contexto del navegador,
+  // y `context.request` la comparte con las páginas y con las llamadas directas a la API.
+  session: [
+    async ({ context }, provide) => {
+      const res = await context.request.post(`${API}/auth/login`, { data: E2E_USER });
+      expect(res.status()).toBe(200);
+      await provide();
+    },
+    { auto: true },
+  ],
+  api: async ({ context, session }, provide) => {
+    void session;
+    await resetData(context.request);
+    await provide(context.request);
   },
 });
 

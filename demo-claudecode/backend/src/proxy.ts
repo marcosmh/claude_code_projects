@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { corsHeaders } from "./utils/cors";
+import { allowedOrigins, corsHeaders } from "./utils/cors";
 import { failure } from "./utils/http";
 import { LIMITS, RateLimiter, classify, clientKey } from "./utils/rateLimit";
 
@@ -13,6 +13,13 @@ export function proxy(request: NextRequest) {
 
   if (request.method === "OPTIONS") {
     return new NextResponse(null, { status: 204, headers });
+  }
+
+  // Cookies are sent automatically, so a write from a foreign origin must never get through.
+  // Requests without Origin (curl, server-to-server) carry no browser cookie jar and are unaffected.
+  const origin = request.headers.get("origin");
+  if (origin && request.method !== "GET" && request.method !== "HEAD" && !allowedOrigins().includes(origin)) {
+    return failure(403, "FORBIDDEN", "Origen no permitido");
   }
 
   if (rateLimitDisabled) {

@@ -35,12 +35,49 @@ describe("proxy: CORS", () => {
     expect(none.headers.get("access-control-allow-origin")).toBeNull();
   });
 
+  it("permite credenciales (cookie de sesión) solo a orígenes permitidos", () => {
+    const ok = proxy(req("OPTIONS", "/api/v1/invoices", { origin: ORIGIN }));
+    expect(ok.headers.get("access-control-allow-credentials")).toBe("true");
+    const evil = proxy(req("OPTIONS", "/api/v1/invoices", { origin: "http://evil.com" }));
+    expect(evil.headers.get("access-control-allow-credentials")).toBeNull();
+  });
+
   it("solo intercepta /api/*", () => {
     expect(config.matcher).toBe("/api/:path*");
   });
 });
 
+describe("proxy: escrituras desde otro origen (CSRF)", () => {
+  it.each(["POST", "PUT", "PATCH", "DELETE"])("%s con Origin ajeno -> 403 FORBIDDEN", async (method) => {
+    const res = proxy(req(method, "/api/v1/invoices/1", { origin: "http://evil.com", "x-forwarded-for": freshIp() }));
+    expect(res.status).toBe(403);
+    expect((await res.json()).error.code).toBe("FORBIDDEN");
+    expect(res.headers.get("access-control-allow-origin")).toBeNull();
+  });
+
+  it("el login también está protegido", () => {
+    const res = proxy(req("POST", "/api/v1/auth/login", { origin: "http://evil.com", "x-forwarded-for": freshIp() }));
+    expect(res.status).toBe(403);
+  });
+
+  it("escrituras con el Origin permitido o sin Origin (curl) pasan; las lecturas no se bloquean", () => {
+    const ip = freshIp();
+    expect(proxy(req("POST", "/api/v1/invoices", { origin: ORIGIN, "x-forwarded-for": ip })).status).toBe(200);
+    expect(proxy(req("POST", "/api/v1/invoices", { "x-forwarded-for": ip })).status).toBe(200);
+    expect(proxy(req("GET", "/api/v1/invoices", { origin: "http://evil.com", "x-forwarded-for": ip })).status).toBe(200);
+  });
+});
+
 describe("proxy: rate limiting", () => {
+  it("el login tiene su propio límite estricto, independiente de las demás escrituras", async () => {
+    const h = { origin: ORIGIN, "x-forwarded-for": freshIp() };
+    for (let i = 0; i < LIMITS.auth; i++) expect(proxy(req("POST", "/api/v1/auth/login", h)).status).toBe(200);
+    const blocked = proxy(req("POST", "/api/v1/auth/login", h));
+    expect(blocked.status).toBe(429);
+    expect((await blocked.json()).error.code).toBe("RATE_LIMITED");
+    expect(proxy(req("POST", "/api/v1/invoices", h)).status).toBe(200);
+  });
+
   it("el PDF se bloquea tras su límite con 429, Retry-After y CORS", async () => {
     const headers = { origin: ORIGIN, "x-forwarded-for": freshIp() };
     for (let i = 0; i < LIMITS.pdf; i++) {

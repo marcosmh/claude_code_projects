@@ -16,8 +16,8 @@ export class StatsService {
     private readonly now: () => Date = () => new Date(),
   ) {}
 
-  async summary(): Promise<StatsSummaryResponse> {
-    const invoices = await this.repository.findStatsRows();
+  async summary(ownerId: number): Promise<StatsSummaryResponse> {
+    const invoices = await this.repository.findStatsRows(ownerId);
     const now = this.now();
     const byStatus = Object.fromEntries(
       STATUSES.map((s) => [s, { count: 0, totalCents: 0 }]),
@@ -43,7 +43,7 @@ export class StatsService {
   }
 
   /** Totals per issue month and status for the last `months` months (current month included). */
-  async monthly(months: number): Promise<MonthBucketResponse[]> {
+  async monthly(ownerId: number, months: number): Promise<MonthBucketResponse[]> {
     const now = this.now();
     const short = new Intl.DateTimeFormat("es-ES", { month: "short", timeZone: "UTC" });
     const long = new Intl.DateTimeFormat("es-ES", {
@@ -65,7 +65,7 @@ export class StatsService {
 
     // Only load what can land in a bucket: invoices issued since the first month.
     const issuedFrom = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (months - 1), 1));
-    const invoices = await this.repository.findStatsRows({ issuedFrom });
+    const invoices = await this.repository.findStatsRows(ownerId, { issuedFrom });
 
     for (const invoice of invoices) {
       if (!isInvoiceStatus(invoice.status)) continue;

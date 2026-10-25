@@ -10,8 +10,8 @@ export interface InvoicePdf {
 export class InvoicePdfService {
   constructor(private readonly invoices: Pick<InvoiceService, "getById">) {}
 
-  async generate(id: number): Promise<InvoicePdf> {
-    const invoice = await this.invoices.getById(id);
+  async generate(ownerId: number, id: number): Promise<InvoicePdf> {
+    const invoice = await this.invoices.getById(ownerId, id);
     const buffer = await renderToBuffer(InvoiceDocument({ invoice }));
     return { filename: `${invoice.number}.pdf`, content: new Uint8Array(buffer) };
   }

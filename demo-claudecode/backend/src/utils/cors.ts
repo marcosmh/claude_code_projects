@@ -14,6 +14,8 @@ export function corsHeaders(origin: string | null, allowed = allowedOrigins()): 
     "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    // The session lives in an httpOnly cookie, so the browser must be allowed to send and accept it.
+    "Access-Control-Allow-Credentials": "true",
     "Access-Control-Expose-Headers":
       "Content-Disposition, Location, Retry-After, RateLimit-Limit, RateLimit-Remaining, X-Request-Id",
     "Access-Control-Max-Age": "86400",

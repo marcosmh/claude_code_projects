@@ -19,6 +19,7 @@ cd backend
 cp .env.example .env     # DATABASE_URL (default file:./prisma/dev.db), FRONTEND_ORIGIN (default http://localhost:5173)
 npm install
 npm run db:migrate       # apply migrations
+npm run user:create -- you@example.com   # no public sign-up; prompts for the password (min 12 chars). The first user inherits invoices without an owner
 npm run db:seed -- --force   # WARNING: deletes ALL invoices first; refuses without --force or with NODE_ENV=production
 npm run dev              # http://localhost:4000
 npm test                 # vitest; temp SQLite + fake repository, never prisma/dev.db
@@ -26,7 +27,9 @@ npm run typecheck
 npm run build
 ```
 
-Flow: `src/app/api/v1/**/route.ts` (routing only, wrapped in `withErrorHandler`) -> `src/controllers` (parse request, build HTTP response) -> `src/services` (all business logic, depends on the `InvoiceRepository` interface) -> `src/repositories` (the only Prisma access). Wiring is in `src/container.ts`. Also: `src/validators` (Zod), `src/dto` (contracts + mapper), `src/domain` (totals, overdue, invoice number), `src/proxy.ts` (CORS; in Next 16 `middleware` is called `proxy`).
+Flow: `src/app/api/v1/**/route.ts` (routing only, wrapped in `withErrorHandler`) -> `src/controllers` (parse request, build HTTP response) -> `src/services` (all business logic, depends on the `InvoiceRepository` interface) -> `src/repositories` (the only Prisma access). Wiring is in `src/container.ts`. Also: `src/validators` (Zod), `src/dto` (contracts + mapper), `src/domain` (totals, overdue, invoice number), `src/proxy.ts` (CORS, rate limiting, cross-origin write guard; in Next 16 `middleware` is called `proxy`).
+
+Auth: session cookie (httpOnly, opaque token, only its SHA-256 stored in `Session`), scrypt passwords, `withAuth` wraps every invoice/stats route and passes the user id down. **Every `InvoiceRepository` method takes `ownerId` first** and filters by it; another user's invoice is a 404, never a 403. Never add a repository query without the owner filter.
 
 `backend/AGENTS.md` applies: this Next.js (16.x) differs from older versions; read `node_modules/next/dist/docs/` before using an API.
 
@@ -45,7 +48,7 @@ npm test                 # vitest + Testing Library (jsdom)
 npm run test:e2e         # Playwright + axe; starts its own backend (4100, e2e.db) and frontend (5174)
 ```
 
-Mandatory flow: components -> hooks -> services -> REST API. TanStack Query holds server data; Zustand only holds global UI state (`uiStore`, `toastStore`); filters live in the URL. Business rules (totals, `isOverdue`, invoice number, dashboard aggregates) come from the backend; the only exception is the informative `utils/totalsPreview.ts`. See `frontend/README.md` for details.
+Mandatory flow: components -> hooks -> services -> REST API. Session: `useSession` (TanStack Query, key `queryKeys.session`), `RequireAuth` protects all routes except `/login`, `apiClient` sends `credentials: "include"` and calls the handler set in `main.tsx` on any 401 outside `/auth/*` (clears cached data and sends the user to `/login`). TanStack Query holds server data; Zustand only holds global UI state (`uiStore`, `toastStore`); filters live in the URL. Business rules (totals, `isOverdue`, invoice number, dashboard aggregates) come from the backend; the only exception is the informative `utils/totalsPreview.ts`. See `frontend/README.md` for details.
 
 ### Domain rules to preserve
 
@@ -63,7 +66,7 @@ The root `tsconfig.json` excludes `backend/` and `frontend/` so root tooling doe
 
 ## Audit
 
-A read-only audit (quality, testing, architecture, security) was done on 2026-10-24. Since then: backend hardening (limits, headers, rate limiting), unit tests with coverage ratchets, CI (`.github/workflows/ci.yml`) and Playwright + axe E2E. Known open gaps: **no authentication or authorization** (anyone who reaches port 4000 can read and change every invoice) and the `isOverdue` rule for invoices due today. Re-verify findings against `backend/` and `frontend/` before acting on them.
+A read-only audit (quality, testing, architecture, security) was done on 2026-10-24. Since then: backend hardening (limits, headers, rate limiting), unit tests with coverage ratchets, CI (`.github/workflows/ci.yml`) and Playwright + axe E2E. Authentication and per-user authorization were added afterwards (see Backend). Known open gaps: no lockout per account after failed logins, no password change or roles, and the `isOverdue` rule for invoices due today. Re-verify findings against `backend/` and `frontend/` before acting on them.
 
 ## Available skills
 

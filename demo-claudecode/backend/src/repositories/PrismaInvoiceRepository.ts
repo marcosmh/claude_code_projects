@@ -32,10 +32,11 @@ function scalarData(input: InvoiceData) {
   };
 }
 
-function buildWhere(options: FindAllInvoicesOptions): Prisma.InvoiceWhereInput {
+function buildWhere(ownerId: number, options: FindAllInvoicesOptions): Prisma.InvoiceWhereInput {
   const { status, search } = options.filters ?? {};
   const term = search?.trim();
   return {
+    ownerId,
     ...(status ? { status } : {}),
     ...(term
       ? { OR: [{ clientName: { contains: term } }, { number: { contains: term } }] }
@@ -46,8 +47,8 @@ function buildWhere(options: FindAllInvoicesOptions): Prisma.InvoiceWhereInput {
 export class PrismaInvoiceRepository implements InvoiceRepository {
   constructor(private readonly db: PrismaClient) {}
 
-  async findAll(options: FindAllInvoicesOptions = {}): Promise<PaginatedInvoices> {
-    const where = buildWhere(options);
+  async findAll(ownerId: number, options: FindAllInvoicesOptions = {}): Promise<PaginatedInvoices> {
+    const where = buildWhere(ownerId, options);
     const { pagination } = options;
     const [rows, total] = await this.db.$transaction([
       this.db.invoice.findMany({
@@ -63,9 +64,9 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
     return { data: rows.map(toDomain), total };
   }
 
-  async findStatsRows({ issuedFrom }: StatsRowsOptions = {}): Promise<InvoiceStatsRow[]> {
+  async findStatsRows(ownerId: number, { issuedFrom }: StatsRowsOptions = {}): Promise<InvoiceStatsRow[]> {
     return this.db.invoice.findMany({
-      where: issuedFrom ? { issueDate: { gte: issuedFrom } } : undefined,
+      where: { ownerId, ...(issuedFrom ? { issueDate: { gte: issuedFrom } } : {}) },
       select: {
         status: true,
         taxRate: true,
@@ -76,20 +77,21 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
     });
   }
 
-  async findById(id: number): Promise<Invoice | null> {
-    const row = await this.db.invoice.findUnique({ where: { id }, include });
+  async findById(ownerId: number, id: number): Promise<Invoice | null> {
+    const row = await this.db.invoice.findFirst({ where: { id, ownerId }, include });
     return row ? toDomain(row) : null;
   }
 
-  async create(input: CreateInvoiceInput): Promise<Invoice> {
+  async create(ownerId: number, input: CreateInvoiceInput): Promise<Invoice> {
     const row = await this.db.invoice.create({
-      data: { ...scalarData(input), number: input.number, items: { create: input.items } },
+      data: { ...scalarData(input), ownerId, number: input.number, items: { create: input.items } },
       include,
     });
     return toDomain(row);
   }
 
   async createWithNumber(
+    ownerId: number,
     input: Omit<CreateInvoiceInput, "number">,
     buildNumber: (id: number) => string,
   ): Promise<Invoice> {
@@ -97,6 +99,7 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
       const created = await tx.invoice.create({
         data: {
           ...scalarData(input),
+          ownerId,
           number: `tmp-${crypto.randomUUID()}`,
           items: { create: input.items },
         },
@@ -110,9 +113,9 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
     return toDomain(row);
   }
 
-  async update(id: number, input: UpdateInvoiceInput): Promise<Invoice | null> {
+  async update(ownerId: number, id: number, input: UpdateInvoiceInput): Promise<Invoice | null> {
     return this.db.$transaction(async (tx) => {
-      const exists = await tx.invoice.findUnique({ where: { id }, select: { id: true } });
+      const exists = await tx.invoice.findFirst({ where: { id, ownerId }, select: { id: true } });
       if (!exists) return null;
       const row = await tx.invoice.update({
         where: { id },
@@ -126,14 +129,14 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
     });
   }
 
-  async updateStatus(id: number, status: InvoiceStatus): Promise<Invoice | null> {
+  async updateStatus(ownerId: number, id: number, status: InvoiceStatus): Promise<Invoice | null> {
     // updateMany + findUnique instead of update(): a missing row is a normal outcome, not a P2025.
-    const { count } = await this.db.invoice.updateMany({ where: { id }, data: { status } });
-    return count > 0 ? this.findById(id) : null;
+    const { count } = await this.db.invoice.updateMany({ where: { id, ownerId }, data: { status } });
+    return count > 0 ? this.findById(ownerId, id) : null;
   }
 
-  async delete(id: number): Promise<boolean> {
-    const { count } = await this.db.invoice.deleteMany({ where: { id } });
+  async delete(ownerId: number, id: number): Promise<boolean> {
+    const { count } = await this.db.invoice.deleteMany({ where: { id, ownerId } });
     return count > 0;
   }
 }

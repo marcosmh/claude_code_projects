@@ -2,6 +2,24 @@
 
 Base URL por defecto: `http://localhost:4000/api/v1`. Todas las respuestas JSON usan `Content-Type: application/json` (salvo PDF y 204).
 
+## Autenticación
+
+Todos los endpoints, salvo `POST /auth/login` y `POST /auth/logout`, exigen sesión: la cookie `session` (`HttpOnly`, `SameSite=Lax`, 7 días) que fija el login. Desde un navegador hay que enviar las peticiones con `credentials: "include"`. Sin cookie válida (o caducada, o revocada) la respuesta es **401 `UNAUTHENTICATED`**.
+
+Cada factura pertenece a un usuario y solo ese usuario puede verla, modificarla, descargarla o borrarla, y solo sus facturas entran en las estadísticas. Pedir la factura de otro usuario devuelve **404 `NOT_FOUND`**, indistinguible de un id inexistente. No hay registro público: las cuentas las crea el administrador con `npm run user:create`.
+
+### POST /auth/login
+
+Cuerpo `{ "email": "ana@example.com", "password": "..." }` (el email se normaliza a minúsculas). 200 `{ "data": { "id": 1, "email": "ana@example.com" } }` y cabecera `Set-Cookie: session=...; Max-Age=604800; Path=/; HttpOnly; SameSite=Lax`. 401 con el mismo mensaje (`Email o contraseña incorrectos`) para email desconocido y contraseña errónea. 400 si el cuerpo es inválido. Límite: 10 intentos por minuto y por IP (429).
+
+### POST /auth/logout
+
+204 y cookie vaciada (`Max-Age=0`); revoca la sesión en el servidor. Es idempotente y no exige sesión.
+
+### GET /auth/me
+
+200 `{ "data": { "id": 1, "email": "ana@example.com" } }` con la sesión actual, o 401.
+
 ## Convenciones
 
 - **Dinero**: enteros en centavos (`unitPriceCents`, `subtotalCents`, ...). El backend nunca devuelve decimales de dinero.
@@ -10,7 +28,7 @@ Base URL por defecto: `http://localhost:4000/api/v1`. Todas las respuestas JSON 
 - **Totales**: siempre calculados por el backend por factura: `subtotalCents`, `taxCents`, `totalCents`; cada línea trae `amountCents` (`round(quantity * unitPriceCents)`). `taxCents = round(subtotalCents * taxRate / 100)`.
 - **Número**: `FAC-` + id con 4 dígitos (`FAC-0007`), asignado por el servidor; no se envía ni se puede modificar. No se reutiliza tras borrar.
 - **IDs de líneas** (`items[].id`): PUT reemplaza las líneas, por lo que sus ids cambian. PATCH status solo modifica el estado y conserva los ids. No usarlos como clave estable entre ediciones con PUT.
-- **CORS**: se permite el origen definido en `FRONTEND_ORIGIN` (lista separada por comas; por defecto `http://localhost:5173`). Métodos: GET, POST, PUT, PATCH, DELETE, OPTIONS. Cabeceras: `Content-Type`, `Authorization`. Expuestas: `Content-Disposition`, `Location`, `Retry-After`, `RateLimit-Limit`, `RateLimit-Remaining`, `X-Request-Id`. Los preflight OPTIONS responden 204.
+- **CORS**: se permite el origen definido en `FRONTEND_ORIGIN` (lista separada por comas; por defecto `http://localhost:5173`), con `Access-Control-Allow-Credentials: true` para la cookie de sesión. Las escrituras (POST, PUT, PATCH, DELETE) con una cabecera `Origin` que no esté en la lista reciben 403 `FORBIDDEN`; las peticiones sin `Origin` (curl) no se ven afectadas. Métodos: GET, POST, PUT, PATCH, DELETE, OPTIONS. Cabeceras: `Content-Type`, `Authorization`. Expuestas: `Content-Disposition`, `Location`, `Retry-After`, `RateLimit-Limit`, `RateLimit-Remaining`, `X-Request-Id`. Los preflight OPTIONS responden 204.
 - Las peticiones con cuerpo deben enviar `Content-Type: application/json` (admite `; charset=...`). Cualquier otro valor, o su ausencia, devuelve 400 `VALIDATION_ERROR`.
 - Límites de entrada (400 si se superan): `clientName` 200 caracteres, `clientEmail` 254, `clientAddress` 500, `notes` 2000, `items[].description` 500, máximo 100 líneas, `quantity` ≤ 100000, `unitPriceCents` ≤ 100000000, `page` ≤ 100000.
 - Las respuestas de `/api/*` incluyen `X-Content-Type-Options: nosniff`, `Cache-Control: no-store`, `Referrer-Policy: no-referrer` y `Content-Security-Policy: frame-ancestors 'none'`.
@@ -42,7 +60,9 @@ Error:
 | HTTP | `code` | Cuándo |
 | --- | --- | --- |
 | 400 | `VALIDATION_ERROR` | JSON inválido, tipos/formatos incorrectos (zod), id no numérico, query params inválidos |
-| 404 | `NOT_FOUND` | La factura no existe |
+| 401 | `UNAUTHENTICATED` | Falta la sesión, es inválida o caducó; también credenciales erróneas en el login |
+| 403 | `FORBIDDEN` | Escritura desde un origen no permitido (`Origin` fuera de `FRONTEND_ORIGIN`) |
+| 404 | `NOT_FOUND` | La factura no existe o pertenece a otro usuario |
 | 409 | `CONFLICT` | Conflicto de unicidad detectado en la base de datos (Prisma P2002) |
 | 429 | `RATE_LIMITED` | Se superó el límite de peticiones (ver abajo); incluye `Retry-After` |
 | 422 | `UNPROCESSABLE_ENTITY` | Petición bien formada que incumple reglas de negocio |
@@ -50,7 +70,7 @@ Error:
 
 Los `message` están en español, listos para mostrar al usuario.
 
-**Límite de peticiones** (por IP y minuto, en memoria de una sola instancia): 120 lecturas, 30 escrituras (POST/PUT/PATCH/DELETE) y 10 PDF. Las respuestas incluyen `RateLimit-Limit` y `RateLimit-Remaining`; al superarlo, 429 con `Retry-After` en segundos. La IP sale de `X-Forwarded-For` (o `X-Real-IP`), por lo que solo es fiable detrás de un proxy inverso que la fije. Los preflight OPTIONS no cuentan.
+**Límite de peticiones** (por IP y minuto, en memoria de una sola instancia): 120 lecturas, 30 escrituras (POST/PUT/PATCH/DELETE), 10 PDF y 10 intentos de login. Las respuestas incluyen `RateLimit-Limit` y `RateLimit-Remaining`; al superarlo, 429 con `Retry-After` en segundos. La IP sale de `X-Forwarded-For` (o `X-Real-IP`), por lo que solo es fiable detrás de un proxy inverso que la fije. Los preflight OPTIONS no cuentan.
 
 Reglas de negocio (422): `dueDate >= issueDate`; al menos una línea; `quantity > 0` en cada línea.
 

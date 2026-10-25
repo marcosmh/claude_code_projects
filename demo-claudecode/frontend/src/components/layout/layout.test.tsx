@@ -1,13 +1,24 @@
-import { render, screen } from "@testing-library/react";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { render as rtlRender, screen } from "@testing-library/react";
+import type { ReactElement } from "react";
 import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { beforeEach, describe, expect, it } from "vitest";
+import { queryKeys } from "@/hooks/queryKeys";
+import { createQueryClient } from "@/queryClient";
 import { useToastStore } from "@/store/toastStore";
 import { useUiStore } from "@/store/uiStore";
 import { AppShell } from "./AppShell";
 import { Sidebar } from "./Sidebar";
 import { ThemeToggle } from "./ThemeToggle";
 import { TopBar } from "./TopBar";
+
+// TopBar y AppShell muestran el menú de usuario: necesitan un cliente de consultas con sesión.
+function render(ui: ReactElement) {
+  const client = createQueryClient();
+  client.setQueryData(queryKeys.session, { id: 1, email: "ana@example.com" });
+  return rtlRender(<QueryClientProvider client={client}>{ui}</QueryClientProvider>);
+}
 
 beforeEach(() => {
   document.documentElement.classList.remove("dark", "menu-collapsed");
