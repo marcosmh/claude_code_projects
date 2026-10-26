@@ -30,7 +30,7 @@ Requiere sesión. Cuerpo `{ "currentPassword": "...", "newPassword": "..." }` (l
 
 - **Dinero**: enteros en centavos (`unitPriceCents`, `subtotalCents`, ...). El backend nunca devuelve decimales de dinero.
 - **Fechas**: ISO 8601. En peticiones se acepta `"2026-10-01"` o `"2026-10-01T00:00:00Z"` (también con offset). En respuestas siempre `"2026-10-01T00:00:00.000Z"` (UTC). Para mostrar solo la fecha, tomar los 10 primeros caracteres.
-- **Estados** (`status`): `DRAFT` | `SENT` | `PAID`. "Vencida" NO es un estado: es `isOverdue: true` (estado `SENT` y `dueDate` anterior a ahora).
+- **Estados** (`status`): `DRAFT` | `SENT` | `PAID`. "Vencida" NO es un estado: es `isOverdue: true` (estado `SENT` y `dueDate` ya pasado: el día de vencimiento sigue en plazo y es vencida desde el día siguiente, 00:00 UTC).
 - **Totales**: siempre calculados por el backend por factura: `subtotalCents`, `taxCents`, `totalCents`; cada línea trae `amountCents` (`round(quantity * unitPriceCents)`). `taxCents = round(subtotalCents * taxRate / 100)`.
 - **Número**: `FAC-` + id con 4 dígitos (`FAC-0007`), asignado por el servidor; no se envía ni se puede modificar. No se reutiliza tras borrar.
 - **IDs de líneas** (`items[].id`): PUT reemplaza las líneas, por lo que sus ids cambian. PATCH status solo modifica el estado y conserva los ids. No usarlos como clave estable entre ediciones con PUT.

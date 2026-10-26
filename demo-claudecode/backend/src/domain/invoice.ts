@@ -44,9 +44,15 @@ export function calcTotals(items: LineItem[], taxRate: number): Totals {
   return { subtotalCents, taxCents, totalCents: subtotalCents + taxCents };
 }
 
-/** "Overdue" is not a status: it is a SENT invoice whose due date has passed. */
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * "Overdue" is not a status: it is a SENT invoice whose due date has passed. Due dates are calendar
+ * days stored at 00:00 UTC, so the invoice is still on time during the whole due day and becomes
+ * overdue from the next day (00:00 UTC) on.
+ */
 export function isOverdue(invoice: { status: InvoiceStatus; dueDate: Date }, now: Date): boolean {
-  return invoice.status === "SENT" && invoice.dueDate < now;
+  return invoice.status === "SENT" && invoice.dueDate.getTime() + DAY_MS <= now.getTime();
 }
 
 export function buildInvoiceNumber(id: number): string {

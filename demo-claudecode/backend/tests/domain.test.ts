@@ -24,6 +24,14 @@ describe("domain/invoice", () => {
     expect(isOverdue({ status: "DRAFT", dueDate: past }, now)).toBe(false);
     expect(isOverdue({ status: "SENT", dueDate: new Date("2026-10-20") }, now)).toBe(false);
   });
+
+  it("isOverdue: el día de vencimiento aún no está vencida, desde el día siguiente sí", () => {
+    const dueDate = new Date("2026-10-10");
+    const sent = { status: "SENT", dueDate } as const;
+    expect(isOverdue(sent, new Date("2026-10-10T00:00:00Z"))).toBe(false);
+    expect(isOverdue(sent, new Date("2026-10-10T23:59:59.999Z"))).toBe(false);
+    expect(isOverdue(sent, new Date("2026-10-11T00:00:00Z"))).toBe(true);
+  });
 });
 
 describe("domain/invoice: redondeo en el límite", () => {
