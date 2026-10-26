@@ -8,17 +8,22 @@ datasource db {
 }
 
 model User {
-  id           Int       @id @default(autoincrement())
-  email        String    @unique
+  id            Int            @id @default(autoincrement())
+  email         String         @unique
   // scrypt$N$r$p$salt$hash (see src/utils/password.ts)
-  passwordHash String
+  passwordHash  String
   // Consecutive failed logins; reset on success and when the account gets locked
-  failedLogins Int       @default(0)
+  failedLogins  Int            @default(0)
   // While in the future the account rejects every login, even with the right password
-  lockedUntil  DateTime?
-  createdAt    DateTime  @default(now())
-  sessions     Session[]
-  invoices     Invoice[]
+  lockedUntil   DateTime?
+  // USER | ADMIN (validated in the service layer, not a Prisma enum)
+  role          String         @default("USER")
+  // Embedded in access tokens (`ver`); bumping it invalidates every live access token of the user
+  tokenVersion  Int            @default(0)
+  createdAt     DateTime       @default(now())
+  sessions      Session[]
+  refreshTokens RefreshToken[]
+  invoices      Invoice[]
 }
 
 model Session {
@@ -31,6 +36,26 @@ model Session {
   createdAt DateTime @default(now())
 
   @@index([userId])
+  @@index([expiresAt])
+}
+
+model RefreshToken {
+  id         Int       @id @default(autoincrement())
+  // SHA-256 of the refresh token's jti; the raw value is never stored
+  tokenHash  String    @unique
+  // Shared by every token born from the same login; reuse of a rotated token revokes the whole family
+  family     String
+  userId     Int
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt  DateTime
+  // Set when the token is rotated, logged out or revoked
+  revokedAt  DateTime?
+  // Id of the RefreshToken row that replaced this one on rotation (plain column, no FK: rows may be purged independently)
+  replacedBy Int?
+  createdAt  DateTime  @default(now())
+
+  @@index([userId])
+  @@index([family])
   @@index([expiresAt])
 }
 

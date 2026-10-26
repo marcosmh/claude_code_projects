@@ -27,6 +27,7 @@ export default defineConfig({
         FRONTEND_ORIGIN: WEB_URL,
         NEXT_DIST_DIR: ".next-e2e",
         RATE_LIMIT_DISABLED: "1",
+        JWT_SECRET: "e2e-only-secret-not-for-production-0123456789", // desechable: solo firma tokens del e2e.db
         USER_PASSWORD: "e2e-password-123", // cuenta desechable de e2e.db; debe coincidir con E2E_USER
       },
     },

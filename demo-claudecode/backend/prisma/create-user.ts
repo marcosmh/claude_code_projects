@@ -7,7 +7,7 @@ import { AuthService } from "../src/services/AuthService";
 import { AppError } from "../src/utils/errors";
 import { newUserSchema } from "../src/validators/auth.validator";
 
-// Usage: npm run user:create -- ana@example.com
+// Usage: npm run user:create -- ana@example.com [--role USER|ADMIN]   (default role: USER)
 // The password is read from the USER_PASSWORD env var or typed at a hidden prompt (never an argument:
 // arguments end up in the shell history and in `ps`).
 
@@ -26,22 +26,41 @@ function askHidden(question: string): Promise<string> {
   });
 }
 
+/** Splits `<email> [--role X]` / `--role=X` in any order. */
+function parseArgs(args: string[]): { email?: string; role?: string } {
+  let email: string | undefined;
+  let role: string | undefined;
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === "--role") role = args[++i];
+    else if (arg.startsWith("--role=")) role = arg.slice("--role=".length);
+    else if (!arg.startsWith("--") && email === undefined) email = arg;
+    else throw new Error(`Argumento no reconocido: ${arg}`);
+  }
+  return { email, role };
+}
+
 async function main() {
-  const email = process.argv[2];
-  if (!email) throw new Error("Usage: npm run user:create -- <email>");
+  const { email, role } = parseArgs(process.argv.slice(2));
+  if (!email) throw new Error("Usage: npm run user:create -- <email> [--role USER|ADMIN]");
   const password = process.env.USER_PASSWORD ?? (await askHidden("Contraseña (mín. 12 caracteres): "));
 
-  const input = newUserSchema.safeParse({ email, password });
+  const input = newUserSchema.safeParse({ email, password, role });
   if (!input.success) throw new Error(input.error.issues.map((i) => i.message).join("; "));
 
   const url = process.env.DATABASE_URL ?? "file:./prisma/dev.db";
   const prisma = new PrismaClient({ adapter: new PrismaBetterSqlite3({ url }) });
   try {
-    const { user, claimedInvoices } = await new AuthService(new PrismaAuthRepository(prisma)).createUser(
+    // Creating an account never signs tokens, so the JWT configuration is not needed here.
+    const noJwt = () => {
+      throw new Error("create-user no emite tokens");
+    };
+    const { user, claimedInvoices } = await new AuthService(new PrismaAuthRepository(prisma), noJwt).createUser(
       input.data.email,
       input.data.password,
+      input.data.role,
     );
-    console.log(`Usuario creado: ${user.email} (id ${user.id})`);
+    console.log(`Usuario creado: ${user.email} (id ${user.id}, rol ${user.role})`);
     if (claimedInvoices > 0) console.log(`${claimedInvoices} facturas existentes asignadas a este usuario`);
   } finally {
     await prisma.$disconnect();

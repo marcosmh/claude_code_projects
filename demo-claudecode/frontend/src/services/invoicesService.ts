@@ -1,5 +1,5 @@
 import type { Invoice, InvoiceListParams, InvoiceRequest, PageMeta, Paginated, Status } from "@/types/invoice";
-import { buildUrl, request } from "./apiClient";
+import { request, requestBlob } from "./apiClient";
 
 export const invoicesService = {
   async list(params: InvoiceListParams, signal?: AbortSignal): Promise<Paginated<Invoice>> {
@@ -33,8 +33,8 @@ export const invoicesService = {
     await request<void>(`/invoices/${id}`, { method: "DELETE" });
   },
 
-  /** URL del PDF servido por el backend; se abre en una pestaña nueva. */
-  pdfUrl(id: number): string {
-    return buildUrl(`/invoices/${id}/pdf`);
+  /** PDF de la factura. Se descarga con `Authorization` (un enlace directo no la enviaría). */
+  async pdf(id: number): Promise<Blob> {
+    return requestBlob(`/invoices/${id}/pdf`);
   },
 };

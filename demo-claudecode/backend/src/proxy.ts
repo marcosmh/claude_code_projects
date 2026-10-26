@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { allowedOrigins, corsHeaders } from "./utils/cors";
+import { allowedOrigins, corsHeaders, usesRefreshCookie } from "./utils/cors";
 import { failure } from "./utils/http";
 import { LIMITS, RateLimiter, classify, clientKey } from "./utils/rateLimit";
 
@@ -9,13 +9,14 @@ const rateLimitDisabled = process.env.RATE_LIMIT_DISABLED === "1" && process.env
 
 // Next 16 renamed `middleware` to `proxy`. Handles CORS (incl. preflight) and rate limiting for the API.
 export function proxy(request: NextRequest) {
-  const headers = corsHeaders(request.headers.get("origin"));
+  const headers = corsHeaders(request.headers.get("origin"), allowedOrigins(), usesRefreshCookie(request.nextUrl.pathname));
 
   if (request.method === "OPTIONS") {
     return new NextResponse(null, { status: 204, headers });
   }
 
-  // Cookies are sent automatically, so a write from a foreign origin must never get through.
+  // Bearer tokens are not sent by the browser on their own, but the refresh cookie is: a write from a foreign
+  // origin must never get through (defence in depth on top of SameSite=Strict).
   // Requests without Origin (curl, server-to-server) carry no browser cookie jar and are unaffected.
   const origin = request.headers.get("origin");
   if (origin && request.method !== "GET" && request.method !== "HEAD" && !allowedOrigins().includes(origin)) {

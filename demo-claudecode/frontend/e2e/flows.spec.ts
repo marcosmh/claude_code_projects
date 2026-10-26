@@ -101,8 +101,10 @@ test.describe("flujos de usuario", () => {
   test("el PDF de una factura se genera", async ({ page, api }) => {
     const { id } = await createInvoice(api);
     await page.goto(`/invoices/${id}`);
-    const href = await page.getByRole("link", { name: "Ver PDF" }).getAttribute("href");
-    const res = await api.get(href!);
+    // "Ver PDF" descarga el PDF con Authorization y lo abre en una pestaña nueva desde un blob.
+    const [popup] = await Promise.all([page.waitForEvent("popup"), page.getByRole("button", { name: "Ver PDF" }).click()]);
+    await popup.waitForURL(/^blob:/);
+    const res = await api.get(`${API}/invoices/${id}/pdf`);
     expect(res.status()).toBe(200);
     expect(res.headers()["content-type"]).toBe("application/pdf");
     expect((await res.body()).subarray(0, 4).toString()).toBe("%PDF");

@@ -1,10 +1,12 @@
-export type RouteClass = "read" | "write" | "pdf" | "auth";
+export type RouteClass = "read" | "write" | "pdf" | "auth" | "refresh";
 
 /** Requests allowed per window and client, by kind of route. */
-export const LIMITS: Record<RouteClass, number> = { read: 120, write: 30, pdf: 10, auth: 10 };
+export const LIMITS: Record<RouteClass, number> = { read: 120, write: 30, pdf: 10, auth: 10, refresh: 20 };
 export const WINDOW_MS = 60_000;
 
 export function classify(method: string, pathname: string): RouteClass {
+  // Refresh has its own bucket: a replayed or guessed refresh token must not eat the login budget, nor the other way round.
+  if (method === "POST" && pathname.endsWith("/auth/refresh")) return "refresh";
   // Login is the brute-force target: its own, stricter bucket.
   if (method === "POST" && (pathname.endsWith("/auth/login") || pathname.endsWith("/auth/password"))) return "auth";
   if (method === "GET" && pathname.endsWith("/pdf")) return "pdf";

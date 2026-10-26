@@ -29,6 +29,8 @@ export const changePasswordSchema = z.object({
     .max(AUTH_LIMITS.passwordMax, `Máximo ${AUTH_LIMITS.passwordMax} caracteres`),
 });
 
+export const roleSchema = z.enum(["USER", "ADMIN"], "El rol debe ser USER o ADMIN");
+
 /** Used when an account is created (npm run user:create). */
 export const newUserSchema = z.object({
   email,
@@ -36,4 +38,5 @@ export const newUserSchema = z.object({
     .string("La contraseña es obligatoria")
     .min(AUTH_LIMITS.passwordMin, `La contraseña debe tener al menos ${AUTH_LIMITS.passwordMin} caracteres`)
     .max(AUTH_LIMITS.passwordMax, `Máximo ${AUTH_LIMITS.passwordMax} caracteres`),
+  role: roleSchema.default("USER"),
 });

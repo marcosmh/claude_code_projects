@@ -1,10 +1,20 @@
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import type { AuthRepository } from "../repositories/AuthRepository";
-import type { AuthUser } from "../types";
+import type { AuthIdentity, AuthUser, UserRole } from "../types";
+import { consoleAudit, type AuditLogger } from "../utils/audit";
 import { ConflictError, UnauthorizedError, ValidationError } from "../utils/errors";
+import {
+  InvalidTokenError,
+  signAccessToken,
+  signRefreshToken,
+  verifyAccessToken,
+  verifyRefreshToken,
+  type AccessClaims,
+  type JwtConfig,
+  type RefreshClaims,
+} from "../utils/jwt";
 import { hashPassword, verifyPassword } from "../utils/password";
 
-export const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 /** Consecutive failures that lock an account, and for how long. */
 export const MAX_FAILED_LOGINS = 5;
 export const LOCK_MS = 15 * 60 * 1000;
@@ -12,11 +22,19 @@ export const LOCK_MS = 15 * 60 * 1000;
 // One message for every login failure (unknown email, wrong password, locked account): the response
 // must not reveal which accounts exist or which are locked. The lockout rule is stated up front instead.
 const LOGIN_FAILED = `Email o contraseña incorrectos. Tras ${MAX_FAILED_LOGINS} intentos fallidos la cuenta se bloquea ${LOCK_MS / 60_000} minutos.`;
+const NOT_SIGNED_IN = "Inicia sesión para continuar";
+const TOKEN_EXPIRED = "La sesión ha caducado, inicia sesión de nuevo";
+// Every refresh failure (bad signature, unknown, expired, reused, user gone) answers the same.
+const REFRESH_FAILED = "Sesión no válida, inicia sesión de nuevo";
 
-export interface LoginResult {
+/** What a login or a refresh hands out: the access token for the body and the refresh token for its cookie. */
+export interface SessionTokens {
+  /** Access token (JWT) for the `Authorization: Bearer` header. */
   token: string;
+  refreshToken: string;
+  /** Seconds the refresh cookie should live (the time left to the session's expiry). */
+  refreshMaxAgeSeconds: number;
   user: AuthUser;
-  expiresAt: Date;
 }
 
 export const hashToken = (token: string) => createHash("sha256").update(token).digest("hex");
@@ -25,62 +43,136 @@ export const hashToken = (token: string) => createHash("sha256").update(token).d
 let decoyHash: Promise<string> | undefined;
 const decoy = () => (decoyHash ??= hashPassword(randomBytes(16).toString("hex")));
 
+const isLocked = (user: { lockedUntil: Date | null }, now: Date) => user.lockedUntil !== null && user.lockedUntil > now;
+const toAuthUser = ({ id, email, role }: AuthUser): AuthUser => ({ id, email, role });
+
 export class AuthService {
   constructor(
     private readonly repository: AuthRepository,
+    /** A getter so the configuration is validated on first use, not when the module is imported. */
+    private readonly config: () => JwtConfig,
     private readonly now: () => Date = () => new Date(),
-    private readonly newToken: () => string = () => randomBytes(32).toString("base64url"),
+    private readonly newId: () => string = randomUUID,
+    private readonly audit: AuditLogger = consoleAudit,
   ) {}
 
-  async login(email: string, password: string): Promise<LoginResult> {
+  async login(email: string, password: string): Promise<SessionTokens> {
     const record = await this.repository.findUserByEmail(email);
     // Always verify (against a decoy when the email is unknown) so every failure costs the same.
     const valid = await verifyPassword(password, record?.passwordHash ?? (await decoy()));
     const now = this.now();
-    if (!record) throw new UnauthorizedError(LOGIN_FAILED);
+    if (!record) {
+      this.audit("login_failed", { reason: "unknown_account" });
+      throw new UnauthorizedError(LOGIN_FAILED);
+    }
     // A locked account rejects even the right password and does not count the attempt.
-    if (this.isLocked(record, now)) throw new UnauthorizedError(LOGIN_FAILED);
+    if (isLocked(record, now)) {
+      this.audit("login_locked", { userId: record.id });
+      throw new UnauthorizedError(LOGIN_FAILED);
+    }
     if (!valid) {
       await this.repository.registerFailedLogin(record.id, MAX_FAILED_LOGINS, new Date(now.getTime() + LOCK_MS));
+      this.audit("login_failed", { userId: record.id, reason: "wrong_password" });
       throw new UnauthorizedError(LOGIN_FAILED);
     }
 
     await this.repository.clearLoginFailures(record.id);
-    await this.repository.deleteExpiredSessions(now);
-    const token = this.newToken();
-    const expiresAt = new Date(now.getTime() + SESSION_TTL_MS);
-    await this.repository.createSession({ tokenHash: hashToken(token), userId: record.id, expiresAt });
-    return { token, user: { id: record.id, email: record.email }, expiresAt };
-  }
-
-  /** Resolves the session token to its user, or throws 401. */
-  async authenticate(token: string | null): Promise<AuthUser> {
-    if (!token) throw new UnauthorizedError("Inicia sesión para continuar");
-    const tokenHash = hashToken(token);
-    const session = await this.repository.findSession(tokenHash);
-    if (!session) throw new UnauthorizedError("Inicia sesión para continuar");
-    if (session.expiresAt <= this.now()) {
-      await this.repository.deleteSession(tokenHash);
-      throw new UnauthorizedError("La sesión ha caducado, inicia sesión de nuevo");
-    }
-    return session.user;
+    await this.repository.deleteExpiredRefreshTokens(now);
+    const family = this.newId();
+    const refreshExpiresAt = new Date(now.getTime() + this.config().refreshTtlSeconds * 1000);
+    const refreshJti = this.newId();
+    await this.repository.createRefreshToken({
+      tokenHash: hashToken(refreshJti),
+      family,
+      userId: record.id,
+      expiresAt: refreshExpiresAt,
+    });
+    this.audit("login_success", { userId: record.id });
+    return this.issue(record, { jti: refreshJti, family }, refreshExpiresAt, now);
   }
 
   /**
-   * Changes the password of a signed-in user and revokes all their other sessions (the one in use
-   * stays). A wrong current password counts as a failed login, so a stolen session cannot be used
-   * to guess it indefinitely.
+   * Trades a refresh token for a new access token and a rotated refresh token. A refresh token that was
+   * already used (or revoked) means it leaked or was replayed: its whole family is revoked. The refresh
+   * token keeps the expiry of its family, so a session lasts JWT_REFRESH_EXPIRES_IN from login.
+   * Every failure is the same generic 401.
    */
-  async changePassword(userId: number, token: string | null, current: string, next: string): Promise<number> {
+  async refresh(refreshToken: string | null): Promise<SessionTokens> {
+    const now = this.now();
+    const claims = await this.verifyRefresh(refreshToken, now);
+    const stored = await this.repository.findRefreshToken(hashToken(claims.jti));
+    if (!stored || stored.family !== claims.family) {
+      // Validly signed but unknown to us (e.g. the database was reset): nothing of it may keep working.
+      await this.repository.revokeRefreshTokenFamily(claims.family, now);
+      return this.refreshDenied("unknown_token");
+    }
+    if (stored.revokedAt) {
+      await this.repository.revokeRefreshTokenFamily(stored.family, now);
+      this.audit("refresh_reuse_detected", { userId: stored.userId });
+      throw new UnauthorizedError(REFRESH_FAILED);
+    }
+    if (stored.expiresAt <= now) return this.refreshDenied("expired", stored.userId);
+
+    const identity = await this.repository.findAuthIdentity(stored.userId);
+    if (!identity || isLocked(identity, now)) {
+      await this.repository.revokeRefreshTokenFamily(stored.family, now);
+      return this.refreshDenied(identity ? "locked" : "unknown_user", stored.userId);
+    }
+
+    const nextJti = this.newId();
+    const rotated = await this.repository.rotateRefreshToken(
+      stored.tokenHash,
+      { tokenHash: hashToken(nextJti), family: stored.family, userId: stored.userId, expiresAt: stored.expiresAt },
+      now,
+    );
+    if (!rotated) {
+      // Lost a race against another use of the same token: indistinguishable from a replay.
+      await this.repository.revokeRefreshTokenFamily(stored.family, now);
+      this.audit("refresh_reuse_detected", { userId: stored.userId, reason: "concurrent_rotation" });
+      throw new UnauthorizedError(REFRESH_FAILED);
+    }
+    this.audit("refresh_success", { userId: stored.userId });
+    return this.issue(identity, { jti: nextJti, family: stored.family }, stored.expiresAt, now);
+  }
+
+  /**
+   * Resolves an access token to its user, or throws 401. Checks signature, algorithm, exp, iss, aud, then
+   * that the user still exists, is not locked and still has the token's `ver` (a password change bumps it).
+   * One read by primary key; role and email come from it, not from the token.
+   */
+  async authenticate(accessToken: string | null): Promise<AuthUser> {
+    if (!accessToken) throw new UnauthorizedError(NOT_SIGNED_IN);
+    const now = this.now();
+    let claims: AccessClaims;
+    try {
+      claims = await verifyAccessToken(this.config(), accessToken, now);
+    } catch (error) {
+      throw new UnauthorizedError(error instanceof InvalidTokenError && error.expired ? TOKEN_EXPIRED : NOT_SIGNED_IN);
+    }
+    const identity = await this.repository.findAuthIdentity(claims.userId);
+    if (!identity || identity.tokenVersion !== claims.version || isLocked(identity, now)) {
+      throw new UnauthorizedError(NOT_SIGNED_IN);
+    }
+    return toAuthUser(identity);
+  }
+
+  /**
+   * Changes the password of a signed-in user. Bumps the token version (every live access token dies, the
+   * caller's included: its next request renews through the refresh token) and revokes every refresh token
+   * except the family of the caller's own. A wrong current password counts as a failed login, so a stolen
+   * session cannot be used to guess it indefinitely.
+   */
+  async changePassword(userId: number, refreshToken: string | null, current: string, next: string): Promise<void> {
     const record = await this.repository.findUserById(userId);
-    if (!record || !token) throw new UnauthorizedError("Inicia sesión para continuar");
+    if (!record) throw new UnauthorizedError(NOT_SIGNED_IN);
 
     const now = this.now();
     const valid = await verifyPassword(current, record.passwordHash);
-    if (this.isLocked(record, now) || !valid) {
-      if (!this.isLocked(record, now)) {
+    if (isLocked(record, now) || !valid) {
+      if (!isLocked(record, now)) {
         await this.repository.registerFailedLogin(record.id, MAX_FAILED_LOGINS, new Date(now.getTime() + LOCK_MS));
       }
+      this.audit("password_change_failed", { userId, reason: "wrong_current_password" });
       throw new ValidationError("No se pudo cambiar la contraseña", [
         { field: "currentPassword", message: "La contraseña actual no es correcta" },
       ]);
@@ -91,28 +183,86 @@ export class AuthService {
       ]);
     }
     await this.repository.updatePassword(record.id, await hashPassword(next));
-    return this.repository.deleteOtherSessions(record.id, hashToken(token));
+    await this.repository.incrementTokenVersion(record.id);
+    const keepFamily = await this.ownFamily(userId, refreshToken, now);
+    if (keepFamily) await this.repository.revokeOtherRefreshTokens(userId, keepFamily, now);
+    else await this.repository.revokeAllRefreshTokens(userId, now);
+    this.audit("password_changed", { userId });
   }
 
-  private isLocked(user: { lockedUntil: Date | null }, now: Date): boolean {
-    return user.lockedUntil !== null && user.lockedUntil > now;
-  }
-
-  async logout(token: string | null): Promise<void> {
-    if (token) await this.repository.deleteSession(hashToken(token));
+  /** Revokes the whole family of the refresh token. Idempotent: a missing or invalid token is a no-op. */
+  async logout(refreshToken: string | null): Promise<void> {
+    const now = this.now();
+    let claims: RefreshClaims;
+    try {
+      claims = await this.verifyRefresh(refreshToken, now);
+    } catch {
+      return;
+    }
+    const stored = await this.repository.findRefreshToken(hashToken(claims.jti));
+    if (!stored) return;
+    await this.repository.revokeRefreshTokenFamily(stored.family, now);
+    this.audit("logout", { userId: stored.userId });
   }
 
   /**
    * Creates an account (used by the user:create script; there is no public sign-up).
    * The first account inherits the invoices that predate authentication.
    */
-  async createUser(email: string, password: string): Promise<{ user: AuthUser; claimedInvoices: number }> {
+  async createUser(
+    email: string,
+    password: string,
+    role: UserRole = "USER",
+  ): Promise<{ user: AuthUser; claimedInvoices: number }> {
     if (await this.repository.findUserByEmail(email)) {
       throw new ConflictError("Ya existe un usuario con ese email");
     }
     const isFirst = (await this.repository.countUsers()) === 0;
-    const created = await this.repository.createUser({ email, passwordHash: await hashPassword(password) });
+    const created = await this.repository.createUser({ email, passwordHash: await hashPassword(password), role });
     const claimedInvoices = isFirst ? await this.repository.claimOrphanInvoices(created.id) : 0;
-    return { user: { id: created.id, email: created.email }, claimedInvoices };
+    return { user: toAuthUser(created), claimedInvoices };
+  }
+
+  private async issue(
+    identity: AuthIdentity,
+    refresh: RefreshClaims,
+    refreshExpiresAt: Date,
+    now: Date,
+  ): Promise<SessionTokens> {
+    const config = this.config();
+    const [token, refreshToken] = await Promise.all([
+      signAccessToken(config, { userId: identity.id, role: identity.role, version: identity.tokenVersion }, this.newId(), now),
+      signRefreshToken(config, refresh, now, refreshExpiresAt),
+    ]);
+    const refreshMaxAgeSeconds = Math.max(0, Math.floor((refreshExpiresAt.getTime() - now.getTime()) / 1000));
+    return { token, refreshToken, refreshMaxAgeSeconds, user: toAuthUser(identity) };
+  }
+
+  private async verifyRefresh(refreshToken: string | null, now: Date): Promise<RefreshClaims> {
+    if (!refreshToken) throw new UnauthorizedError(REFRESH_FAILED);
+    try {
+      return await verifyRefreshToken(this.config(), refreshToken, now);
+    } catch {
+      this.audit("refresh_failed", { reason: "invalid_token" });
+      throw new UnauthorizedError(REFRESH_FAILED);
+    }
+  }
+
+  private refreshDenied(reason: string, userId?: number): never {
+    this.audit("refresh_failed", { userId, reason });
+    throw new UnauthorizedError(REFRESH_FAILED);
+  }
+
+  /** Family of the caller's own refresh token, if it is valid, live and theirs. */
+  private async ownFamily(userId: number, refreshToken: string | null, now: Date): Promise<string | null> {
+    if (!refreshToken) return null;
+    try {
+      const claims = await verifyRefreshToken(this.config(), refreshToken, now);
+      const stored = await this.repository.findRefreshToken(hashToken(claims.jti));
+      const live = stored && stored.userId === userId && !stored.revokedAt && stored.expiresAt > now;
+      return live ? stored.family : null;
+    } catch {
+      return null;
+    }
   }
 }

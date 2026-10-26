@@ -21,6 +21,7 @@
     "@react-pdf/renderer": "^4.9.0",
     "better-sqlite3": "^12.11.1",
     "dotenv": "^18.0.9",
+    "jose": "^6.2.13",
     "next": "^16.4.2",
     "prisma": "^7.10.1",
     "react": "^19.3.0",

@@ -8,9 +8,11 @@ import { createQueryClient } from "@/queryClient";
 import { useToastStore } from "@/store/toastStore";
 import { UserMenu } from "@/components/layout/UserMenu";
 import { LoginPage } from "./LoginPage";
+import { clearAccessToken, getAccessToken, setAccessToken } from "@/services/tokenStorage";
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  clearAccessToken();
   useToastStore.setState({ toasts: [] });
 });
 
@@ -88,7 +90,7 @@ describe("LoginPage", () => {
   });
 
   it("los datos cacheados de otra cuenta se descartan al iniciar sesión", async () => {
-    vi.stubGlobal("fetch", reply({ data: { id: 2, email: "bea@example.com" } }, 200));
+    vi.stubGlobal("fetch", reply({ data: { token: "jwt", user: { id: 2, email: "bea@example.com", role: "ADMIN" } } }, 200));
     const { user, client } = renderLogin();
     client.setQueryData(queryKeys.invoices, ["factura de otra cuenta"]);
 
@@ -98,15 +100,17 @@ describe("LoginPage", () => {
 
     expect(await screen.findByText("Panel")).toBeInTheDocument();
     expect(client.getQueryData(queryKeys.invoices)).toBeUndefined();
-    expect(client.getQueryData(queryKeys.session)).toEqual({ id: 2, email: "bea@example.com" });
+    expect(client.getQueryData(queryKeys.session)).toEqual({ id: 2, email: "bea@example.com", role: "ADMIN" });
+    expect(getAccessToken()).toBe("jwt");
   });
 });
 
 describe("UserMenu", () => {
-  it("si cerrar la sesión falla, avisa y mantiene la sesión", async () => {
+  it("si el servidor no responde al cerrar sesión, avisa pero la sesión termina en este dispositivo", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Failed to fetch")));
     const client = createQueryClient();
-    client.setQueryData(queryKeys.session, { id: 1, email: "ana@example.com" });
+    client.setQueryData(queryKeys.session, { id: 1, email: "ana@example.com", role: "USER" });
+    setAccessToken("jwt");
     render(
       <QueryClientProvider client={client}>
         <MemoryRouter>
@@ -118,7 +122,8 @@ describe("UserMenu", () => {
     await userEvent.click(screen.getByRole("button", { name: "Cerrar sesión" }));
 
     await vi.waitFor(() => expect(useToastStore.getState().toasts[0]?.message).toContain("No se pudo conectar"));
-    expect(client.getQueryData(queryKeys.session)).toEqual({ id: 1, email: "ana@example.com" });
+    expect(client.getQueryData(queryKeys.session)).toBeNull();
+    expect(getAccessToken()).toBeNull();
   });
 
   it("no muestra nada sin sesión", () => {

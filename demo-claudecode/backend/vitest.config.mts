@@ -6,6 +6,8 @@ export default defineConfig({
   test: {
     include: ["tests/**/*.test.ts"],
     environment: "node",
+    // Throwaway secret for tests only (>= 32 bytes). Never a real one.
+    env: { JWT_SECRET: "test-only-secret-not-for-production-0123456789" },
     globalSetup: ["tests/globalSetup.ts"],
     fileParallelism: false,
     coverage: {

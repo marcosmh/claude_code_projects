@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { InvoiceRequest } from "@/types/invoice";
 import { API_URL } from "./apiClient";
+import { clearAccessToken, setAccessToken } from "./tokenStorage";
 import { invoicesService } from "./invoicesService";
 
 const json = (body: unknown, init?: ResponseInit) => new Response(JSON.stringify(body), init);
@@ -88,7 +89,17 @@ describe("invoicesService", () => {
     await expect(invoicesService.get(9)).rejects.toMatchObject({ status: 404, code: "NOT_FOUND" });
   });
 
-  it("pdfUrl apunta al endpoint del PDF", () => {
-    expect(invoicesService.pdfUrl(12)).toBe(`${API_URL}/invoices/12/pdf`);
+  it("pdf descarga el binario con Authorization", async () => {
+    setAccessToken("jwt-pdf");
+    const fetchMock = vi.fn().mockResolvedValue(new Response("%PDF-1.4", { status: 200, headers: { "Content-Type": "application/pdf" } }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const blob = await invoicesService.pdf(12);
+
+    expect(blob.type).toBe("application/pdf");
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(`${API_URL}/invoices/12/pdf`);
+    expect((init.headers as Record<string, string>).Authorization).toBe("Bearer jwt-pdf");
+    clearAccessToken();
   });
 });

@@ -1,22 +1,49 @@
+export type UserRole = "USER" | "ADMIN";
+
 /** The authenticated user as the rest of the app sees it (never carries the password hash). */
 export interface AuthUser {
   id: number;
   email: string;
+  role: UserRole;
 }
 
-export interface UserRecord extends AuthUser {
-  passwordHash: string;
-  /** The account rejects every login until this instant. */
+/** What authenticating a request needs: the user plus the facts that can revoke a live access token. */
+export interface AuthIdentity extends AuthUser {
+  tokenVersion: number;
   lockedUntil: Date | null;
 }
 
+export interface UserRecord extends AuthIdentity {
+  passwordHash: string;
+}
+
 export interface SessionRecord {
-  user: AuthUser;
+  user: { id: number; email: string };
   expiresAt: Date;
 }
 
 export interface CreateSessionInput {
   tokenHash: string;
+  userId: number;
+  expiresAt: Date;
+}
+
+export interface RefreshTokenRecord {
+  id: number;
+  /** SHA-256 of the refresh token's jti. */
+  tokenHash: string;
+  family: string;
+  userId: number;
+  expiresAt: Date;
+  revokedAt: Date | null;
+  /** Id of the token that replaced this one on rotation. */
+  replacedBy: number | null;
+  createdAt: Date;
+}
+
+export interface CreateRefreshTokenInput {
+  tokenHash: string;
+  family: string;
   userId: number;
   expiresAt: Date;
 }

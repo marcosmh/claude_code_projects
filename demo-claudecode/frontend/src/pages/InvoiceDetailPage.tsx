@@ -7,8 +7,8 @@ import { DeleteInvoiceDialog } from "@/components/features/invoices/DeleteInvoic
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useInvoice } from "@/hooks/useInvoice";
 import { useInvoiceMutations } from "@/hooks/useInvoiceMutations";
+import { useInvoicePdf } from "@/hooks/useInvoicePdf";
 import { ApiError } from "@/services/apiClient";
-import { invoicesService } from "@/services/invoicesService";
 import { formatDate, formatMoney } from "@/utils/format";
 import { NotFoundPage } from "./NotFoundPage";
 import { parseId } from "./parseId";
@@ -18,6 +18,7 @@ export function InvoiceDetailPage() {
   const navigate = useNavigate();
   const { data: invoice, error, isPending, refetch } = useInvoice(id);
   const { changeStatus, remove } = useInvoiceMutations();
+  const pdf = useInvoicePdf();
   useDocumentTitle(invoice?.number ?? "Factura");
 
   if (id === null || (error instanceof ApiError && error.status === 404)) return <NotFoundPage />;
@@ -47,9 +48,9 @@ export function InvoiceDetailPage() {
               {changeStatus.isPending ? "Marcando…" : nextStatus === "SENT" ? "Marcar como enviada" : "Marcar como pagada"}
             </button>
           )}
-          <a href={invoicesService.pdfUrl(invoice.id)} target="_blank" rel="noopener noreferrer" className={button("primary", "sm")}>
-            Ver PDF
-          </a>
+          <button type="button" disabled={pdf.isPending} onClick={() => void pdf.open(invoice.id)} className={button("primary", "sm")}>
+            {pdf.isPending ? "Abriendo PDF…" : "Ver PDF"}
+          </button>
           <Link to={`/invoices/${invoice.id}/edit`} className={button("secondary", "sm")}>
             Editar
           </Link>

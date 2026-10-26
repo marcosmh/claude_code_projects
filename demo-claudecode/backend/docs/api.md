@@ -4,27 +4,33 @@ Base URL por defecto: `http://localhost:4000/api/v1`. Todas las respuestas JSON 
 
 ## Autenticación
 
-Todos los endpoints, salvo `POST /auth/login` y `POST /auth/logout`, exigen sesión: la cookie `session` (`HttpOnly`, `SameSite=Lax`, 7 días) que fija el login. Desde un navegador hay que enviar las peticiones con `credentials: "include"`. Sin cookie válida (o caducada, o revocada) la respuesta es **401 `UNAUTHENTICATED`**.
+Autenticación con JWT. `POST /auth/login` devuelve un **access token** en el cuerpo (vida corta, 15 min por defecto) que el cliente envía en cada petición como `Authorization: Bearer <token>`, y fija en una cookie `HttpOnly` el **refresh token** (7 días por defecto) que solo sirve para `/auth/refresh`, `/auth/logout` y `/auth/password`. Todos los endpoints, salvo `POST /auth/login`, `POST /auth/refresh` y `POST /auth/logout`, exigen el access token. Sin él, o con uno inválido, caducado, de otra firma/emisor/audiencia, con otro algoritmo (solo se acepta HS256) o desactualizado, la respuesta es **401 `UNAUTHENTICATED`**. La cookie `session` de la versión anterior ya no se lee.
 
-Cada factura pertenece a un usuario y solo ese usuario puede verla, modificarla, descargarla o borrarla, y solo sus facturas entran en las estadísticas. Pedir la factura de otro usuario devuelve **404 `NOT_FOUND`**, indistinguible de un id inexistente. No hay registro público: las cuentas las crea el administrador con `npm run user:create`.
+Access token: claims `sub` (id de usuario), `role`, `ver` (versión de tokens del usuario), `jti`, `iat`, `exp`, `iss`, `aud`. Sin email ni otros datos. El rol y el email que usa el servidor salen de la base de datos, no del token.
+
+Cada factura pertenece a un usuario y solo ese usuario puede verla, modificarla, descargarla o borrarla, y solo sus facturas entran en las estadísticas. Pedir la factura de otro usuario devuelve **404 `NOT_FOUND`**, indistinguible de un id inexistente (también para un `ADMIN`). No hay registro público: las cuentas las crea el administrador con `npm run user:create -- <email> [--role USER|ADMIN]`. **403 `FORBIDDEN`** solo aparece por rol insuficiente en rutas protegidas con `withRole(...)` (hoy ninguna ruta lo exige) o por origen.
 
 ### POST /auth/login
 
-Cuerpo `{ "email": "ana@example.com", "password": "..." }` (el email se normaliza a minúsculas). 200 `{ "data": { "id": 1, "email": "ana@example.com" } }` y cabecera `Set-Cookie: session=...; Max-Age=604800; Path=/; HttpOnly; SameSite=Lax`. 401 con el mismo mensaje para email desconocido, contraseña errónea y cuenta bloqueada (`Email o contraseña incorrectos. Tras 5 intentos fallidos la cuenta se bloquea 15 minutos.`), sin `Set-Cookie`.
+Cuerpo `{ "email": "ana@example.com", "password": "..." }` (el email se normaliza a minúsculas). 200 `{ "data": { "token": "<access JWT>", "user": { "id": 1, "email": "ana@example.com", "role": "USER" } } }` y cabecera `Set-Cookie: refresh=<JWT>; Max-Age=604800; Path=/api/v1/auth; HttpOnly; SameSite=Strict` (más `Secure` con `NODE_ENV=production`). 401 con el mismo mensaje para email desconocido, contraseña errónea y cuenta bloqueada (`Email o contraseña incorrectos. Tras 5 intentos fallidos la cuenta se bloquea 15 minutos.`), sin `Set-Cookie`. Desde un navegador, la petición debe enviarse con `credentials: "include"` para que se guarde la cookie.
 
-**Bloqueo de cuenta**: 5 intentos fallidos seguidos bloquean la cuenta 15 minutos; durante el bloqueo ni la contraseña correcta sirve y los intentos no lo alargan. Un login correcto reinicia el contador. El mensaje no distingue "no existe" de "bloqueada" para no revelar qué cuentas existen. Consecuencia asumida: quien conozca un email puede bloquear esa cuenta 15 minutos a base de intentos. 400 si el cuerpo es inválido. Límite: 10 intentos por minuto y por IP (429).
+**Bloqueo de cuenta**: 5 intentos fallidos seguidos bloquean la cuenta 15 minutos; durante el bloqueo ni la contraseña correcta sirve y los intentos no lo alargan. Mientras dura, sus access tokens y refresh tokens vivos también se rechazan (401). Un login correcto reinicia el contador. El mensaje no distingue "no existe" de "bloqueada" para no revelar qué cuentas existen. Consecuencia asumida: quien conozca un email puede bloquear esa cuenta 15 minutos a base de intentos. 400 si el cuerpo es inválido. Límite: 10 intentos por minuto y por IP (429).
+
+### POST /auth/refresh
+
+Sin cuerpo; lee la cookie `refresh` (enviar con `credentials: "include"`). 200 con el mismo cuerpo que el login (`{ "data": { "token", "user": { id, email, role } } }`) y una cookie `refresh` **nueva** (rotación: el refresh token anterior queda revocado). El refresh token conserva la caducidad de su sesión: una sesión dura `JWT_REFRESH_EXPIRES_IN` desde el login, no se alarga con cada renovación. Si llega un refresh token ya usado o revocado se considera robado o repetido: **se revoca toda su familia** (también el token más reciente, así que el usuario tendrá que iniciar sesión de nuevo). Dos peticiones simultáneas con el mismo refresh token (p. ej. dos pestañas) cuentan igual: una gana y la sesión se cierra. Cualquier fallo (sin cookie, firma inválida, caducado, desconocido, reutilizado, usuario inexistente o bloqueado) es el mismo **401 `UNAUTHENTICATED`** (`Sesión no válida, inicia sesión de nuevo`) y vacía la cookie. Límite propio: 20 por minuto y por IP (429).
 
 ### POST /auth/logout
 
-204 y cookie vaciada (`Max-Age=0`); revoca la sesión en el servidor. Es idempotente y no exige sesión.
+204 y cookie `refresh` vaciada (`Max-Age=0`, mismo `Path`); revoca en el servidor la familia del refresh token. Es idempotente y no exige access token (ni cookie válida). El cliente debe borrar además su access token, que sigue siendo válido hasta que caduca.
 
 ### POST /auth/password
 
-Requiere sesión. Cuerpo `{ "currentPassword": "...", "newPassword": "..." }` (la nueva, de 12 a 200 caracteres y distinta de la actual). 204 si se cambia; **revoca todas las demás sesiones del usuario** y conserva la actual. 422 con `details[].field` = `currentPassword` (no coincide) o `newPassword` (igual a la actual); 400 si el cuerpo es inválido. Una contraseña actual incorrecta cuenta como intento fallido para el bloqueo de cuenta. Comparte el límite de 10 intentos por minuto del login.
+Requiere access token (y, para conservar la sesión del dispositivo actual, la cookie `refresh`: enviar con `credentials: "include"`). Cuerpo `{ "currentPassword": "...", "newPassword": "..." }` (la nueva, de 12 a 200 caracteres y distinta de la actual). 204 si se cambia. Incrementa la versión de tokens del usuario: **todos sus access tokens vivos dejan de valer, incluido el que se usó en esta petición** (la siguiente petición recibe 401 y el cliente debe llamar a `/auth/refresh`, que sí funciona con la cookie del dispositivo actual), y se revocan los refresh tokens de todos los demás dispositivos (todos, si no llega una cookie `refresh` propia válida). 422 con `details[].field` = `currentPassword` (no coincide) o `newPassword` (igual a la actual); 400 si el cuerpo es inválido. Una contraseña actual incorrecta cuenta como intento fallido para el bloqueo de cuenta. Comparte el límite de 10 intentos por minuto del login.
 
 ### GET /auth/me
 
-200 `{ "data": { "id": 1, "email": "ana@example.com" } }` con la sesión actual, o 401.
+200 `{ "data": { "id": 1, "email": "ana@example.com", "role": "USER" } }` con el access token actual, o 401.
 
 ## Convenciones
 
@@ -34,7 +40,7 @@ Requiere sesión. Cuerpo `{ "currentPassword": "...", "newPassword": "..." }` (l
 - **Totales**: siempre calculados por el backend por factura: `subtotalCents`, `taxCents`, `totalCents`; cada línea trae `amountCents` (`round(quantity * unitPriceCents)`). `taxCents = round(subtotalCents * taxRate / 100)`.
 - **Número**: `FAC-` + id con 4 dígitos (`FAC-0007`), asignado por el servidor; no se envía ni se puede modificar. No se reutiliza tras borrar.
 - **IDs de líneas** (`items[].id`): PUT reemplaza las líneas, por lo que sus ids cambian. PATCH status solo modifica el estado y conserva los ids. No usarlos como clave estable entre ediciones con PUT.
-- **CORS**: se permite el origen definido en `FRONTEND_ORIGIN` (lista separada por comas; por defecto `http://localhost:5173`), con `Access-Control-Allow-Credentials: true` para la cookie de sesión. Las escrituras (POST, PUT, PATCH, DELETE) con una cabecera `Origin` que no esté en la lista reciben 403 `FORBIDDEN`; las peticiones sin `Origin` (curl) no se ven afectadas. Métodos: GET, POST, PUT, PATCH, DELETE, OPTIONS. Cabeceras: `Content-Type`, `Authorization`. Expuestas: `Content-Disposition`, `Location`, `Retry-After`, `RateLimit-Limit`, `RateLimit-Remaining`, `X-Request-Id`. Los preflight OPTIONS responden 204.
+- **CORS**: se permite el origen definido en `FRONTEND_ORIGIN` (lista separada por comas; por defecto `http://localhost:5173`), con `Access-Control-Allow-Credentials: true` **solo** en `/auth/login`, `/auth/refresh`, `/auth/logout` y `/auth/password` (las únicas que usan la cookie del refresh; el resto se autentica con `Authorization` y no necesita credenciales). Las escrituras (POST, PUT, PATCH, DELETE) con una cabecera `Origin` que no esté en la lista reciben 403 `FORBIDDEN`; las peticiones sin `Origin` (curl) no se ven afectadas. Métodos: GET, POST, PUT, PATCH, DELETE, OPTIONS. Cabeceras: `Content-Type`, `Authorization`. Expuestas: `Content-Disposition`, `Location`, `Retry-After`, `RateLimit-Limit`, `RateLimit-Remaining`, `X-Request-Id`. Los preflight OPTIONS responden 204.
 - Las peticiones con cuerpo deben enviar `Content-Type: application/json` (admite `; charset=...`). Cualquier otro valor, o su ausencia, devuelve 400 `VALIDATION_ERROR`.
 - Límites de entrada (400 si se superan): `clientName` 200 caracteres, `clientEmail` 254, `clientAddress` 500, `notes` 2000, `items[].description` 500, máximo 100 líneas, `quantity` ≤ 100000, `unitPriceCents` ≤ 100000000, `page` ≤ 100000.
 - Las respuestas de `/api/*` incluyen `X-Content-Type-Options: nosniff`, `Cache-Control: no-store`, `Referrer-Policy: no-referrer` y `Content-Security-Policy: frame-ancestors 'none'`.
@@ -66,7 +72,7 @@ Error:
 | HTTP | `code` | Cuándo |
 | --- | --- | --- |
 | 400 | `VALIDATION_ERROR` | JSON inválido, tipos/formatos incorrectos (zod), id no numérico, query params inválidos |
-| 401 | `UNAUTHENTICATED` | Falta la sesión, es inválida o caducó; también credenciales erróneas en el login |
+| 401 | `UNAUTHENTICATED` | Falta el access token, es inválido, caducó o fue revocado; refresh token inválido; también credenciales erróneas en el login |
 | 403 | `FORBIDDEN` | Escritura desde un origen no permitido (`Origin` fuera de `FRONTEND_ORIGIN`) |
 | 404 | `NOT_FOUND` | La factura no existe o pertenece a otro usuario |
 | 409 | `CONFLICT` | Conflicto de unicidad detectado en la base de datos (Prisma P2002) |
@@ -76,7 +82,7 @@ Error:
 
 Los `message` están en español, listos para mostrar al usuario.
 
-**Límite de peticiones** (por IP y minuto, en memoria de una sola instancia): 120 lecturas, 30 escrituras (POST/PUT/PATCH/DELETE), 10 PDF y 10 intentos de login. Las respuestas incluyen `RateLimit-Limit` y `RateLimit-Remaining`; al superarlo, 429 con `Retry-After` en segundos. La IP sale de `X-Forwarded-For` (o `X-Real-IP`), por lo que solo es fiable detrás de un proxy inverso que la fije. Los preflight OPTIONS no cuentan.
+**Límite de peticiones** (por IP y minuto, en memoria de una sola instancia): 120 lecturas, 30 escrituras (POST/PUT/PATCH/DELETE), 10 PDF, 10 intentos de login (y cambios de contraseña) y 20 renovaciones (`/auth/refresh`). Las respuestas incluyen `RateLimit-Limit` y `RateLimit-Remaining`; al superarlo, 429 con `Retry-After` en segundos. La IP sale de `X-Forwarded-For` (o `X-Real-IP`), por lo que solo es fiable detrás de un proxy inverso que la fije. Los preflight OPTIONS no cuentan.
 
 Reglas de negocio (422): `dueDate >= issueDate`; al menos una línea; `quantity > 0` en cada línea.
 

@@ -50,7 +50,9 @@ export function useLogout() {
   const push = useToastStore((s) => s.push);
   return useMutation({
     mutationFn: () => authService.logout(),
-    onSuccess: () => endSession(queryClient),
-    onError: (error) => push("error", errorMessage(error, "No se pudo cerrar la sesión. Inténtalo de nuevo.")),
+    // El token local ya se borró aunque el backend no respondiera: la sesión termina siempre en este dispositivo.
+    onSettled: () => endSession(queryClient),
+    onError: (error) =>
+      push("error", errorMessage(error, "No se pudo avisar al servidor del cierre de sesión. Tu sesión se cerró en este dispositivo.")),
   });
 }

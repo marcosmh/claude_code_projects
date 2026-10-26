@@ -20,6 +20,7 @@ const invoice = {
 
 beforeEach(async () => {
   await db.invoice.deleteMany();
+  await db.refreshToken.deleteMany();
   await db.session.deleteMany();
   await db.user.deleteMany();
 });
@@ -123,5 +124,140 @@ describe("PrismaAuthRepository", () => {
     expect(await repo.claimOrphanInvoices(ana.id)).toBe(0);
     expect((await invoices.findAll(ana.id)).total).toBe(2);
     expect((await invoices.findById(bea.id, owned.id))?.id).toBe(owned.id);
+  });
+
+  describe("refresh tokens", () => {
+    const expiresAt = new Date("2027-01-01T00:00:00Z");
+    const now = new Date("2026-10-26T12:00:00Z");
+    const newUser = (email = "ana@example.com") => repo.createUser({ email, passwordHash: "h" });
+
+    it("creates and finds tokens by hash, unrevoked at first", async () => {
+      const user = await newUser();
+      const created = await repo.createRefreshToken({ tokenHash: "h1", family: "f1", userId: user.id, expiresAt });
+      expect(created).toMatchObject({ tokenHash: "h1", family: "f1", userId: user.id, revokedAt: null, replacedBy: null });
+      expect(await repo.findRefreshToken("h1")).toEqual(created);
+      expect(await repo.findRefreshToken("nope")).toBeNull();
+      await expect(
+        repo.createRefreshToken({ tokenHash: "h1", family: "f2", userId: user.id, expiresAt }),
+      ).rejects.toThrow();
+    });
+
+    it("rotation revokes the old token, links replacedBy and creates the new one", async () => {
+      const user = await newUser();
+      const first = await repo.createRefreshToken({ tokenHash: "h1", family: "f1", userId: user.id, expiresAt });
+      const second = await repo.rotateRefreshToken(
+        "h1",
+        { tokenHash: "h2", family: "f1", userId: user.id, expiresAt },
+        now,
+      );
+      expect(second).toMatchObject({ tokenHash: "h2", family: "f1", revokedAt: null });
+      expect(await repo.findRefreshToken("h1")).toMatchObject({ id: first.id, revokedAt: now, replacedBy: second!.id });
+      expect(await repo.findRefreshToken("h2")).toMatchObject({ revokedAt: null });
+    });
+
+    it("rotating an already-rotated or unknown token returns null and creates nothing", async () => {
+      const user = await newUser();
+      await repo.createRefreshToken({ tokenHash: "h1", family: "f1", userId: user.id, expiresAt });
+      await repo.rotateRefreshToken("h1", { tokenHash: "h2", family: "f1", userId: user.id, expiresAt }, now);
+      const reuse = await repo.rotateRefreshToken(
+        "h1",
+        { tokenHash: "h3", family: "f1", userId: user.id, expiresAt },
+        now,
+      );
+      expect(reuse).toBeNull();
+      expect(await repo.findRefreshToken("h3")).toBeNull();
+      expect(await repo.rotateRefreshToken("ghost", { tokenHash: "h4", family: "f1", userId: user.id, expiresAt }, now)).toBeNull();
+      expect(await repo.findRefreshToken("h4")).toBeNull();
+    });
+
+    it("concurrent rotations of the same token: exactly one wins", async () => {
+      const user = await newUser();
+      await repo.createRefreshToken({ tokenHash: "h1", family: "f1", userId: user.id, expiresAt });
+      const results = await Promise.all(
+        ["a", "b"].map((h) =>
+          repo.rotateRefreshToken("h1", { tokenHash: `n-${h}`, family: "f1", userId: user.id, expiresAt }, now),
+        ),
+      );
+      expect(results.filter(Boolean)).toHaveLength(1);
+    });
+
+    it("revokeOtherRefreshTokens keeps the given family and other users untouched", async () => {
+      const ana = await newUser();
+      const bea = await newUser("bea@example.com");
+      await repo.createRefreshToken({ tokenHash: "a1", family: "fa", userId: ana.id, expiresAt });
+      await repo.createRefreshToken({ tokenHash: "a2", family: "fb", userId: ana.id, expiresAt });
+      await repo.createRefreshToken({ tokenHash: "b1", family: "fc", userId: bea.id, expiresAt });
+      expect(await repo.revokeOtherRefreshTokens(ana.id, "fa", now)).toBe(1);
+      expect((await repo.findRefreshToken("a1"))!.revokedAt).toBeNull();
+      expect((await repo.findRefreshToken("a2"))!.revokedAt).toEqual(now);
+      expect((await repo.findRefreshToken("b1"))!.revokedAt).toBeNull();
+    });
+
+    it("revokes a whole family without touching other families", async () => {
+      const user = await newUser();
+      await repo.createRefreshToken({ tokenHash: "h1", family: "f1", userId: user.id, expiresAt });
+      await repo.rotateRefreshToken("h1", { tokenHash: "h2", family: "f1", userId: user.id, expiresAt }, now);
+      await repo.createRefreshToken({ tokenHash: "o1", family: "f2", userId: user.id, expiresAt });
+      const later = new Date("2026-10-26T13:00:00Z");
+      // h1 was already revoked by rotation (count excludes it and keeps its original date)
+      expect(await repo.revokeRefreshTokenFamily("f1", later)).toBe(1);
+      expect((await repo.findRefreshToken("h1"))!.revokedAt).toEqual(now);
+      expect((await repo.findRefreshToken("h2"))!.revokedAt).toEqual(later);
+      expect((await repo.findRefreshToken("o1"))!.revokedAt).toBeNull();
+      expect(await repo.revokeRefreshTokenFamily("f1", later)).toBe(0);
+    });
+
+    it("revokes all tokens of one user only", async () => {
+      const ana = await newUser();
+      const luis = await newUser("luis@example.com");
+      await repo.createRefreshToken({ tokenHash: "a1", family: "fa", userId: ana.id, expiresAt });
+      await repo.createRefreshToken({ tokenHash: "a2", family: "fb", userId: ana.id, expiresAt });
+      await repo.createRefreshToken({ tokenHash: "l1", family: "fc", userId: luis.id, expiresAt });
+      expect(await repo.revokeAllRefreshTokens(ana.id, now)).toBe(2);
+      expect((await repo.findRefreshToken("a1"))!.revokedAt).toEqual(now);
+      expect((await repo.findRefreshToken("l1"))!.revokedAt).toBeNull();
+    });
+
+    it("deleteExpiredRefreshTokens removes only expired ones; deleting a user cascades", async () => {
+      const user = await newUser();
+      await repo.createRefreshToken({ tokenHash: "old", family: "f", userId: user.id, expiresAt: new Date("2026-01-01") });
+      await repo.createRefreshToken({ tokenHash: "new", family: "f", userId: user.id, expiresAt });
+      expect(await repo.deleteExpiredRefreshTokens(now)).toBe(1);
+      expect(await repo.findRefreshToken("old")).toBeNull();
+      await db.user.delete({ where: { id: user.id } });
+      expect(await repo.findRefreshToken("new")).toBeNull();
+    });
+  });
+
+  describe("tokenVersion and role", () => {
+    it("starts at 0, increments atomically and returns null for unknown users", async () => {
+      const user = await repo.createUser({ email: "ana@example.com", passwordHash: "h" });
+      expect(await repo.getTokenVersion(user.id)).toBe(0);
+      expect(await repo.incrementTokenVersion(user.id)).toBe(1);
+      const both = await Promise.all([repo.incrementTokenVersion(user.id), repo.incrementTokenVersion(user.id)]);
+      expect([...both].sort()).toEqual([2, 3]);
+      expect(await repo.getTokenVersion(user.id)).toBe(3);
+      expect(await repo.getTokenVersion(9999)).toBeNull();
+      expect(await repo.incrementTokenVersion(9999)).toBeNull();
+    });
+
+    it("createUser stores the role; records and the lean identity carry role and version, never the hash", async () => {
+      const admin = await repo.createUser({ email: "root@example.com", passwordHash: "h", role: "ADMIN" });
+      expect(admin).toMatchObject({ role: "ADMIN", tokenVersion: 0, lockedUntil: null });
+      const identity = await repo.findAuthIdentity(admin.id);
+      expect(identity).toEqual({ id: admin.id, email: "root@example.com", role: "ADMIN", tokenVersion: 0, lockedUntil: null });
+      expect(identity).not.toHaveProperty("passwordHash");
+      expect(await repo.findAuthIdentity(9999)).toBeNull();
+      expect((await repo.findUserById(admin.id))?.role).toBe("ADMIN");
+      expect((await repo.findUserByEmail("root@example.com"))?.role).toBe("ADMIN");
+    });
+
+    it("defaults the role to USER and reads a stored ADMIN", async () => {
+      const user = await repo.createUser({ email: "ana@example.com", passwordHash: "h" });
+      expect(await repo.getUserRole(user.id)).toBe("USER");
+      await db.user.update({ where: { id: user.id }, data: { role: "ADMIN" } });
+      expect(await repo.getUserRole(user.id)).toBe("ADMIN");
+      expect(await repo.getUserRole(9999)).toBeNull();
+    });
   });
 });

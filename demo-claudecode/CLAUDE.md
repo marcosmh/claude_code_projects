@@ -68,7 +68,7 @@ The root `tsconfig.json` excludes `backend/` and `frontend/` so root tooling doe
 
 A read-only audit (quality, testing, architecture, security) was done on 2026-10-24. Since then: backend hardening (limits, headers, rate limiting), unit tests with coverage ratchets, CI (`.github/workflows/ci.yml`) and Playwright + axe E2E. Authentication and per-user authorization were added afterwards (see Backend). Account lockout (5 failures, 15 min) and password change (revokes other sessions) are in. Known open gaps: no roles, no forgotten-password flow, and the `isOverdue` rule for invoices due today. Re-verify findings against `backend/` and `frontend/` before acting on them.
 
-**Planned, not implemented:** the owner decided on 2026-10-26 to migrate authentication from opaque session cookies to JWT (access + refresh tokens, roles). The plan and its open decisions are in `backend/docs/jwt-migration.md`. Until the owner gives the order, the "Auth" paragraph under Backend still describes the real code; do not start the migration on your own.
+**Planned, not implemented:** the owner decided on 2026-10-26 to migrate authentication from opaque session cookies to JWT (access + refresh tokens, roles). The plan and its adopted decisions are in `backend/docs/jwt-migration.md`. Until the owner gives the order, the "Auth" paragraph under Backend still describes the real code; do not start the migration on your own.
 
 ## Available skills
 

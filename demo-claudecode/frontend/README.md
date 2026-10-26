@@ -29,8 +29,8 @@ src/
     layout/    AppShell, TopBar, Sidebar, ThemeToggle
     features/  invoices/ (formulario, tabla, filtros, paginación, diálogo de borrado) y dashboard/ (gráficos SVG)
   pages/       una por ruta; componen hooks y componentes
-  hooks/       useInvoices, useInvoice, useInvoiceMutations, useStats, useInvoiceFilters (URL)
-  services/    apiClient (fetch tipado, ApiError, envoltura {data, meta}), invoicesService, statsService
+  hooks/       useAuth (sesión, login, logout, contraseña), useInvoices, useInvoice, useInvoiceMutations, useInvoicePdf, useStats, useInvoiceFilters (URL)
+  services/    apiClient (fetch tipado, ApiError, envoltura {data, meta}, Bearer + refresh single-flight), tokenStorage, authService, invoicesService, statsService
   store/       Zustand: uiStore (tema, menú) y toastStore (avisos flash)
   types/       contrato de la API
   utils/       formato, etiquetas/colores de estado, esquema Zod del formulario, vista previa de totales
@@ -53,21 +53,38 @@ Decisiones:
 
 ## Pruebas
 
-Cliente HTTP (ApiError, envoltura, red, abort), hook `useInvoices`, formulario (validación, cuerpo enviado, errores del servidor), avisos (roles, 5 s, pausa, cierre) y mapeo de errores del servidor.
+Cliente HTTP (ApiError, envoltura, red, abort, Bearer, `credentials` solo en las rutas con cookie, refresh single-flight, reintento único, fallo -> manejador de 401, almacenamiento no disponible), `authService` (login, logout, cambio de contraseña, recuperación de sesión), `useSession` con `role`, hook `useInvoices`, formulario (validación, cuerpo enviado, errores del servidor), avisos (roles, 5 s, pausa, cierre) y mapeo de errores del servidor.
 
 ## Pruebas E2E y accesibilidad
 
 `e2e/` contiene pruebas con Playwright (Chromium) y `@axe-core/playwright` (reglas WCAG 2.0 a 2.2 nivel AA) sobre la aplicación real: flujos completos (crear, editar, cambiar estado, borrar con diálogo, buscar y filtrar, PDF, tema, menú, foco y teclado) y un barrido de axe en cada pantalla, en tema claro y oscuro, con el formulario con errores, el diálogo abierto y la vista móvil.
 
-Cada prueba arranca con la sesión iniciada (fixture automática en `e2e/fixtures.ts` con la cuenta desechable `e2e@example.com`, que el arranque crea en `e2e.db`); `e2e/auth.spec.ts` usa el `test` de Playwright sin sesión para probar el login, la redirección y el cierre de sesión.
+Cada prueba arranca con la sesión iniciada (fixture automática en `e2e/fixtures.ts` con la cuenta desechable `e2e@example.com`, que el arranque crea en `e2e.db`): el login por API deja la cookie del refresh en el navegador (la app recupera la sesión sola con `/auth/refresh`) y el cliente `api` usa el access token en `Authorization`. `e2e/auth.spec.ts` incluye la renovación transparente (sin token guardado y con token caducado); `e2e/auth.spec.ts` usa el `test` de Playwright sin sesión para probar el login, la redirección y el cierre de sesión.
 
 `npm run test:e2e` levanta su **propia pila**, aislada de `start_apps` y de `prisma/dev.db`: backend en el puerto 4100 con la base `backend/prisma/e2e.db` (se recrea en cada ejecución), build en `.next-e2e` y rate limiting desactivado (`RATE_LIMIT_DISABLED=1`, ignorado con `NODE_ENV=production`), y frontend en el puerto 5174. Cada prueba parte de una base vacía y crea sus datos por la API.
 
 Primera vez: `npx playwright install chromium` (en Linux sin dependencias del sistema, `npx playwright install --with-deps chromium`). Informe tras un fallo: `npm run test:e2e:report`.
 
-## Sesión
+## Sesión (JWT)
 
-La API usa una cookie `httpOnly`, así que el JavaScript de la app nunca ve el token. `apiClient` envía `credentials: "include"`; el estado de sesión es una consulta de TanStack Query (`useSession`, clave `queryKeys.session`) cuyo valor es el usuario o `null`. `RequireAuth` protege todas las rutas salvo `/login` y recuerda la ruta pedida para volver tras entrar. Cualquier 401 fuera de `/auth/*` (sesión caducada o revocada) ejecuta el manejador registrado en `main.tsx`: descarta los datos en caché y la app vuelve a `/login` sin recargar. Desde el menú de usuario se llega a `/account/password` (cambio de contraseña; el servidor cierra las demás sesiones). El login muestra tal cual el mensaje del servidor, que es el mismo para cuenta inexistente, contraseña errónea y cuenta bloqueada. Al iniciar o cerrar sesión se descarta también la caché, para que ningún dato de una cuenta se vea desde otra. No hay pantalla de registro: las cuentas se crean con `npm run user:create` en el backend.
+- **Access token** (JWT de vida corta, 15 min): lo devuelve `POST /auth/login` y `POST /auth/refresh` en el cuerpo (`{ data: { token, user: { id, email, role } } }`). Se guarda en `localStorage` y se envía como `Authorization: Bearer` en cada petición. **Único punto de acceso: `src/services/tokenStorage.ts`** (con `try/catch` y respaldo en memoria si el almacenamiento no está disponible). El token no está en Zustand ni en TanStack Query.
+- **Refresh token**: cookie `httpOnly` (`Path=/api/v1/auth`, `SameSite=Strict`) que el JavaScript nunca ve. Solo `/auth/login`, `/auth/refresh`, `/auth/logout` y `/auth/password` se llaman con `credentials: "include"`; el resto de rutas no envían cookies. La cookie exige que frontend y API compartan sitio (mismo dominio registrable en producción).
+- **Renovación** (`apiClient`): ante un 401 fuera de `/auth/*`, un único intento de `/auth/refresh` con *single-flight* (las peticiones concurrentes comparten una sola petición en vuelo; es imprescindible porque el refresh rota y reutilizar uno viejo revoca toda la sesión) y la petición original se repite **una vez** (sin bucles). Si otra petición ya renovó el token mientras esta estaba en vuelo, solo se repite. Si el refresh responde 401, `apiClient` borra el token y llama al manejador de `main.tsx`: descarta la caché y la app vuelve a `/login` sin recargar. Un fallo de red, 5xx o 429 en el refresh NO cierra la sesión: el error llega a la petición.
+- **Carga de la app**: `useSession` (clave `queryKeys.session`, valor = `{ id, email, role }` o `null`) llama a `/auth/me`; sin token, o con uno caducado, recupera la sesión con `/auth/refresh` antes de dar la sesión por perdida. `RequireAuth` protege todas las rutas salvo `/login` y recuerda la ruta pedida.
+- **Login** guarda el token; **logout** llama al backend (borra la cookie) y borra el token aunque la llamada falle (la sesión termina en este dispositivo y se avisa del fallo; la cookie sigue viva si el backend no respondió, así que recargar podría recuperar la sesión). **Cambio de contraseña**: el backend invalida el access token actual, por eso `authService.changePassword` llama después a `/auth/refresh` (la cookie de este dispositivo sigue válida) y el servidor cierra las demás sesiones.
+- El PDF de una factura ya no es un enlace directo (no podría llevar `Authorization`): "Ver PDF" lo descarga con Bearer (`requestBlob`) y lo abre en una pestaña nueva desde un blob (`useInvoicePdf`).
+- El login muestra tal cual el mensaje del servidor (el mismo para cuenta inexistente, contraseña errónea y cuenta bloqueada). Al iniciar o cerrar sesión se descarta la caché de datos. No hay pantalla de registro: las cuentas se crean con `npm run user:create` en el backend.
+
+### Seguridad del token en `localStorage` y CSP
+
+Decisión del proyecto: el access token es legible por cualquier script de la página, así que un XSS filtraría la sesión (y podría llamar a `/auth/refresh`). Mitigaciones:
+
+- El código no usa `dangerouslySetInnerHTML` ni scripts de terceros (comprobado con `grep`; mantenerlo así).
+- **CSP estricta**, definida en `vite.config.ts` (`buildCsp`): `script-src 'self'` (sin `unsafe-inline`), `style-src 'self'` (más `style-src-attr 'unsafe-inline'` para los atributos `style` de los gráficos), `connect-src 'self'` + el origen de `VITE_API_URL`, `object-src 'none'`, `base-uri 'none'`, `frame-ancestors 'none'`. El script del tema, antes inline, es ahora `public/theme-init.js` (archivo externo, sin hash que mantener).
+  - **Build**: se inyecta como `<meta http-equiv="Content-Security-Policy">` en `dist/index.html`. `npm run preview` la envía además como cabecera. Un `<meta>` no admite `frame-ancestors`.
+  - **Desarrollo**: sin CSP (Vite necesita scripts inline para HMR).
+  - **Producción**: el hosting debe enviar la misma política como cabecera `Content-Security-Policy` (para que `frame-ancestors` funcione), con `connect-src` apuntando al origen real de la API. Valor para el build por defecto: `default-src 'self'; script-src 'self'; style-src 'self'; style-src-attr 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' http://localhost:4000; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'` (cambia `http://localhost:4000`). Si se añade un script o recurso externo, hay que ampliarla a propósito.
+- Access token de vida corta y claims mínimos (backend).
 
 ## Tema, moneda y avisos
 

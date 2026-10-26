@@ -5,6 +5,7 @@ import { createMemoryRouter, RouterProvider } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createQueryClient } from "./queryClient";
 import { createAppRouter, routes } from "./router";
+import { clearAccessToken, setAccessToken } from "./services/tokenStorage";
 
 const summary = {
   byStatus: { DRAFT: { count: 0, totalCents: 0 }, SENT: { count: 0, totalCents: 0 }, PAID: { count: 0, totalCents: 0 } },
@@ -14,12 +15,14 @@ const summary = {
 const meta = { page: 1, pageSize: 10, total: 0, totalPages: 1 };
 
 const respond = (body: unknown, status = 200) => Promise.resolve(new Response(JSON.stringify(body), { status }));
-const ANA = { id: 1, email: "ana@example.com" };
+const ANA = { id: 1, email: "ana@example.com", role: "USER" };
 const noSession = () => respond({ error: { code: "UNAUTHENTICATED", message: "Inicia sesión" } }, 401);
 
 /** Respuestas por defecto de la API simulada; `session` decide qué contesta /auth/me. */
 function api(path: string, session: () => Promise<Response> = () => respond({ data: ANA })) {
   if (path.endsWith("/auth/me")) return session();
+  // Renovación: concede un token nuevo mientras la sesión exista y 401 si no.
+  if (path.endsWith("/auth/refresh")) return session().then((r) => (r.ok ? respond({ data: { token: "t2", user: ANA } }) : r));
   if (path.endsWith("/stats/summary")) return respond({ data: summary });
   if (path.endsWith("/stats/monthly")) return respond({ data: [] });
   if (path.endsWith("/invoices")) return respond({ data: [], meta });
@@ -27,9 +30,13 @@ function api(path: string, session: () => Promise<Response> = () => respond({ da
 }
 
 beforeEach(() => {
+  setAccessToken("t1");
   vi.stubGlobal("fetch", vi.fn().mockImplementation((url: string) => api(new URL(url).pathname)));
 });
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  clearAccessToken();
+});
 
 function renderAt(path: string) {
   const router = createMemoryRouter(routes, { initialEntries: [path] });
@@ -107,7 +114,7 @@ describe("router: sesión", () => {
         const path = new URL(url).pathname;
         if (path.endsWith("/auth/login")) {
           signedIn = true;
-          return respond({ data: ANA });
+          return respond({ data: { token: "t3", user: ANA } });
         }
         return api(path, () => (signedIn ? respond({ data: ANA }) : noSession()));
       }),
@@ -154,6 +161,29 @@ describe("router: sesión", () => {
 
     await user.click(screen.getByRole("button", { name: "Cerrar sesión" }));
 
+    expect(await screen.findByRole("heading", { level: 1, name: "Iniciar sesión" })).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe("/login");
+  });
+});
+
+describe("router: renovación transparente", () => {
+  it("sin access token, la sesión se recupera por el refresh antes de redirigir a /login", async () => {
+    clearAccessToken();
+    const fetchMock = vi.fn().mockImplementation((url: string) => api(new URL(url).pathname));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { router } = renderAt("/invoices");
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Facturas" })).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe("/invoices");
+    const called = fetchMock.mock.calls.map((c) => new URL(c[0] as string).pathname);
+    expect(called).toContain("/api/v1/auth/refresh");
+  });
+
+  it("sin access token y sin refresh válido, redirige a /login", async () => {
+    clearAccessToken();
+    vi.stubGlobal("fetch", vi.fn().mockImplementation((url: string) => api(new URL(url).pathname, noSession)));
+    const { router } = renderAt("/invoices");
     expect(await screen.findByRole("heading", { level: 1, name: "Iniciar sesión" })).toBeInTheDocument();
     expect(router.state.location.pathname).toBe("/login");
   });

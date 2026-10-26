@@ -10,7 +10,7 @@ import type { Invoice } from "@/types/invoice";
 import { InvoiceDetailPage } from "./InvoiceDetailPage";
 
 vi.mock("@/services/invoicesService", () => ({
-  invoicesService: { get: vi.fn(), setStatus: vi.fn(), remove: vi.fn(), pdfUrl: (id: number) => `http://api/invoices/${id}/pdf` },
+  invoicesService: { get: vi.fn(), setStatus: vi.fn(), remove: vi.fn(), pdf: vi.fn() },
 }));
 const svc = vi.mocked(invoicesService);
 
@@ -91,15 +91,46 @@ describe("InvoiceDetailPage", () => {
     expect(screen.getByText("Vencida")).toBeInTheDocument();
   });
 
-  it("el enlace al PDF se abre en una pestaña nueva de forma segura", async () => {
+  it("Ver PDF descarga el PDF con sesión y lo abre en una pestaña nueva", async () => {
     svc.get.mockResolvedValue(invoice());
+    svc.pdf.mockResolvedValue(new Blob(["%PDF"], { type: "application/pdf" }));
+    const tab = { opener: "x" as unknown, location: { href: "" }, close: vi.fn() };
+    vi.spyOn(window, "open").mockReturnValue(tab as unknown as Window);
+    URL.createObjectURL = vi.fn(() => "blob:pdf-1");
+    URL.revokeObjectURL = vi.fn();
     renderPage();
 
-    const link = await screen.findByRole("link", { name: "Ver PDF" });
-    expect(link).toHaveAttribute("href", "http://api/invoices/3/pdf");
-    expect(link).toHaveAttribute("target", "_blank");
-    expect(link).toHaveAttribute("rel", "noopener noreferrer");
+    await userEvent.click(await screen.findByRole("button", { name: "Ver PDF" }));
+
+    await vi.waitFor(() => expect(tab.location.href).toBe("blob:pdf-1"));
+    expect(svc.pdf).toHaveBeenCalledWith(3);
+    expect(window.open).toHaveBeenCalledWith("about:blank", "_blank");
+    expect(tab.opener).toBeNull();
     expect(screen.getByRole("link", { name: "Editar" })).toHaveAttribute("href", "/invoices/3/edit");
+  });
+
+  it("si el PDF falla, cierra la pestaña y avisa", async () => {
+    svc.get.mockResolvedValue(invoice());
+    svc.pdf.mockRejectedValue(new ApiError(404, "NOT_FOUND", "No existe"));
+    const tab = { opener: null, location: { href: "" }, close: vi.fn() };
+    vi.spyOn(window, "open").mockReturnValue(tab as unknown as Window);
+    renderPage();
+
+    await userEvent.click(await screen.findByRole("button", { name: "Ver PDF" }));
+
+    await vi.waitFor(() => expect(tab.close).toHaveBeenCalled());
+    expect(useToastStore.getState().toasts[0]).toMatchObject({ type: "error", message: "No existe" });
+  });
+
+  it("si el navegador bloquea la pestaña, avisa sin descargar", async () => {
+    svc.get.mockResolvedValue(invoice());
+    vi.spyOn(window, "open").mockReturnValue(null);
+    renderPage();
+
+    await userEvent.click(await screen.findByRole("button", { name: "Ver PDF" }));
+
+    expect(useToastStore.getState().toasts[0]?.message).toMatch(/bloqueó la pestaña/);
+    expect(svc.pdf).not.toHaveBeenCalled();
   });
 
   it.each([

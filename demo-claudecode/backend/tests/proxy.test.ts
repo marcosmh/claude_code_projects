@@ -35,11 +35,26 @@ describe("proxy: CORS", () => {
     expect(none.headers.get("access-control-allow-origin")).toBeNull();
   });
 
-  it("permite credenciales (cookie de sesión) solo a orígenes permitidos", () => {
+  it("permite la cabecera Authorization solo al origen del frontend", () => {
     const ok = proxy(req("OPTIONS", "/api/v1/invoices", { origin: ORIGIN }));
-    expect(ok.headers.get("access-control-allow-credentials")).toBe("true");
+    expect(ok.headers.get("access-control-allow-headers")).toMatch(/Authorization/);
     const evil = proxy(req("OPTIONS", "/api/v1/invoices", { origin: "http://evil.com" }));
-    expect(evil.headers.get("access-control-allow-credentials")).toBeNull();
+    expect(evil.headers.get("access-control-allow-headers")).toBeNull();
+  });
+
+  it.each(["login", "refresh", "logout", "password"])(
+    "permite credenciales (cookie del refresh) en /auth/%s, solo a orígenes permitidos",
+    (route) => {
+      const ok = proxy(req("OPTIONS", `/api/v1/auth/${route}`, { origin: ORIGIN }));
+      expect(ok.headers.get("access-control-allow-credentials")).toBe("true");
+      const evil = proxy(req("OPTIONS", `/api/v1/auth/${route}`, { origin: "http://evil.com" }));
+      expect(evil.headers.get("access-control-allow-credentials")).toBeNull();
+    },
+  );
+
+  it.each(["/api/v1/invoices", "/api/v1/stats/summary", "/api/v1/auth/me"])("no permite credenciales en %s", (path) => {
+    const res = proxy(req("OPTIONS", path, { origin: ORIGIN }));
+    expect(res.headers.get("access-control-allow-credentials")).toBeNull();
   });
 
   it("solo intercepta /api/*", () => {
@@ -55,8 +70,8 @@ describe("proxy: escrituras desde otro origen (CSRF)", () => {
     expect(res.headers.get("access-control-allow-origin")).toBeNull();
   });
 
-  it("el login también está protegido", () => {
-    const res = proxy(req("POST", "/api/v1/auth/login", { origin: "http://evil.com", "x-forwarded-for": freshIp() }));
+  it.each(["login", "refresh", "logout", "password"])("/auth/%s también está protegido", (route) => {
+    const res = proxy(req("POST", `/api/v1/auth/${route}`, { origin: "http://evil.com", "x-forwarded-for": freshIp() }));
     expect(res.status).toBe(403);
   });
 
@@ -75,6 +90,17 @@ describe("proxy: rate limiting", () => {
     const blocked = proxy(req("POST", "/api/v1/auth/login", h));
     expect(blocked.status).toBe(429);
     expect((await blocked.json()).error.code).toBe("RATE_LIMITED");
+    expect(proxy(req("POST", "/api/v1/invoices", h)).status).toBe(200);
+  });
+
+  it("/auth/refresh tiene su propio límite, independiente del login y de las demás escrituras", async () => {
+    const h = { origin: ORIGIN, "x-forwarded-for": freshIp() };
+    for (let i = 0; i < LIMITS.refresh; i++) expect(proxy(req("POST", "/api/v1/auth/refresh", h)).status).toBe(200);
+    const blocked = proxy(req("POST", "/api/v1/auth/refresh", h));
+    expect(blocked.status).toBe(429);
+    expect(blocked.headers.get("access-control-allow-credentials")).toBe("true");
+    expect((await blocked.json()).error.code).toBe("RATE_LIMITED");
+    expect(proxy(req("POST", "/api/v1/auth/login", h)).status).toBe(200);
     expect(proxy(req("POST", "/api/v1/invoices", h)).status).toBe(200);
   });
 

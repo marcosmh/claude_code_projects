@@ -130,7 +130,7 @@ Consequences of this flow that you must handle (they are requirements, not optio
 - Logging and audit middleware.
 
 ### Required environment variables
-`JWT_SECRET`, `JWT_EXPIRES_IN`, `JWT_REFRESH_EXPIRES_IN`, `BCRYPT_ROUNDS`. Document them in `.env.example` with empty or placeholder values only, keep real values out of version control, fail fast at startup if `JWT_SECRET` is missing or too short, and never print its value.
+`JWT_SECRET`, `JWT_EXPIRES_IN`, `JWT_REFRESH_EXPIRES_IN` (optionally `JWT_ISSUER`, `JWT_AUDIENCE`; no `BCRYPT_ROUNDS` here because the project keeps scrypt). Document them in `.env.example` with empty or placeholder values only, keep real values out of version control, fail fast at startup if `JWT_SECRET` is missing or too short, and never print its value.
 
 ### Minimum endpoints
 `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`, `GET /auth/me`. Refresh tokens must be rotated and revocable (store only a hash server-side) so that logout and reuse detection actually invalidate them.

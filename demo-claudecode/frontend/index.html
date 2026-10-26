@@ -6,19 +6,7 @@
     <meta name="description" content="Gestión de facturas" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>Facturas</title>
-    <script>
-      // Aplica tema y menú antes del primer pintado. Una elección guardada manda; si no hay, se sigue
-      // la preferencia del sistema (prefers-color-scheme) y, si no se puede saber, oscuro.
-      try {
-        var d = document.documentElement;
-        var saved = localStorage.getItem("theme");
-        var dark = saved ? saved !== "light" : !window.matchMedia || !matchMedia("(prefers-color-scheme: light)").matches;
-        if (dark) d.classList.add("dark");
-        if (localStorage.getItem("menu") === "collapsed") d.classList.add("menu-collapsed");
-      } catch (e) {
-        document.documentElement.classList.add("dark");
-      }
-    </script>
+    <script src="/theme-init.js"></script>
   </head>
   <body class="min-h-full flex flex-col">
     <div id="root" class="flex min-h-screen flex-1 flex-col"></div>
