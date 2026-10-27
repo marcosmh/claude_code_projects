@@ -50,6 +50,32 @@ export class FakeAuthRepository implements AuthRepository {
       this.users.find((u) => u.id === userId)!.lockedUntil = lockUntil;
     } else this.failures.set(userId, count);
   }
+  async reserveLoginAttempt(userId: number, maxAttempts: number, lockUntil: Date, now: Date) {
+    const user = this.users.find((u) => u.id === userId);
+    if (!user || (user.lockedUntil && user.lockedUntil > now)) return false;
+    user.lockedUntil = null;
+    const count = (this.failures.get(userId) ?? 0) + 1;
+    if (count > maxAttempts) {
+      this.failures.set(userId, 0);
+      user.lockedUntil = lockUntil;
+      return false;
+    }
+    this.failures.set(userId, count);
+    return true;
+  }
+  async settleFailedLogin(userId: number, maxAttempts: number, lockUntil: Date) {
+    if ((this.failures.get(userId) ?? 0) >= maxAttempts) {
+      this.failures.set(userId, 0);
+      this.users.find((u) => u.id === userId)!.lockedUntil = lockUntil;
+    }
+  }
+  async completeLogin(userId: number, now: Date) {
+    const user = this.users.find((u) => u.id === userId);
+    if (!user || (user.lockedUntil && user.lockedUntil > now)) return false;
+    this.failures.delete(userId);
+    user.lockedUntil = null;
+    return true;
+  }
   async clearLoginFailures(userId: number) {
     this.failures.delete(userId);
     this.users.find((u) => u.id === userId)!.lockedUntil = null;

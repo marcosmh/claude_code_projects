@@ -62,6 +62,30 @@ test.describe("autenticación", () => {
     expect((await page.request.post(`${API}/auth/refresh`)).status()).toBe(401);
   });
 
+  test("si el logout falla, el servidor no lo revoca y al recargar la sesión no se restaura sola", async ({ page }) => {
+    await page.goto("/login");
+    await page.getByLabel("Email").fill(E2E_USER.email);
+    await page.getByLabel("Contraseña").fill(E2E_USER.password);
+    await page.getByRole("button", { name: "Iniciar sesión" }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+
+    await page.route("**/auth/logout", (route) => route.abort());
+    await page.getByRole("button", { name: "Cerrar sesión" }).click();
+    await expect(page).toHaveURL(/\/login$/);
+
+    // La cookie del refresh sigue viva en el servidor, pero este navegador no la usa para restaurar la sesión.
+    await page.unroute("**/auth/logout");
+    await page.goto("/dashboard");
+    await expect(page).toHaveURL(/\/login$/);
+
+    // Un inicio de sesión correcto limpia la marca.
+    await page.getByLabel("Email").fill(E2E_USER.email);
+    await page.getByLabel("Contraseña").fill(E2E_USER.password);
+    await page.getByRole("button", { name: "Iniciar sesión" }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+    expect(await page.evaluate(() => localStorage.getItem("loggedOut"))).toBeNull();
+  });
+
   test("una sesión revocada en el servidor devuelve al inicio de sesión sin recargar", async ({ page }) => {
     await page.goto("/login");
     await page.getByLabel("Email").fill(E2E_USER.email);

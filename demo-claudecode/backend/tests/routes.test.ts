@@ -2,6 +2,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { FakeAuthRepository } from "./helpers/FakeAuthRepository";
 import type { FakeInvoiceRepository } from "./helpers/FakeInvoiceRepository";
 
+// These tests log in dozens of times with the same few emails: switch the per-email login limit off (it has its own test).
+vi.hoisted(() => {
+  process.env.RATE_LIMIT_DISABLED = "1";
+});
+
 // Route handlers import the container, which imports the Prisma-backed repository: swap it for a fake.
 const fake = vi.hoisted(() => ({ repo: undefined as unknown, auth: undefined as unknown }));
 vi.mock("../src/repositories", async () => {
@@ -359,11 +364,23 @@ describe("autenticación y autorización", () => {
       expect(bodies.size).toBe(1);
     });
 
-    it("un refresh token reutilizado -> 401 y la familia entera queda revocada", async () => {
+    it("un refresh token reutilizado fuera de la ventana de gracia -> 401 y la familia entera queda revocada", async () => {
       const { refresh } = await loginAs("ana@example.com");
       const next = refreshCookieOf(await postRefresh(refresh));
-      expect((await postRefresh(refresh)).status).toBe(401);
+      (fake.auth as FakeAuthRepository).refreshTokens.find((t) => t.replacedBy !== null)!.revokedAt = new Date(Date.now() - 60_000);
+      const replay = await postRefresh(refresh);
+      expect(replay.status).toBe(401);
+      expect(replay.headers.get("Set-Cookie")).toMatch(/^refresh=; Max-Age=0;/);
       expect((await postRefresh(next)).status).toBe(401);
+    });
+
+    it("un refresh token reutilizado dentro de la ventana de gracia -> 401 sin borrar la cookie ni revocar la familia", async () => {
+      const { refresh } = await loginAs("ana@example.com");
+      const next = refreshCookieOf(await postRefresh(refresh));
+      const replay = await postRefresh(refresh);
+      expect(replay.status).toBe(401);
+      expect(replay.headers.get("Set-Cookie")).toBeNull();
+      expect((await postRefresh(next)).status).toBe(200);
     });
 
     it("el refresh token no vale como Bearer en las rutas de datos", async () => {

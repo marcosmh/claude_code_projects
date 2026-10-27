@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { allowedOrigins, corsHeaders, usesRefreshCookie } from "./utils/cors";
 import { failure } from "./utils/http";
-import { LIMITS, RateLimiter, classify, clientKey } from "./utils/rateLimit";
+import { LIMITS, RateLimiter, bucketKey, classify } from "./utils/rateLimit";
 
 const limiter = new RateLimiter();
 // Test-only switch (the E2E suite fires far more than 30 writes/min from one IP). Never honoured in production.
@@ -30,7 +30,14 @@ export function proxy(request: NextRequest) {
   }
 
   const routeClass = classify(request.method, request.nextUrl.pathname);
-  const result = limiter.hit(`${clientKey(request.headers)}:${routeClass}`, LIMITS[routeClass]);
+  const key = bucketKey(request.headers);
+  // No trustworthy IP and no credential (production without TRUSTED_PROXY_HOPS): no shared bucket; see README.
+  if (key === null) {
+    const passthrough = NextResponse.next();
+    for (const [name, value] of Object.entries(headers)) passthrough.headers.set(name, value);
+    return passthrough;
+  }
+  const result = limiter.hit(`${key}:${routeClass}`, LIMITS[routeClass]);
   const limitHeaders = {
     "RateLimit-Limit": String(result.limit),
     "RateLimit-Remaining": String(result.remaining),

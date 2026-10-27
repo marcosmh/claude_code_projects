@@ -128,30 +128,55 @@ async function requestRefresh(): Promise<AuthSession> {
   return session;
 }
 
-let refreshInFlight: Promise<AuthSession> | null = null;
+/**
+ * Serializa la renovación entre pestañas con la Web Locks API: el refresh rota, y dos pestañas que lo usan a la vez
+ * hacen que la segunda parezca una reutilización (se revoca la sesión en ambas). Sin Locks API (jsdom, navegadores
+ * antiguos) solo queda el single-flight de esta pestaña.
+ */
+function withRefreshLock<T>(task: () => Promise<T>): Promise<T> {
+  const locks = typeof navigator === "undefined" ? undefined : navigator.locks;
+  return locks ? locks.request("refresh", task) : task();
+}
+
+let refreshInFlight: Promise<AuthSession | null> | null = null;
 
 /**
- * Renueva el access token con la cookie del refresh (single-flight: las llamadas concurrentes comparten una sola
- * petición, imprescindible porque el refresh rota y reutilizar uno viejo revoca toda la sesión).
- * Guarda el token nuevo y devuelve la sesión; lanza `ApiError` (401 si no hay sesión recuperable).
+ * Single-flight de esta pestaña + lock entre pestañas. Con `staleToken` definido, dentro del lock se vuelve a leer el
+ * access token: si ya es otro (otra pestaña renovó mientras esperábamos) no se llama al refresh y devuelve `null`.
  */
-export function refreshSession(): Promise<AuthSession> {
-  refreshInFlight ??= requestRefresh().finally(() => {
+function sharedRefresh(staleToken?: string | null): Promise<AuthSession | null> {
+  refreshInFlight ??= withRefreshLock(async () => {
+    if (staleToken !== undefined) {
+      const current = getAccessToken();
+      if (current !== null && current !== staleToken) return null;
+    }
+    return requestRefresh();
+  }).finally(() => {
     refreshInFlight = null;
   });
   return refreshInFlight;
 }
 
 /**
- * Tras un 401: `true` si hay un access token distinto del que falló (otra petición ya renovó) o si el refresh lo
- * consigue; `false` si el refresh dice que no hay sesión. Otros fallos del refresh (red, 5xx, 429) se propagan:
- * no son motivo para cerrar la sesión.
+ * Renueva el access token con la cookie del refresh (single-flight: las llamadas concurrentes comparten una sola
+ * petición, imprescindible porque el refresh rota y reutilizar uno viejo revoca toda la sesión).
+ * Guarda el token nuevo y devuelve la sesión; lanza `ApiError` (401 si no hay sesión recuperable).
+ */
+export async function refreshSession(): Promise<AuthSession> {
+  // `null` solo si nos unimos a una renovación que se resolvió reutilizando el token de otra pestaña: se repite.
+  return (await sharedRefresh()) ?? refreshSession();
+}
+
+/**
+ * Tras un 401: `true` si hay un access token distinto del que falló (otra petición o pestaña ya renovó) o si el
+ * refresh lo consigue; `false` si el refresh dice que no hay sesión. Otros fallos del refresh (red, 5xx, 429) se
+ * propagan: no son motivo para cerrar la sesión.
  */
 async function recoverFromUnauthorized(failedToken: string | null): Promise<boolean> {
   const current = getAccessToken();
   if (current !== null && current !== failedToken) return true;
   try {
-    await refreshSession();
+    await sharedRefresh(failedToken);
     return true;
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) return false;

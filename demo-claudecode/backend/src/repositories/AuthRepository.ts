@@ -20,6 +20,23 @@ export interface AuthRepository {
    * `lockUntil` and the count restarts. The increment is atomic (concurrent guesses are all counted).
    */
   registerFailedLogin(userId: number, maxAttempts: number, lockUntil: Date): Promise<void>;
+  /**
+   * Reserves one password check BEFORE the password is verified, atomically: returns false (and reserves
+   * nothing) if the account is locked at `now`; otherwise counts the attempt and returns true while at most
+   * `maxAttempts` checks are outstanding. Past that it locks the account until `lockUntil` (counter restarts)
+   * and returns false. Concurrent logins therefore cannot verify more than `maxAttempts` guesses.
+   */
+  reserveLoginAttempt(userId: number, maxAttempts: number, lockUntil: Date, now: Date): Promise<boolean>;
+  /**
+   * After a wrong password that held a reservation: locks the account (counter restarts) if the counter has
+   * reached `maxAttempts`. Does not count again.
+   */
+  settleFailedLogin(userId: number, maxAttempts: number, lockUntil: Date): Promise<void>;
+  /**
+   * After a right password that held a reservation: clears the counter and the lock, but only if the account
+   * is not locked at `now` (conditional write). Returns false if it got locked meanwhile: the login must fail.
+   */
+  completeLogin(userId: number, now: Date): Promise<boolean>;
   /** Forgets earlier failures and any lock (after a successful login). */
   clearLoginFailures(userId: number): Promise<void>;
   /** Replaces the password hash and forgets failures and locks. */

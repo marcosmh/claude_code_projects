@@ -138,6 +138,51 @@ describe("proxy: rate limiting", () => {
   });
 });
 
+describe("proxy: origen de la IP (TRUSTED_PROXY_HOPS)", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  const load = async (hops: string, nodeEnv = "test") => {
+    vi.stubEnv("TRUSTED_PROXY_HOPS", hops);
+    vi.stubEnv("NODE_ENV", nodeEnv);
+    vi.resetModules();
+    return (await import("../src/proxy")).proxy;
+  };
+  const login = (p: (r: NextRequest) => Response, xff: string) =>
+    p(req("POST", "/api/v1/auth/login", { "x-forwarded-for": xff }));
+
+  it("hops=0: rotar X-Forwarded-For no evade el límite del login", async () => {
+    const p = await load("0");
+    for (let i = 0; i < LIMITS.auth; i++) expect(login(p, `9.9.9.${i}`).status).toBe(200);
+    const blocked = login(p, "9.9.9.200");
+    expect(blocked.status).toBe(429);
+    expect((await blocked.json()).error.code).toBe("RATE_LIMITED");
+  });
+
+  it("hops=1: rotar la parte izquierda no evade el límite, pero otra IP real tiene su cubo", () => {
+    return load("1").then((p) => {
+      for (let i = 0; i < LIMITS.auth; i++) expect(login(p, `${i}.0.0.1, 203.0.113.7`).status).toBe(200);
+      expect(login(p, "77.0.0.1, 203.0.113.7").status).toBe(429);
+      expect(login(p, "77.0.0.1, 203.0.113.8").status).toBe(200);
+    });
+  });
+
+  it("producción sin hops: sin cubo global compartido, las peticiones sin credencial no se bloquean entre sí", async () => {
+    const p = await load("0", "production");
+    for (let i = 0; i < LIMITS.auth + 5; i++) expect(login(p, "1.1.1.1").status).toBe(200);
+  });
+
+  it("producción sin hops: el cubo es por credencial", async () => {
+    const p = await load("0", "production");
+    const write = (token: string) => p(req("POST", "/api/v1/invoices", { authorization: `Bearer ${token}` }));
+    for (let i = 0; i < LIMITS.write; i++) expect(write("aaaa.bbbb.cccc-user1").status).toBe(200);
+    expect(write("aaaa.bbbb.cccc-user1").status).toBe(429);
+    expect(write("aaaa.bbbb.cccc-user2").status).toBe(200);
+  });
+});
+
 describe("proxy: RATE_LIMIT_DISABLED (solo E2E)", () => {
   afterEach(() => {
     vi.unstubAllEnvs();

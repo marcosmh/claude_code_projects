@@ -265,6 +265,88 @@ describe("request: sesión con JWT", () => {
   });
 });
 
+describe("refresh entre pestañas (Web Locks)", () => {
+  const unauthorized = () => json({ error: { code: "UNAUTHENTICATED", message: "Inicia sesión" } }, 401);
+  const session = (token: string) => json({ data: { token, user: { id: 1, email: "a@b.co", role: "USER" } } });
+  const urlOf = (call: unknown) => (call as [string])[0].replace("http://localhost:4000/api/v1", "");
+
+  /** Lock exclusivo FIFO, como `navigator.locks.request(name, cb)` con el mismo nombre. */
+  function installFakeLocks() {
+    let tail: Promise<unknown> = Promise.resolve();
+    const request = vi.fn(<T,>(_name: string, task: () => Promise<T>) => {
+      const run = tail.then(task, task);
+      tail = run.catch(() => undefined);
+      return run;
+    });
+    vi.stubGlobal("navigator", { ...window.navigator, locks: { request } });
+    return request;
+  }
+
+  afterEach(() => {
+    setUnauthorizedHandler(undefined);
+    vi.resetModules();
+  });
+
+  it("dos pestañas con 401 a la vez hacen UN solo refresh y la segunda reutiliza el token nuevo", async () => {
+    const lock = installFakeLocks();
+    // Dos instancias del módulo = dos pestañas (cada una con su single-flight), con el localStorage compartido.
+    vi.resetModules();
+    const tabA = await import("./apiClient");
+    vi.resetModules();
+    const tabB = await import("./apiClient");
+    expect(tabA.request).not.toBe(tabB.request);
+    window.localStorage.setItem("accessToken", "viejo");
+
+    const fetchMock = vi.fn(async (url: string, init: RequestInit) => {
+      if (url.endsWith("/auth/refresh")) {
+        await Promise.resolve();
+        window.localStorage.setItem("accessToken", "nuevo"); // el token lo guarda la pestaña que renueva
+        return session("nuevo");
+      }
+      const bearer = (init.headers as Record<string, string>).Authorization;
+      return bearer === "Bearer nuevo" ? json({ data: url }) : unauthorized();
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const results = await Promise.all([tabA.request("/invoices"), tabB.request("/stats/summary")]);
+
+    expect(results).toHaveLength(2);
+    expect(fetchMock.mock.calls.filter((c) => urlOf(c) === "/auth/refresh")).toHaveLength(1);
+    expect(lock).toHaveBeenCalledWith("refresh", expect.any(Function));
+    expect(window.localStorage.getItem("accessToken")).toBe("nuevo");
+  });
+
+  it("dentro del lock, si el refresh falla por red no cierra la sesión y libera el lock", async () => {
+    installFakeLocks();
+    setAccessToken("viejo");
+    const handler = vi.fn();
+    setUnauthorizedHandler(handler);
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(unauthorized()).mockRejectedValueOnce(new TypeError("x")));
+
+    await expect(request("/invoices")).rejects.toMatchObject({ code: "NETWORK_ERROR" });
+
+    expect(handler).not.toHaveBeenCalled();
+    expect(getAccessToken()).toBe("viejo");
+    // El lock quedó libre: un nuevo intento puede renovar.
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(session("t2")));
+    await expect(refreshSession()).resolves.toMatchObject({ token: "t2" });
+  });
+
+  it("sin Locks API (navigator.locks ausente) el refresh sigue funcionando", async () => {
+    vi.stubGlobal("navigator", { ...window.navigator, locks: undefined });
+    setAccessToken("viejo");
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(unauthorized())
+      .mockResolvedValueOnce(session("nuevo"))
+      .mockResolvedValueOnce(json({ data: "ok" }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(request("/invoices")).resolves.toEqual({ data: "ok" });
+    expect(fetchMock.mock.calls.map(urlOf)).toEqual(["/invoices", "/auth/refresh", "/invoices"]);
+  });
+});
+
 describe("tokenStorage", () => {
   afterEach(() => vi.restoreAllMocks());
 

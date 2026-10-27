@@ -3,7 +3,7 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createQueryClient } from "@/queryClient";
-import { clearAccessToken, getAccessToken, setAccessToken } from "@/services/tokenStorage";
+import { clearAccessToken, clearLoggedOutLocally, getAccessToken, isLoggedOutLocally, setAccessToken } from "@/services/tokenStorage";
 import { useToastStore } from "@/store/toastStore";
 import { queryKeys } from "./queryKeys";
 import { useLogin, useLogout, useSession } from "./useAuth";
@@ -17,7 +17,10 @@ function setup() {
   return { client, wrapper };
 }
 
-beforeEach(() => clearAccessToken());
+beforeEach(() => {
+  clearAccessToken();
+  clearLoggedOutLocally();
+});
 afterEach(() => {
   vi.unstubAllGlobals();
   clearAccessToken();
@@ -94,5 +97,27 @@ describe("useLogin / useLogout", () => {
     expect(getAccessToken()).toBeNull();
     expect(client.getQueryData(queryKeys.session)).toBeNull();
     await waitFor(() => expect(useToastStore.getState().toasts[0]?.type).toBe("error"));
+    expect(useToastStore.getState().toasts[0]?.message).toMatch(/no pudo revocarla/);
+    expect(isLoggedOutLocally()).toBe(true);
+  });
+
+  it("tras un logout fallido, recargar la sesión no la restaura hasta un nuevo login", async () => {
+    setAccessToken("jwt");
+    const fetchMock = vi.fn().mockRejectedValue(new TypeError("Failed to fetch"));
+    vi.stubGlobal("fetch", fetchMock);
+    const first = setup();
+    const logout = renderHook(() => useLogout(), { wrapper: first.wrapper });
+    await act(() => logout.result.current.mutateAsync().catch(() => undefined));
+    fetchMock.mockClear();
+
+    const reloaded = setup();
+    const { result } = renderHook(() => useSession(), { wrapper: reloaded.wrapper });
+    await waitFor(() => expect(result.current.data).toBeNull());
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    fetchMock.mockResolvedValue(json({ data: { token: "jwt-9", user: ADMIN } }));
+    const login = renderHook(() => useLogin(), { wrapper: reloaded.wrapper });
+    await act(() => login.result.current.mutateAsync({ email: ADMIN.email, password: "x" }));
+    expect(isLoggedOutLocally()).toBe(false);
   });
 });

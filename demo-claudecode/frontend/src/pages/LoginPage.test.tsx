@@ -121,7 +121,7 @@ describe("UserMenu", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "Cerrar sesión" }));
 
-    await vi.waitFor(() => expect(useToastStore.getState().toasts[0]?.message).toContain("No se pudo conectar"));
+    await vi.waitFor(() => expect(useToastStore.getState().toasts[0]?.message).toContain("el servidor no pudo revocarla"));
     expect(client.getQueryData(queryKeys.session)).toBeNull();
     expect(getAccessToken()).toBeNull();
   });

@@ -13,6 +13,8 @@ export interface JwtConfig {
   secret: Uint8Array;
   accessTtlSeconds: number;
   refreshTtlSeconds: number;
+  /** Seconds after a rotation during which re-presenting the old refresh token is a plain 401 (0 = off). */
+  refreshReuseGraceSeconds: number;
   issuer: string;
   audience: string;
 }
@@ -40,6 +42,19 @@ export function parseDuration(value: string, name: string): number {
   return seconds;
 }
 
+export const DEFAULT_REFRESH_REUSE_GRACE_SECONDS = 10;
+const MAX_REFRESH_REUSE_GRACE_SECONDS = 60;
+
+/** REFRESH_REUSE_GRACE_SECONDS: integer 0..60 (0 turns the grace off); unset means the default. */
+function parseGrace(value: string | undefined): number {
+  if (value === undefined || value.trim() === "") return DEFAULT_REFRESH_REUSE_GRACE_SECONDS;
+  const seconds = /^\d+$/.test(value.trim()) ? Number(value.trim()) : NaN;
+  if (!(seconds >= 0 && seconds <= MAX_REFRESH_REUSE_GRACE_SECONDS)) {
+    throw new Error(`REFRESH_REUSE_GRACE_SECONDS debe ser un entero entre 0 y ${MAX_REFRESH_REUSE_GRACE_SECONDS}`);
+  }
+  return seconds;
+}
+
 /**
  * Reads and validates the JWT settings. Fails (never printing the secret) when JWT_SECRET is missing or
  * shorter than 32 bytes, or when a duration is malformed.
@@ -55,6 +70,7 @@ export function loadJwtConfig(env: Record<string, string | undefined> = process.
     secret: bytes,
     accessTtlSeconds: parseDuration(env.JWT_EXPIRES_IN || "15m", "JWT_EXPIRES_IN"),
     refreshTtlSeconds: parseDuration(env.JWT_REFRESH_EXPIRES_IN || "7d", "JWT_REFRESH_EXPIRES_IN"),
+    refreshReuseGraceSeconds: parseGrace(env.REFRESH_REUSE_GRACE_SECONDS),
     issuer: env.JWT_ISSUER || "facturas-api",
     audience: env.JWT_AUDIENCE || "facturas-web",
   };

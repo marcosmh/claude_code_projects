@@ -55,6 +55,39 @@ export class PrismaAuthRepository implements AuthRepository {
     });
   }
 
+  async reserveLoginAttempt(userId: number, maxAttempts: number, lockUntil: Date, now: Date): Promise<boolean> {
+    return this.db.$transaction(async (tx) => {
+      // One conditional UPDATE: it only matches an unlocked account (or an expired lock) and increments in the
+      // same statement, so concurrent reservations are serialised by the database and each gets its own count.
+      const { count } = await tx.user.updateMany({
+        where: { id: userId, OR: [{ lockedUntil: null }, { lockedUntil: { lte: now } }] },
+        data: { failedLogins: { increment: 1 }, lockedUntil: null },
+      });
+      if (count === 0) return false;
+      const row = await tx.user.findUnique({ where: { id: userId }, select: { failedLogins: true } });
+      if (!row || row.failedLogins > maxAttempts) {
+        await tx.user.updateMany({ where: { id: userId }, data: { failedLogins: 0, lockedUntil: lockUntil } });
+        return false;
+      }
+      return true;
+    });
+  }
+
+  async settleFailedLogin(userId: number, maxAttempts: number, lockUntil: Date): Promise<void> {
+    await this.db.user.updateMany({
+      where: { id: userId, failedLogins: { gte: maxAttempts } },
+      data: { failedLogins: 0, lockedUntil: lockUntil },
+    });
+  }
+
+  async completeLogin(userId: number, now: Date): Promise<boolean> {
+    const { count } = await this.db.user.updateMany({
+      where: { id: userId, OR: [{ lockedUntil: null }, { lockedUntil: { lte: now } }] },
+      data: { failedLogins: 0, lockedUntil: null },
+    });
+    return count > 0;
+  }
+
   async clearLoginFailures(userId: number): Promise<void> {
     await this.db.user.update({ where: { id: userId }, data: { failedLogins: 0, lockedUntil: null } });
   }

@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tansta
 import { authService } from "@/services/authService";
 import { useToastStore } from "@/store/toastStore";
 import type { AuthUser } from "@/types/auth";
-import { errorMessage } from "@/utils/apiErrors";
 import { queryKeys } from "./queryKeys";
 
 /** Descarta todo lo cacheado salvo la sesión: los datos de un usuario no deben verse desde otra cuenta. */
@@ -52,7 +51,10 @@ export function useLogout() {
     mutationFn: () => authService.logout(),
     // El token local ya se borró aunque el backend no respondiera: la sesión termina siempre en este dispositivo.
     onSettled: () => endSession(queryClient),
-    onError: (error) =>
-      push("error", errorMessage(error, "No se pudo avisar al servidor del cierre de sesión. Tu sesión se cerró en este dispositivo.")),
+    onError: () =>
+      push(
+        "error",
+        "Cerraste la sesión aquí, pero el servidor no pudo revocarla. No se restaurará automáticamente en este navegador; vuelve a iniciar sesión cuando quieras.",
+      ),
   });
 }

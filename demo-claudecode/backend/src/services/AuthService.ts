@@ -2,7 +2,7 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import type { AuthRepository } from "../repositories/AuthRepository";
 import type { AuthIdentity, AuthUser, UserRole } from "../types";
 import { consoleAudit, type AuditLogger } from "../utils/audit";
-import { ConflictError, UnauthorizedError, ValidationError } from "../utils/errors";
+import { ConflictError, RefreshReplayInGraceError, UnauthorizedError, ValidationError } from "../utils/errors";
 import {
   InvalidTokenError,
   signAccessToken,
@@ -58,25 +58,33 @@ export class AuthService {
 
   async login(email: string, password: string): Promise<SessionTokens> {
     const record = await this.repository.findUserByEmail(email);
-    // Always verify (against a decoy when the email is unknown) so every failure costs the same.
-    const valid = await verifyPassword(password, record?.passwordHash ?? (await decoy()));
     const now = this.now();
+    const lockUntil = new Date(now.getTime() + LOCK_MS);
+    // The attempt is reserved atomically BEFORE the (slow) password check. Reading the lock first and
+    // verifying afterwards let N parallel logins all see "not locked", all be verified, and a right password
+    // among them get in before the failures were counted. A reservation caps the checks at MAX_FAILED_LOGINS.
+    const reserved = record ? await this.repository.reserveLoginAttempt(record.id, MAX_FAILED_LOGINS, lockUntil, now) : false;
+    // Always verify (against a decoy when the email is unknown or the account is locked) so every failure costs the same.
+    const valid = await verifyPassword(password, record?.passwordHash ?? (await decoy()));
     if (!record) {
       this.audit("login_failed", { reason: "unknown_account" });
       throw new UnauthorizedError(LOGIN_FAILED);
     }
     // A locked account rejects even the right password and does not count the attempt.
-    if (isLocked(record, now)) {
+    if (!reserved) {
       this.audit("login_locked", { userId: record.id });
       throw new UnauthorizedError(LOGIN_FAILED);
     }
     if (!valid) {
-      await this.repository.registerFailedLogin(record.id, MAX_FAILED_LOGINS, new Date(now.getTime() + LOCK_MS));
+      await this.repository.settleFailedLogin(record.id, MAX_FAILED_LOGINS, lockUntil);
       this.audit("login_failed", { userId: record.id, reason: "wrong_password" });
       throw new UnauthorizedError(LOGIN_FAILED);
     }
-
-    await this.repository.clearLoginFailures(record.id);
+    // Conditional on "not locked": if concurrent wrong guesses locked the account meanwhile, the right one fails too.
+    if (!(await this.repository.completeLogin(record.id, now))) {
+      this.audit("login_locked", { userId: record.id, reason: "locked_during_login" });
+      throw new UnauthorizedError(LOGIN_FAILED);
+    }
     await this.repository.deleteExpiredRefreshTokens(now);
     const family = this.newId();
     const refreshExpiresAt = new Date(now.getTime() + this.config().refreshTtlSeconds * 1000);
@@ -106,11 +114,7 @@ export class AuthService {
       await this.repository.revokeRefreshTokenFamily(claims.family, now);
       return this.refreshDenied("unknown_token");
     }
-    if (stored.revokedAt) {
-      await this.repository.revokeRefreshTokenFamily(stored.family, now);
-      this.audit("refresh_reuse_detected", { userId: stored.userId });
-      throw new UnauthorizedError(REFRESH_FAILED);
-    }
+    if (stored.revokedAt) return this.reuseDetected(stored, now);
     if (stored.expiresAt <= now) return this.refreshDenied("expired", stored.userId);
 
     const identity = await this.repository.findAuthIdentity(stored.userId);
@@ -126,10 +130,9 @@ export class AuthService {
       now,
     );
     if (!rotated) {
-      // Lost a race against another use of the same token: indistinguishable from a replay.
-      await this.repository.revokeRefreshTokenFamily(stored.family, now);
-      this.audit("refresh_reuse_detected", { userId: stored.userId, reason: "concurrent_rotation" });
-      throw new UnauthorizedError(REFRESH_FAILED);
+      // Lost a race against another use of the same token: same as a replay, judged by when the winner rotated.
+      const current = await this.repository.findRefreshToken(stored.tokenHash);
+      return this.reuseDetected(current ?? stored, now, "concurrent_rotation");
     }
     this.audit("refresh_success", { userId: stored.userId });
     return this.issue(identity, { jti: nextJti, family: stored.family }, stored.expiresAt, now);
@@ -246,6 +249,28 @@ export class AuthService {
       this.audit("refresh_failed", { reason: "invalid_token" });
       throw new UnauthorizedError(REFRESH_FAILED);
     }
+  }
+
+  /**
+   * A revoked refresh token came back. If it was ROTATED (replacedBy set) less than the grace window ago, it
+   * is most likely a second tab or a lost response: plain 401, no new tokens (a replay must never get any),
+   * family untouched. Anything else (outside the window, or revoked by logout/password change/lockout) is
+   * treated as theft: the whole family is revoked and the event audited.
+   */
+  private async reuseDetected(
+    stored: { tokenHash: string; family: string; userId: number; revokedAt: Date | null; replacedBy: number | null },
+    now: Date,
+    reason?: string,
+  ): Promise<never> {
+    const graceMs = this.config().refreshReuseGraceSeconds * 1000;
+    const rotatedAt = stored.replacedBy !== null ? stored.revokedAt : null;
+    if (graceMs > 0 && rotatedAt && now.getTime() - rotatedAt.getTime() <= graceMs) {
+      this.audit("refresh_reuse_grace", { userId: stored.userId, ...(reason && { reason }) });
+      throw new RefreshReplayInGraceError(REFRESH_FAILED);
+    }
+    await this.repository.revokeRefreshTokenFamily(stored.family, now);
+    this.audit("refresh_reuse_detected", { userId: stored.userId, ...(reason && { reason }) });
+    throw new UnauthorizedError(REFRESH_FAILED);
   }
 
   private refreshDenied(reason: string, userId?: number): never {

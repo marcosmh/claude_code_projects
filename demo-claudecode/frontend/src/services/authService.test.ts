@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "./apiClient";
 import { authService } from "./authService";
-import { clearAccessToken, getAccessToken, setAccessToken } from "./tokenStorage";
+import { clearAccessToken, clearLoggedOutLocally, getAccessToken, isLoggedOutLocally, markLoggedOutLocally, setAccessToken } from "./tokenStorage";
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
 const unauthorized = () => json({ error: { code: "UNAUTHENTICATED", message: "Inicia sesión" } }, 401);
@@ -14,6 +14,7 @@ const paths = (fetchMock: ReturnType<typeof vi.fn>) => fetchMock.mock.calls.map(
 beforeEach(() => {
   window.localStorage.clear();
   clearAccessToken();
+  clearLoggedOutLocally();
 });
 afterEach(() => vi.unstubAllGlobals());
 
@@ -49,11 +50,63 @@ describe("authService", () => {
     expect(getAccessToken()).toBeNull();
   });
 
-  it("logout borra el token aunque el backend falle", async () => {
+  it("logout borra el token aunque el backend falle y deja la marca local", async () => {
     setAccessToken("jwt-1");
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Failed to fetch")));
     await expect(authService.logout()).rejects.toMatchObject({ code: "NETWORK_ERROR" });
     expect(getAccessToken()).toBeNull();
+    expect(isLoggedOutLocally()).toBe(true);
+  });
+
+  it("logout reintenta una vez ante un fallo de red y, si el segundo intento funciona, no deja marca", async () => {
+    setAccessToken("jwt-1");
+    const fetchMock = vi.fn().mockRejectedValueOnce(new TypeError("x")).mockResolvedValueOnce(new Response(null, { status: 204 }));
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(authService.logout()).resolves.toBeUndefined();
+    expect(paths(fetchMock)).toEqual(["/auth/logout", "/auth/logout"]);
+    expect(isLoggedOutLocally()).toBe(false);
+  });
+
+  it("logout reintenta una sola vez ante un 5xx y luego marca", async () => {
+    const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(new Response("boom", { status: 503 })));
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(authService.logout()).rejects.toMatchObject({ status: 503 });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(isLoggedOutLocally()).toBe(true);
+  });
+
+  it("logout no reintenta un 429 pero deja la marca", async () => {
+    const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(new Response("{}", { status: 429 })));
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(authService.logout()).rejects.toMatchObject({ status: 429 });
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(isLoggedOutLocally()).toBe(true);
+  });
+
+  it("con la marca de logout fallido, me no restaura la sesión con la cookie viva", async () => {
+    markLoggedOutLocally();
+    const fetchMock = vi.fn().mockResolvedValue(sessionBody("recuperado"));
+    vi.stubGlobal("fetch", fetchMock);
+    expect(await authService.me()).toBeNull();
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(getAccessToken()).toBeNull();
+  });
+
+  it("un login correcto limpia la marca y me vuelve a restaurar la sesión", async () => {
+    markLoggedOutLocally();
+    vi.stubGlobal("fetch", vi.fn().mockImplementation(() => Promise.resolve(sessionBody("jwt-2"))));
+    await authService.login("ana@example.com", "secreto");
+    expect(isLoggedOutLocally()).toBe(false);
+
+    clearAccessToken();
+    expect(await authService.me()).toEqual(user);
+  });
+
+  it("un login fallido conserva la marca", async () => {
+    markLoggedOutLocally();
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(unauthorized()));
+    await expect(authService.login("a@b.co", "x")).rejects.toMatchObject({ status: 401 });
+    expect(isLoggedOutLocally()).toBe(true);
   });
 
   it("changePassword envía ambas contraseñas y luego pide un access token nuevo", async () => {

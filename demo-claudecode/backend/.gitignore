@@ -8,3 +8,5 @@ next-env.d.ts
 *.tsbuildinfo
 coverage
 .next-e2e
+prisma/*.db*
+*.bak*

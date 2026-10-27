@@ -1,6 +1,13 @@
 import type { AuthUser } from "@/types/auth";
 import { ApiError, refreshSession, request } from "./apiClient";
-import { clearAccessToken, getAccessToken, setAccessToken } from "./tokenStorage";
+import {
+  clearAccessToken,
+  clearLoggedOutLocally,
+  getAccessToken,
+  isLoggedOutLocally,
+  markLoggedOutLocally,
+  setAccessToken,
+} from "./tokenStorage";
 
 /** Intenta recuperar la sesión con la cookie del refresh: usuario, o `null` si no hay sesión recuperable. */
 async function restoreSession(): Promise<AuthUser | null> {
@@ -12,18 +19,36 @@ async function restoreSession(): Promise<AuthUser | null> {
   }
 }
 
+const isRetryableLogoutError = (error: unknown) => error instanceof ApiError && (error.status === 0 || error.status >= 500);
+
 export const authService = {
   /** Inicia sesión y guarda el access token; el refresh llega en una cookie httpOnly. */
   async login(email: string, password: string): Promise<AuthUser> {
     const { token, user } = (await request<{ token: string; user: AuthUser }>("/auth/login", { method: "POST", body: { email, password } })).data;
     setAccessToken(token);
+    clearLoggedOutLocally();
     return user;
   },
 
-  /** Avisa al backend y borra el access token aunque la llamada falle (el error se propaga después). */
+  /**
+   * Avisa al backend y borra el access token siempre. Ante un fallo de red o 5xx reintenta una vez; si el servidor
+   * sigue sin revocar la sesión deja la marca local que impide restaurarla con la cookie viva y propaga el error.
+   */
   async logout(): Promise<void> {
     try {
-      await request<void>("/auth/logout", { method: "POST" });
+      try {
+        await request<void>("/auth/logout", { method: "POST" });
+      } catch (error) {
+        if (!isRetryableLogoutError(error)) throw error;
+        // Se borra ya, no tras el reintento: si la página se descarga mientras espera (p. ej. navega a /login), el
+        // token no puede quedarse guardado.
+        clearAccessToken();
+        await request<void>("/auth/logout", { method: "POST" });
+      }
+      clearLoggedOutLocally();
+    } catch (error) {
+      markLoggedOutLocally();
+      throw error;
     } finally {
       clearAccessToken();
     }
@@ -55,7 +80,7 @@ export const authService = {
    * Sin token o con uno caducado, la sesión se recupera por el refresh antes de darla por perdida.
    */
   async me(signal?: AbortSignal): Promise<AuthUser | null> {
-    if (!getAccessToken()) return restoreSession();
+    if (!getAccessToken()) return isLoggedOutLocally() ? null : restoreSession();
     try {
       return (await request<AuthUser>("/auth/me", { signal })).data;
     } catch (error) {

@@ -88,6 +88,59 @@ describe("PrismaAuthRepository", () => {
     expect((await db.user.findUnique({ where: { id: user.id } }))?.failedLogins).toBe(4);
   });
 
+  describe("reserva atómica de intentos de login", () => {
+    const until = new Date("2026-12-01T00:00:00Z");
+    const now = new Date("2026-10-10T12:00:00Z");
+    const state = (id: number) => db.user.findUnique({ where: { id }, select: { failedLogins: true, lockedUntil: true } });
+
+    it("reserveLoginAttempt cuenta cada reserva y bloquea al superar el máximo", async () => {
+      const user = await repo.createUser({ email: "ana@example.com", passwordHash: "h" });
+      for (let i = 0; i < 3; i++) expect(await repo.reserveLoginAttempt(user.id, 3, until, now)).toBe(true);
+      expect(await state(user.id)).toEqual({ failedLogins: 3, lockedUntil: null });
+      expect(await repo.reserveLoginAttempt(user.id, 3, until, now)).toBe(false);
+      expect(await state(user.id)).toEqual({ failedLogins: 0, lockedUntil: until });
+    });
+
+    it("rechaza sin contar ni alargar el bloqueo mientras dura, y lo libera al caducar", async () => {
+      const user = await repo.createUser({ email: "ana@example.com", passwordHash: "h" });
+      await db.user.update({ where: { id: user.id }, data: { lockedUntil: until } });
+      expect(await repo.reserveLoginAttempt(user.id, 3, new Date("2027-01-01"), now)).toBe(false);
+      expect(await state(user.id)).toEqual({ failedLogins: 0, lockedUntil: until });
+      expect(await repo.reserveLoginAttempt(user.id, 3, until, new Date(until.getTime() + 1))).toBe(true);
+      expect(await state(user.id)).toEqual({ failedLogins: 1, lockedUntil: null });
+      expect(await repo.reserveLoginAttempt(user.id + 999, 3, until, now)).toBe(false);
+    });
+
+    it("reservas concurrentes: como mucho `max` pasan y el resto bloquea la cuenta", async () => {
+      const user = await repo.createUser({ email: "ana@example.com", passwordHash: "h" });
+      const results = await Promise.all(Array.from({ length: 12 }, () => repo.reserveLoginAttempt(user.id, 5, until, now)));
+      expect(results.filter(Boolean)).toHaveLength(5);
+      expect((await state(user.id))?.lockedUntil).toEqual(until);
+    });
+
+    it("settleFailedLogin bloquea solo si el contador llegó al máximo y no cuenta otra vez", async () => {
+      const user = await repo.createUser({ email: "ana@example.com", passwordHash: "h" });
+      for (let i = 0; i < 2; i++) await repo.reserveLoginAttempt(user.id, 3, until, now);
+      await repo.settleFailedLogin(user.id, 3, until);
+      expect(await state(user.id)).toEqual({ failedLogins: 2, lockedUntil: null });
+      await repo.reserveLoginAttempt(user.id, 3, until, now);
+      await repo.settleFailedLogin(user.id, 3, until);
+      expect(await state(user.id)).toEqual({ failedLogins: 0, lockedUntil: until });
+    });
+
+    it("completeLogin limpia contador y bloqueo caducado, pero falla si la cuenta está bloqueada", async () => {
+      const user = await repo.createUser({ email: "ana@example.com", passwordHash: "h" });
+      await repo.reserveLoginAttempt(user.id, 3, until, now);
+      expect(await repo.completeLogin(user.id, now)).toBe(true);
+      expect(await state(user.id)).toEqual({ failedLogins: 0, lockedUntil: null });
+      await db.user.update({ where: { id: user.id }, data: { failedLogins: 2, lockedUntil: until } });
+      expect(await repo.completeLogin(user.id, now)).toBe(false);
+      expect(await state(user.id)).toEqual({ failedLogins: 2, lockedUntil: until });
+      expect(await repo.completeLogin(user.id, new Date(until.getTime() + 1))).toBe(true);
+      expect(await repo.completeLogin(user.id + 999, now)).toBe(false);
+    });
+  });
+
   it("clearLoginFailures y updatePassword quitan fallos y bloqueo", async () => {
     const user = await repo.createUser({ email: "ana@example.com", passwordHash: "old" });
     await repo.registerFailedLogin(user.id, 1, new Date("2099-01-01"));

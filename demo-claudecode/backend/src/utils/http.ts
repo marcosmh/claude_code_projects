@@ -1,5 +1,5 @@
 import { ZodError } from "zod";
-import { AppError, type ErrorDetail } from "./errors";
+import { AppError, RateLimitedError, type ErrorDetail } from "./errors";
 
 export interface ErrorBody {
   error: { code: string; message: string; details?: ErrorDetail[] };
@@ -24,7 +24,8 @@ export function errorResponse(error: unknown): Response {
     return failure(400, "VALIDATION_ERROR", "Datos de entrada inválidos", zodDetails(error));
   }
   if (error instanceof AppError) {
-    return failure(error.status, error.code, error.message, error.details);
+    const headers = error instanceof RateLimitedError ? { "Retry-After": String(error.retryAfter) } : undefined;
+    return failure(error.status, error.code, error.message, error.details, headers);
   }
   const prismaCode = prismaErrorCode(error);
   if (prismaCode === "P2025") return failure(404, "NOT_FOUND", "Recurso no encontrado");

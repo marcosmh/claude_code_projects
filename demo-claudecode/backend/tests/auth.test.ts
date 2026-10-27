@@ -3,7 +3,7 @@ import { AuthService, LOCK_MS, MAX_FAILED_LOGINS, hashToken } from "../src/servi
 import type { AuditAction } from "../src/utils/audit";
 import { REFRESH_COOKIE, clearedRefreshCookie, readCookie, refreshCookie } from "../src/utils/cookies";
 import { loadJwtConfig, signAccessToken } from "../src/utils/jwt";
-import { ConflictError, UnauthorizedError, ValidationError } from "../src/utils/errors";
+import { ConflictError, RefreshReplayInGraceError, UnauthorizedError, ValidationError } from "../src/utils/errors";
 import { hashPassword, verifyPassword } from "../src/utils/password";
 import { changePasswordSchema, loginBodySchema, newUserSchema } from "../src/validators/auth.validator";
 import { FakeAuthRepository } from "./helpers/FakeAuthRepository";
@@ -70,8 +70,9 @@ describe("auth validators", () => {
 const NOW = new Date("2026-10-10T12:00:00Z");
 const config = loadJwtConfig({ JWT_SECRET: "service-test-secret-0123456789-0123456789" });
 const DAY = 86_400_000;
+const GRACE_MS = config.refreshReuseGraceSeconds * 1000;
 
-function harness() {
+function harness(cfg = config) {
   const h = {
     t: NOW,
     counter: 0,
@@ -84,7 +85,7 @@ function harness() {
   h.repo = new FakeAuthRepository(h.invoices);
   h.service = new AuthService(
     h.repo,
-    () => config,
+    () => cfg,
     () => h.t,
     () => `id-${++h.counter}`,
     (action, fields) => h.audit.push({ action, fields }),
@@ -198,6 +199,7 @@ describe("AuthService", () => {
     it("a reused refresh token revokes the whole family: the legitimate newest token dies too", async () => {
       const first = await h.service.login("ana@example.com", PASSWORD);
       const second = await h.service.refresh(first.refreshToken);
+      h.advance(GRACE_MS + 1);
       const replay = await h.service.refresh(first.refreshToken).catch((e) => e);
       expect(replay).toBeInstanceOf(UnauthorizedError);
       expect(h.repo.refreshTokens.every((t) => t.revokedAt)).toBe(true);
@@ -209,15 +211,82 @@ describe("AuthService", () => {
       const laptop = await h.service.login("ana@example.com", PASSWORD);
       const phone = await h.service.login("ana@example.com", PASSWORD);
       await h.service.refresh(laptop.refreshToken);
+      h.advance(GRACE_MS + 1);
       await h.service.refresh(laptop.refreshToken).catch(() => {});
       await expect(h.service.refresh(phone.refreshToken)).resolves.toBeDefined();
     });
 
-    it("two concurrent uses of the same token: one wins, the family is revoked", async () => {
+    it("two concurrent uses of the same token: one wins, the loser gets a 401 and the family survives (grace)", async () => {
+      const { refreshToken } = await h.service.login("ana@example.com", PASSWORD);
+      const results = await Promise.allSettled([h.service.refresh(refreshToken), h.service.refresh(refreshToken)]);
+      expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
+      const rejected = results.find((r) => r.status === "rejected") as PromiseRejectedResult;
+      expect(rejected.reason).toBeInstanceOf(RefreshReplayInGraceError);
+      expect(h.repo.refreshTokens.filter((t) => !t.revokedAt)).toHaveLength(1);
+      expect(h.audit.map((a) => a.action)).not.toContain("refresh_reuse_detected");
+    });
+
+    it("two concurrent uses with the grace off: one wins and the family is revoked", async () => {
+      h = harness({ ...config, refreshReuseGraceSeconds: 0 });
+      await h.service.createUser("ana@example.com", PASSWORD);
       const { refreshToken } = await h.service.login("ana@example.com", PASSWORD);
       const results = await Promise.allSettled([h.service.refresh(refreshToken), h.service.refresh(refreshToken)]);
       expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
       expect(h.repo.refreshTokens.every((t) => t.revokedAt)).toBe(true);
+    });
+
+    describe("reuse grace window", () => {
+      it("a replay inside the window is a plain 401: no tokens, family untouched, newest token still works", async () => {
+        const first = await h.service.login("ana@example.com", PASSWORD);
+        const second = await h.service.refresh(first.refreshToken);
+        h.advance(GRACE_MS);
+        const replay = await h.service.refresh(first.refreshToken).catch((e) => e);
+        expect(replay).toBeInstanceOf(RefreshReplayInGraceError);
+        expect(replay.message).toBe(((await h.service.refresh("junk").catch((e) => e)) as Error).message);
+        expect(h.repo.refreshTokens.filter((t) => !t.revokedAt)).toHaveLength(1);
+        expect(h.audit.map((a) => a.action)).toContain("refresh_reuse_grace");
+        expect(h.audit.map((a) => a.action)).not.toContain("refresh_reuse_detected");
+        await expect(h.service.refresh(second.refreshToken)).resolves.toBeDefined();
+      });
+
+      it("the same replay outside the window revokes the family and is audited", async () => {
+        const first = await h.service.login("ana@example.com", PASSWORD);
+        const second = await h.service.refresh(first.refreshToken);
+        h.advance(GRACE_MS + 1);
+        await expect(h.service.refresh(first.refreshToken)).rejects.not.toBeInstanceOf(RefreshReplayInGraceError);
+        expect(h.repo.refreshTokens.every((t) => t.revokedAt)).toBe(true);
+        expect(h.audit.map((a) => a.action)).toContain("refresh_reuse_detected");
+        await expect(h.service.refresh(second.refreshToken)).rejects.toBeInstanceOf(UnauthorizedError);
+      });
+
+      it("a token revoked by logout is not rotated: it gets no grace and the family stays revoked", async () => {
+        const { refreshToken } = await h.service.login("ana@example.com", PASSWORD);
+        await h.service.logout(refreshToken);
+        const error = await h.service.refresh(refreshToken).catch((e) => e);
+        expect(error).toBeInstanceOf(UnauthorizedError);
+        expect(error).not.toBeInstanceOf(RefreshReplayInGraceError);
+        expect(h.audit.map((a) => a.action)).toContain("refresh_reuse_detected");
+      });
+
+      it("with the grace off (0) any replay revokes the family", async () => {
+        h = harness({ ...config, refreshReuseGraceSeconds: 0 });
+        await h.service.createUser("ana@example.com", PASSWORD);
+        const first = await h.service.login("ana@example.com", PASSWORD);
+        const second = await h.service.refresh(first.refreshToken);
+        await expect(h.service.refresh(first.refreshToken)).rejects.not.toBeInstanceOf(RefreshReplayInGraceError);
+        await expect(h.service.refresh(second.refreshToken)).rejects.toBeInstanceOf(UnauthorizedError);
+      });
+
+      it("REFRESH_REUSE_GRACE_SECONDS: default 10, 0 disables, junk and out-of-range values are rejected", () => {
+        const secret = { JWT_SECRET: "service-test-secret-0123456789-0123456789" };
+        expect(loadJwtConfig(secret).refreshReuseGraceSeconds).toBe(10);
+        expect(loadJwtConfig({ ...secret, REFRESH_REUSE_GRACE_SECONDS: "" }).refreshReuseGraceSeconds).toBe(10);
+        expect(loadJwtConfig({ ...secret, REFRESH_REUSE_GRACE_SECONDS: "0" }).refreshReuseGraceSeconds).toBe(0);
+        expect(loadJwtConfig({ ...secret, REFRESH_REUSE_GRACE_SECONDS: "30" }).refreshReuseGraceSeconds).toBe(30);
+        for (const bad of ["-1", "61", "abc", "1.5"]) {
+          expect(() => loadJwtConfig({ ...secret, REFRESH_REUSE_GRACE_SECONDS: bad })).toThrow(/REFRESH_REUSE_GRACE_SECONDS/);
+        }
+      });
     });
 
     it("gives the same generic 401 for missing, forged, expired, unknown and orphaned tokens", async () => {
@@ -332,6 +401,39 @@ describe("AuthService: bloqueo de cuenta", () => {
     await expect(h.service.login("ana@example.com", PASSWORD)).rejects.toBeInstanceOf(UnauthorizedError);
     expect(h.repo.refreshTokens).toHaveLength(0);
     expect(h.audit.map((a) => a.action)).toContain("login_locked");
+  });
+
+  it("N logins concurrentes con la contraseña correcta tras 4 fallos: nadie entra: el exceso de intentos bloquea la cuenta", async () => {
+    for (let i = 0; i < MAX_FAILED_LOGINS - 1; i++) await bad();
+    const results = await Promise.allSettled(Array.from({ length: 12 }, () => h.service.login("ana@example.com", PASSWORD)));
+    // Reservations 6..12 exceed the budget and lock the account; the 5th (a right password) then fails its
+    // conditional completion because the account is locked. Before the fix all 12 got in.
+    expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(0);
+    expect(h.repo.refreshTokens).toHaveLength(0);
+    expect(h.repo.users[0].lockedUntil).not.toBeNull();
+  });
+
+  it("5 contraseñas erróneas y 10 correctas a la vez: tras el lote la cuenta queda bloqueada y la correcta también se rechaza", async () => {
+    const batch = [
+      ...Array.from({ length: 5 }, () => h.service.login("ana@example.com", "wrong password!!")),
+      ...Array.from({ length: 10 }, () => h.service.login("ana@example.com", PASSWORD)),
+    ];
+    const results = await Promise.allSettled(batch);
+    // Reservations are capped at MAX_FAILED_LOGINS: no more than that many checks run, and the 5 wrong ones lock the account.
+    expect(results.filter((r) => r.status === "fulfilled").length).toBeLessThanOrEqual(MAX_FAILED_LOGINS);
+    expect(results.filter((r) => r.status === "rejected").length).toBeGreaterThanOrEqual(10);
+  });
+
+  it("si una contraseña errónea concurrente bloquea la cuenta antes de cerrar el login, la correcta se rechaza", async () => {
+    for (let i = 0; i < MAX_FAILED_LOGINS - 1; i++) await bad();
+    // The right one is reserved as attempt 6 (over budget), which locks the account; the wrong one fails too.
+    const [wrong, right] = await Promise.allSettled([
+      h.service.login("ana@example.com", "wrong password!!"),
+      h.service.login("ana@example.com", PASSWORD),
+    ]);
+    expect(wrong.status).toBe("rejected");
+    expect(right.status).toBe("rejected");
+    expect(h.repo.users[0].lockedUntil).not.toBeNull();
   });
 
   it("un intento durante el bloqueo no lo alarga ni cuenta como fallo", async () => {

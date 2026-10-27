@@ -28,6 +28,12 @@ export class UnauthorizedError extends AppError {
   readonly code = "UNAUTHENTICATED";
 }
 
+/**
+ * A refresh token that was rotated moments ago (grace window): same 401 as any other refresh failure, but the
+ * session is still alive under the newer token, so the controller must not clear the refresh cookie.
+ */
+export class RefreshReplayInGraceError extends UnauthorizedError {}
+
 /** Authenticated but the request is not allowed, e.g. a cross-origin write (403). */
 export class ForbiddenError extends AppError {
   readonly status = 403;
@@ -42,6 +48,19 @@ export class NotFoundError extends AppError {
 export class ConflictError extends AppError {
   readonly status = 409;
   readonly code = "CONFLICT";
+}
+
+/** Too many requests for a bucket (429). */
+export class RateLimitedError extends AppError {
+  readonly status = 429;
+  readonly code = "RATE_LIMITED";
+
+  constructor(
+    message: string,
+    readonly retryAfter: number,
+  ) {
+    super(message);
+  }
 }
 
 /** Well-formed request that violates a business rule (422). */

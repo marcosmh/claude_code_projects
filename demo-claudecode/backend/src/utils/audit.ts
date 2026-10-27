@@ -5,6 +5,7 @@ export type AuditAction =
   | "refresh_success"
   | "refresh_failed"
   | "refresh_reuse_detected"
+  | "refresh_reuse_grace"
   | "logout"
   | "password_changed"
   | "password_change_failed";

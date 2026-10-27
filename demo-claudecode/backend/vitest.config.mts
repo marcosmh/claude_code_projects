@@ -7,7 +7,9 @@ export default defineConfig({
     include: ["tests/**/*.test.ts"],
     environment: "node",
     // Throwaway secret for tests only (>= 32 bytes). Never a real one.
-    env: { JWT_SECRET: "test-only-secret-not-for-production-0123456789" },
+    // TRUSTED_PROXY_HOPS=1: the proxy tests give each case its own X-Forwarded-For (one trusted hop); the tests of the
+    // untrusted default (0) stub it.
+    env: { JWT_SECRET: "test-only-secret-not-for-production-0123456789", TRUSTED_PROXY_HOPS: "1" },
     globalSetup: ["tests/globalSetup.ts"],
     fileParallelism: false,
     coverage: {
