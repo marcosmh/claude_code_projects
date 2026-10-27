@@ -23,4 +23,4 @@ start() { # name dir port command...
 }
 
 start backend apps/backend 4000 npx next dev -p 4000
-start frontend frontend 5173 npx vite --port 5173 --strictPort
+start frontend apps/frontend 5173 npx vite --port 5173 --strictPort

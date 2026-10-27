@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Invoice (facturas) app, UI text in Spanish. The git root is the parent directory (`claude_code_projects`); the project lives in `demo-claudecode/`.
 
-## Active app: `apps/backend/` + `frontend/`
+## Active app: `apps/backend/` + `apps/frontend/`
 
-The active app is the layered rewrite introduced in commit `de8b5fe` ("refactor using agents"): a REST API in `apps/backend/` and a Vite SPA in `frontend/`. **New work goes there.** The Next.js app archived in `legacy/` is the **legacy** version; see "Legacy root app" below. Decision recorded 2026-10-24.
+The active app is the layered rewrite introduced in commit `de8b5fe` ("refactor using agents"): a REST API in `apps/backend/` and a Vite SPA in `apps/frontend/`. **New work goes there.** The Next.js app archived in `legacy/` is the **legacy** version; see "Legacy root app" below. Decision recorded 2026-10-24.
 
-**Monorepo migration in progress** (plan: `~/.claude/plans/pasted-content-id-59dd-me-gustar-a-encapsulated-quasar.md`, tag `pre-monorepo` is the rollback point). The root of `demo-claudecode/` is an npm-workspaces + Turborepo root (`package.json`, `turbo.json`, `tsconfig.base.json`). Done: phases 0-2 (legacy archived, backend moved to `apps/backend`, package `@invoices/backend`). Still outside the workspaces: `frontend/` (moves to `apps/frontend` in phase 3, with its own lockfile until then). Install once from `demo-claudecode/` (`npm install`; the backend has no lockfile of its own now); run backend scripts from `apps/backend/` (the relative `DATABASE_URL` resolves against the cwd) or with `npm run <script> --workspace=@invoices/backend`. The frontend keeps its own `node_modules`.
+**Monorepo migration in progress** (plan: `~/.claude/plans/pasted-content-id-59dd-me-gustar-a-encapsulated-quasar.md`, tag `pre-monorepo` is the rollback point). The root of `demo-claudecode/` is an npm-workspaces + Turborepo root (`package.json`, `turbo.json`, `tsconfig.base.json`). Done: phases 0-3 (legacy archived in `legacy/`, apps moved to `apps/backend` and `apps/frontend`, packages `@invoices/backend` and `@invoices/frontend`). Next: phase 4 (shared packages). Install once from `demo-claudecode/` (`npm install`; the apps have no lockfile of their own); run scripts from inside each app (the relative `DATABASE_URL` resolves against the cwd), with `npm run <script> --workspace=@invoices/<app>` or with `npx turbo run <task>` from the root. The root pins `typescript` ^6 (hoisted, used by typescript-eslint) while the backend keeps its own TypeScript 7 nested; do not remove either.
 
 ### Backend (`apps/backend/`)
 
@@ -34,14 +34,13 @@ API test collections live in `resources/`: `postman/postman-api.json` is generat
 
 `apps/backend/AGENTS.md` applies: this Next.js (16.x) differs from older versions; read `node_modules/next/dist/docs/` before using an API.
 
-### Frontend (`frontend/`)
+### Frontend (`apps/frontend/`)
 
 React 19 + TypeScript + Vite + React Router + Tailwind v4 + TanStack Query + Zustand + React Hook Form + Zod. Consumes the backend REST API.
 
 ```bash
-cd frontend
+cd apps/frontend
 cp .env.example .env     # optional: VITE_API_URL (default /api/v1, proxied by Vite to VITE_PROXY_TARGET, default http://localhost:4000)
-npm install
 npm run dev              # http://localhost:5173 (backend must be on 4000)
 npm run build            # tsc -b + vite build
 npm run lint
@@ -49,7 +48,7 @@ npm test                 # vitest + Testing Library (jsdom)
 npm run test:e2e         # Playwright + axe; starts its own backend (4100, e2e.db) and frontend (5174)
 ```
 
-Mandatory flow: components -> hooks -> services -> REST API. Session: `useSession` (TanStack Query, key `queryKeys.session`), `RequireAuth` protects all routes except `/login`, no token is ever readable by JavaScript: `apiClient` sends every request with `credentials: "include"` and no `Authorization` (same origin through the Vite proxy in dev), renews on 401 with `/auth/refresh` (single-flight plus `navigator.locks` across tabs; the non-sensitive `refreshedAt` mark in `services/sessionFlags.ts` tells a tab that another already renewed) and retries once; if the refresh fails it calls the handler set in `main.tsx` (clears cached data and sends the user to `/login`). A failed logout sets the local `loggedOut` flag (`services/sessionFlags.ts`) so the session is not auto-restored; `main.tsx` purges the legacy `accessToken` from `localStorage`. TanStack Query holds server data; Zustand only holds global UI state (`uiStore`, `toastStore`); filters live in the URL. Business rules (totals, `isOverdue`, invoice number, dashboard aggregates) come from the backend; the only exception is the informative `utils/totalsPreview.ts`. See `frontend/README.md` for details.
+Mandatory flow: components -> hooks -> services -> REST API. Session: `useSession` (TanStack Query, key `queryKeys.session`), `RequireAuth` protects all routes except `/login`, no token is ever readable by JavaScript: `apiClient` sends every request with `credentials: "include"` and no `Authorization` (same origin through the Vite proxy in dev), renews on 401 with `/auth/refresh` (single-flight plus `navigator.locks` across tabs; the non-sensitive `refreshedAt` mark in `services/sessionFlags.ts` tells a tab that another already renewed) and retries once; if the refresh fails it calls the handler set in `main.tsx` (clears cached data and sends the user to `/login`). A failed logout sets the local `loggedOut` flag (`services/sessionFlags.ts`) so the session is not auto-restored; `main.tsx` purges the legacy `accessToken` from `localStorage`. TanStack Query holds server data; Zustand only holds global UI state (`uiStore`, `toastStore`); filters live in the URL. Business rules (totals, `isOverdue`, invoice number, dashboard aggregates) come from the backend; the only exception is the informative `utils/totalsPreview.ts`. See `apps/frontend/README.md` for details.
 
 ### Domain rules to preserve
 
@@ -57,7 +56,7 @@ Mandatory flow: components -> hooks -> services -> REST API. Session: `useSessio
 - `status` is a plain string (`DRAFT|SENT|PAID`) validated by Zod, not a Prisma enum.
 - Invoice `number` is `FAC-` + id padded to 4 digits, assigned in a transaction right after insert, so it never repeats after deletes. Client data is embedded in the invoice (no Client model).
 - "Overdue" is not a status; it is computed as `SENT` with `dueDate < now`.
-- Dark mode is a `dark` class on `<html>` set by an inline script in `frontend/index.html`; `src/globals.css` remaps the zinc palette under `:root.dark`, so use plain palette classes (avoid `text-white` on remapped dark buttons).
+- Dark mode is a `dark` class on `<html>` set by an inline script in `apps/frontend/index.html`; `src/globals.css` remaps the zinc palette under `:root.dark`, so use plain palette classes (avoid `text-white` on remapped dark buttons).
 
 ## Legacy root app
 
@@ -65,7 +64,7 @@ The Next.js monolith, archived in `legacy/` (formerly the root; Server Actions +
 
 ## Audit
 
-A read-only audit (quality, testing, architecture, security) was done on 2026-10-24. Since then: backend hardening (limits, headers, rate limiting), unit tests with coverage ratchets, CI (`.github/workflows/ci.yml`) and Playwright + axe E2E. Authentication and per-user authorization were added afterwards (see Backend) and migrated to JWT on 2026-10-26, followed by a read-only security audit and fixes (rate limit, atomic lockout, refresh grace window, cross-tab refresh, logout flag). The access token then moved from `localStorage` to an httpOnly cookie (steps 1-5 of decision 6: security headers, `Sec-Fetch-Site` guard, cookie mode in the backend, frontend without tokens in JS, Vite proxy for same-origin dev) and B1 closed it off: the access token carries `sid`, so logout and refresh-reuse revoke it instantly. Account lockout (5 failures, 15 min) and password change (revokes other sessions) are in. Known open gaps: no admin routes (roles exist), no forgotten-password flow, the `isOverdue` rule for invoices due today, and the audit's pending items (B7 `FRONTEND_ORIGIN` required with https in production; B2/B3 secret entropy and separate access/refresh keys; B4/B5 minor; plus steps 6-7 of decision 6; see "Pendiente" in `apps/backend/docs/jwt-migration.md`). Re-verify findings against `apps/backend/` and `frontend/` before acting on them.
+A read-only audit (quality, testing, architecture, security) was done on 2026-10-24. Since then: backend hardening (limits, headers, rate limiting), unit tests with coverage ratchets, CI (`.github/workflows/ci.yml`) and Playwright + axe E2E. Authentication and per-user authorization were added afterwards (see Backend) and migrated to JWT on 2026-10-26, followed by a read-only security audit and fixes (rate limit, atomic lockout, refresh grace window, cross-tab refresh, logout flag). The access token then moved from `localStorage` to an httpOnly cookie (steps 1-5 of decision 6: security headers, `Sec-Fetch-Site` guard, cookie mode in the backend, frontend without tokens in JS, Vite proxy for same-origin dev) and B1 closed it off: the access token carries `sid`, so logout and refresh-reuse revoke it instantly. Account lockout (5 failures, 15 min) and password change (revokes other sessions) are in. Known open gaps: no admin routes (roles exist), no forgotten-password flow, the `isOverdue` rule for invoices due today, and the audit's pending items (B7 `FRONTEND_ORIGIN` required with https in production; B2/B3 secret entropy and separate access/refresh keys; B4/B5 minor; plus steps 6-7 of decision 6; see "Pendiente" in `apps/backend/docs/jwt-migration.md`). Re-verify findings against `apps/backend/` and `apps/frontend/` before acting on them.
 
 **Leftovers of the JWT migration:** the `Session` table and the opaque-session methods in `AuthRepository` are unused and will be removed in a separate later migration (decision 5 of `apps/backend/docs/jwt-migration.md`); do not build on them.
 
