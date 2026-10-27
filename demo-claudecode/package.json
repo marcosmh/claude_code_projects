@@ -1,6 +1,7 @@
 {
   "name": "invoices-monorepo",
   "private": true,
+  "packageManager": "npm@11.20.0",
   "workspaces": [
     "apps/*",
     "packages/*"

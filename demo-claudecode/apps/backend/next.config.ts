@@ -1,6 +1,9 @@
+import path from "node:path";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Monorepo root (two levels up): Turbopack only resolves files inside it, and the shared packages will live there.
+  turbopack: { root: path.join(import.meta.dirname, "../..") },
   // E2E runs a second server from this same directory; it needs its own build dir to avoid the dev lock.
   distDir: process.env.NEXT_DIST_DIR ?? ".next",
   // API-only backend. No pages; CORS is handled in src/proxy.ts.

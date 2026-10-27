@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: demo-claudecode/backend
+        working-directory: demo-claudecode
     env:
       DATABASE_URL: file:./prisma/dev.db
     steps:
@@ -19,11 +19,11 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: demo-claudecode/backend/package-lock.json
+          cache-dependency-path: demo-claudecode/package-lock.json
       - run: npm ci
-      - run: npm run typecheck
-      - run: npm run test:coverage
-      - run: npm run build
+      - run: npm run typecheck --workspace=@invoices/backend
+      - run: npm run test:coverage --workspace=@invoices/backend
+      - run: npm run build --workspace=@invoices/backend
 
   frontend:
     runs-on: ubuntu-latest
@@ -55,11 +55,11 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: |
-            demo-claudecode/backend/package-lock.json
+            demo-claudecode/package-lock.json
             demo-claudecode/frontend/package-lock.json
       - run: npm ci
       - run: npm ci
-        working-directory: demo-claudecode/backend
+        working-directory: demo-claudecode
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
       - uses: actions/upload-artifact@v4

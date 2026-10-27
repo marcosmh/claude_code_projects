@@ -22,5 +22,5 @@ start() { # name dir port command...
   echo "ERROR: $name no abrió el puerto $port; revisa $RUN/$name.log" >&2; return 1
 }
 
-start backend backend 4000 npx next dev -p 4000
+start backend apps/backend 4000 npx next dev -p 4000
 start frontend frontend 5173 npx vite --port 5173 --strictPort

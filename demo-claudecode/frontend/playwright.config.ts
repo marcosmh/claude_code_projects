@@ -17,7 +17,7 @@ export default defineConfig({
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: [
     {
-      cwd: "../backend",
+      cwd: "../apps/backend" /* Phase 3: back to ../backend */,
       command: "rm -f prisma/e2e.db prisma/e2e.db-journal && npx prisma migrate deploy && npx tsx prisma/create-user.ts e2e@example.com && npx next dev -p " + API_PORT,
       url: `http://localhost:${API_PORT}/api/v1/stats/summary`,
       reuseExistingServer: false,
