@@ -2,7 +2,7 @@
   "info": {
     "name": "API de Facturas v1",
     "_postman_id": "6f1d3c64-2b1e-4a53-9f4c-5a1b7e0c9d21",
-    "description": "Colección de la API REST de facturas (`backend/`, contrato en `backend/docs/api.md`).\n\n**Uso rápido**\n1. Arranca el backend (`npm run dev` en `backend/`, puerto 4000) y crea un usuario con `npm run user:create -- tu@correo.com`.\n2. En la pestaña *Variables* de la colección pon `email` y `password` (la contraseña no se versiona).\n3. Ejecuta **Auth → Login**: guarda `{{token}}` y la cookie `refresh`. Después puedes lanzar la colección completa con el Runner (el orden importa: Crear factura guarda `{{id}}`).\n\n**Notas**\n- La autenticación Bearer está definida a nivel de colección con `{{token}}`; Login, Refresh y Logout la desactivan.\n- Si el token caduca (15 min) o cambias la contraseña, ejecuta **Auth → Refresh**.\n- Límites por IP y minuto: 120 lecturas, 30 escrituras, 10 PDF, 10 logins/cambios de contraseña, 20 refresh. 5 logins fallidos bloquean la cuenta 15 min.\n- Postman no envía `Origin`, por lo que la guardia CORS de escrituras no aplica.\n- Dinero en centavos enteros; fechas ISO 8601.",
+    "description": "Colección de la API REST de facturas (`backend/`, contrato en `backend/docs/api.md`).\n\n**Uso rápido**\n1. Arranca el backend (`npm run dev` en `backend/`, puerto 4000) y crea un usuario con `npm run user:create -- tu@correo.com`.\n2. En la pestaña *Variables* de la colección pon `email` y `password` (la contraseña no se versiona).\n3. Ejecuta **Auth → Login**: guarda `{{token}}` y la cookie `refresh`. Después puedes lanzar la colección completa con el Runner (el orden importa: Crear factura guarda `{{id}}`).\n\n**Notas**\n- La autenticación Bearer está definida a nivel de colección con `{{token}}`; Login, Refresh y Logout la desactivan.\n- Si el token caduca (15 min) o cambias la contraseña, ejecuta **Auth → Refresh**.\n- Límites por IP y minuto: 120 lecturas, 30 escrituras, 10 PDF, 10 logins/cambios de contraseña, 20 refresh. 5 logins fallidos bloquean la cuenta 15 min.\n- Postman guarda las cookies `at` y `refresh` de Login y las envía solas; con `Authorization: Bearer` gana el token. Postman no envía `Origin`: las escrituras con Bearer no se ven afectadas, y la carpeta **Cookies y CSRF** prueba qué pasa con cookie y con orígenes ajenos.\n- Dinero en centavos enteros; fechas ISO 8601.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -47,6 +47,12 @@
       "description": "Access token JWT; lo rellenan Login y Refresh"
     },
     {
+      "key": "allowedOrigin",
+      "value": "http://localhost:5173",
+      "type": "string",
+      "description": "Origen del frontend (FRONTEND_ORIGIN del backend); solo para la carpeta Cookies y CSRF"
+    },
+    {
       "key": "id",
       "value": "",
       "type": "string",
@@ -84,7 +90,7 @@
                 "login"
               ]
             },
-            "description": "Inicia sesión. Devuelve el access token en el cuerpo (se guarda en `{{token}}`) y fija la cookie `refresh` (HttpOnly, `Path=/api/v1/auth`), que Postman conserva en su cookie jar. Límite: 10 intentos por minuto por IP y por email; 5 fallos seguidos bloquean la cuenta 15 min.",
+            "description": "Inicia sesión. Devuelve el access token en el cuerpo (se guarda en `{{token}}` para los clientes con Bearer) y fija DOS cookies HttpOnly que Postman conserva en su cookie jar: `at` (access token, `Path=/api/v1`) y `refresh` (`Path=/api/v1/auth`). El navegador usa solo las cookies; esta colección usa Bearer, salvo la carpeta **Cookies y CSRF**. Límite: 10 intentos por minuto por IP y por email; 5 fallos seguidos bloquean la cuenta 15 min.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
@@ -111,7 +117,17 @@
                   "  pm.expect(json.data.user).to.include.all.keys('id', 'email', 'role');",
                   "});",
                   "pm.test('Fija la cookie refresh', () => pm.expect(pm.cookies.has('refresh')).to.be.true);",
-                  "pm.collectionVariables.set('token', json.data.token);"
+                  "pm.collectionVariables.set('token', json.data.token);",
+                  "const setCookies = pm.response.headers.filter(h => h.key.toLowerCase() === 'set-cookie').map(h => h.value);",
+                  "const cookie = n => setCookies.find(v => v.startsWith(n + '='));",
+                  "pm.test('Set-Cookie del access token (at): HttpOnly, SameSite=Strict, Path=/api/v1', () => {",
+                  "  const c = cookie('at') || cookie('__Secure-at'); pm.expect(c, 'cookie at').to.be.a('string');",
+                  "  pm.expect(c).to.include('HttpOnly').and.include('SameSite=Strict').and.include('Path=/api/v1');",
+                  "});",
+                  "pm.test('Set-Cookie del refresh: HttpOnly, SameSite=Strict, Path=/api/v1/auth', () => {",
+                  "  const c = cookie('refresh') || cookie('__Secure-refresh'); pm.expect(c, 'cookie refresh').to.be.a('string');",
+                  "  pm.expect(c).to.include('HttpOnly').and.include('SameSite=Strict').and.include('Path=/api/v1/auth');",
+                  "});"
                 ]
               }
             }
@@ -159,6 +175,10 @@
                 {
                   "key": "Set-Cookie",
                   "value": "refresh=<JWT>; Max-Age=604800; Path=/api/v1/auth; HttpOnly; SameSite=Strict"
+                },
+                {
+                  "key": "Set-Cookie",
+                  "value": "at=<JWT>; Max-Age=900; Path=/api/v1; HttpOnly; SameSite=Strict"
                 }
               ],
               "body": "{\n  \"data\": {\n    \"token\": \"<access JWT>\",\n    \"user\": {\n      \"id\": 1,\n      \"email\": \"ana@example.com\",\n      \"role\": \"USER\"\n    }\n  }\n}"
@@ -222,7 +242,7 @@
                 "refresh"
               ]
             },
-            "description": "Sin cuerpo: lee la cookie `refresh` y la rota. Devuelve un access token nuevo (se guarda en `{{token}}`). Úsalo cuando el token caduque (15 min) o tras cambiar la contraseña. Límite: 20 por minuto por IP.",
+            "description": "Sin cuerpo: lee la cookie `refresh` y la rota; vuelve a fijar las dos cookies. Devuelve un access token nuevo en el cuerpo (se guarda en `{{token}}`). Úsalo cuando el token caduque (15 min) o tras cambiar la contraseña. Límite: 20 por minuto por IP.",
             "auth": {
               "type": "noauth"
             }
@@ -240,7 +260,17 @@
                   "  pm.expect(json.data.user).to.include.all.keys('id', 'email', 'role');",
                   "});",
                   "pm.test('Fija la cookie refresh', () => pm.expect(pm.cookies.has('refresh')).to.be.true);",
-                  "pm.collectionVariables.set('token', json.data.token);"
+                  "pm.collectionVariables.set('token', json.data.token);",
+                  "const setCookies = pm.response.headers.filter(h => h.key.toLowerCase() === 'set-cookie').map(h => h.value);",
+                  "const cookie = n => setCookies.find(v => v.startsWith(n + '='));",
+                  "pm.test('Set-Cookie del access token (at): HttpOnly, SameSite=Strict, Path=/api/v1', () => {",
+                  "  const c = cookie('at') || cookie('__Secure-at'); pm.expect(c, 'cookie at').to.be.a('string');",
+                  "  pm.expect(c).to.include('HttpOnly').and.include('SameSite=Strict').and.include('Path=/api/v1');",
+                  "});",
+                  "pm.test('Set-Cookie del refresh: HttpOnly, SameSite=Strict, Path=/api/v1/auth', () => {",
+                  "  const c = cookie('refresh') || cookie('__Secure-refresh'); pm.expect(c, 'cookie refresh').to.be.a('string');",
+                  "  pm.expect(c).to.include('HttpOnly').and.include('SameSite=Strict').and.include('Path=/api/v1/auth');",
+                  "});"
                 ]
               }
             }
@@ -269,6 +299,14 @@
                 {
                   "key": "Content-Type",
                   "value": "application/json"
+                },
+                {
+                  "key": "Set-Cookie",
+                  "value": "refresh=<JWT nuevo>; Max-Age=604800; Path=/api/v1/auth; HttpOnly; SameSite=Strict"
+                },
+                {
+                  "key": "Set-Cookie",
+                  "value": "at=<JWT nuevo>; Max-Age=900; Path=/api/v1; HttpOnly; SameSite=Strict"
                 }
               ],
               "body": "{\n  \"data\": {\n    \"token\": \"<access JWT>\",\n    \"user\": {\n      \"id\": 1,\n      \"email\": \"ana@example.com\",\n      \"role\": \"USER\"\n    }\n  }\n}"
@@ -1552,7 +1590,14 @@
           "name": "Sin token → 401",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "at=; refresh=",
+                "type": "text",
+                "description": "Anula las cookies del cookie jar para esta petición"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/invoices",
               "host": [
@@ -1562,7 +1607,7 @@
                 "invoices"
               ]
             },
-            "description": "Sin `Authorization` la API responde 401 `UNAUTHENTICATED`.",
+            "description": "Sin `Authorization` ni cookies la API responde 401 `UNAUTHENTICATED` (la cabecera `Cookie` anula el cookie jar).",
             "auth": {
               "type": "noauth"
             }
@@ -1589,6 +1634,12 @@
                 "key": "Authorization",
                 "value": "Bearer token-invalido",
                 "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "at=; refresh=",
+                "type": "text",
+                "description": "Anula las cookies del cookie jar para esta petición"
               }
             ],
             "url": {
@@ -1929,7 +1980,397 @@
           ]
         }
       ],
-      "description": "Casos de error esperados (401, 400, 404, 422)."
+      "description": "Casos de error esperados (401, 400, 404, 422). Las cookies de sesión se anulan donde hace falta probar \"sin credenciales\"."
+    },
+    {
+      "name": "Cookies y CSRF",
+      "item": [
+        {
+          "name": "Me solo con la cookie (sin Authorization)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            },
+            "description": "El access token viaja en la cookie `at` que Login dejó en el cookie jar de Postman; no hay cabecera `Authorization`. Es lo que hace el navegador.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 por cookie', () => pm.response.to.have.status(200));",
+                  "pm.test('Devuelve el usuario', () => pm.expect(pm.response.json().data).to.have.property('email'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bearer inválido gana a la cookie → 401",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer token-invalido",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Si llegan las dos credenciales se usa solo `Authorization`: la cookie válida se ignora y el token inválido da 401. Nunca se mezclan.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Escritura por cookie sin Origin → 403",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/invoices",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "invoices"
+              ]
+            },
+            "description": "Una escritura autenticada solo por cookie debe llevar un `Origin` permitido (o `Sec-Fetch-Site` same-origin/same-site/none). Postman no envía ninguno: 403 `FORBIDDEN` (guardia CSRF de `withAuth`).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-01\",\n  \"dueDate\": \"2026-10-20\",\n  \"status\": \"DRAFT\",\n  \"taxRate\": 16,\n  \"notes\": \"Gracias por su compra\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 2,\n      \"unitPriceCents\": 5000\n    },\n    {\n      \"description\": \"Soporte mensual\",\n      \"quantity\": 1.5,\n      \"unitPriceCents\": 12000\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 403', () => pm.response.to.have.status(403));",
+                  "pm.test('FORBIDDEN', () => pm.expect(pm.response.json().error.code).to.eql('FORBIDDEN'));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "403 Forbidden",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/invoices",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "invoices"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-01\",\n  \"dueDate\": \"2026-10-20\",\n  \"status\": \"DRAFT\",\n  \"taxRate\": 16,\n  \"notes\": \"Gracias por su compra\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 2,\n      \"unitPriceCents\": 5000\n    },\n    {\n      \"description\": \"Soporte mensual\",\n      \"quantity\": 1.5,\n      \"unitPriceCents\": 12000\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": {\n    \"code\": \"FORBIDDEN\",\n    \"message\": \"Origen no permitido\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Escritura por cookie con Origin permitido → 404",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{allowedOrigin}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/invoices/999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "invoices",
+                "999999"
+              ]
+            },
+            "description": "Con un `Origin` permitido la cookie sí autentica una escritura. Se borra un id inexistente para no tocar datos: 404 demuestra que pasó la autenticación y la guardia.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 404', () => pm.response.to.have.status(404));",
+                  "pm.test('NOT_FOUND', () => pm.expect(pm.response.json().error.code).to.eql('NOT_FOUND'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Escritura con Origin ajeno → 403",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Origin",
+                "value": "http://evil.example",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/invoices",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "invoices"
+              ]
+            },
+            "description": "Un `Origin` fuera de `FRONTEND_ORIGIN` se rechaza en `proxy.ts` aunque el Bearer sea válido.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-01\",\n  \"dueDate\": \"2026-10-20\",\n  \"status\": \"DRAFT\",\n  \"taxRate\": 16,\n  \"notes\": \"Gracias por su compra\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 2,\n      \"unitPriceCents\": 5000\n    },\n    {\n      \"description\": \"Soporte mensual\",\n      \"quantity\": 1.5,\n      \"unitPriceCents\": 12000\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 403', () => pm.response.to.have.status(403));",
+                  "pm.test('FORBIDDEN', () => pm.expect(pm.response.json().error.code).to.eql('FORBIDDEN'));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "403 Forbidden",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "http://evil.example",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/invoices",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "invoices"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-01\",\n  \"dueDate\": \"2026-10-20\",\n  \"status\": \"DRAFT\",\n  \"taxRate\": 16,\n  \"notes\": \"Gracias por su compra\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 2,\n      \"unitPriceCents\": 5000\n    },\n    {\n      \"description\": \"Soporte mensual\",\n      \"quantity\": 1.5,\n      \"unitPriceCents\": 12000\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": {\n    \"code\": \"FORBIDDEN\",\n    \"message\": \"Origen no permitido\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Escritura con Sec-Fetch-Site cross-site → 403",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Origin",
+                "value": "{{allowedOrigin}}",
+                "type": "text"
+              },
+              {
+                "key": "Sec-Fetch-Site",
+                "value": "cross-site",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/invoices",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "invoices"
+              ]
+            },
+            "description": "El navegador marca las peticiones entre sitios con `Sec-Fetch-Site: cross-site`; se rechazan aunque el `Origin` parezca válido.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-01\",\n  \"dueDate\": \"2026-10-20\",\n  \"status\": \"DRAFT\",\n  \"taxRate\": 16,\n  \"notes\": \"Gracias por su compra\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 2,\n      \"unitPriceCents\": 5000\n    },\n    {\n      \"description\": \"Soporte mensual\",\n      \"quantity\": 1.5,\n      \"unitPriceCents\": 12000\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cabeceras de seguridad",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/stats/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "stats",
+                "summary"
+              ]
+            },
+            "description": "Comprueba las cabeceras que añade `next.config.ts` (HSTS solo aparece con `NODE_ENV=production`)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const h = n => pm.response.headers.get(n);",
+                  "pm.test('X-Frame-Options: DENY', () => pm.expect(h('X-Frame-Options')).to.eql('DENY'));",
+                  "pm.test('X-Content-Type-Options: nosniff', () => pm.expect(h('X-Content-Type-Options')).to.eql('nosniff'));",
+                  "pm.test('Permissions-Policy restringe cámara y micrófono', () => pm.expect(h('Permissions-Policy')).to.include('camera=()').and.include('microphone=()'));",
+                  "pm.test('CSP frame-ancestors none y Referrer-Policy no-referrer', () => { pm.expect(h('Content-Security-Policy')).to.include(\"frame-ancestors 'none'\"); pm.expect(h('Referrer-Policy')).to.eql('no-referrer'); });",
+                  "pm.test('Cache-Control: no-store', () => pm.expect(h('Cache-Control')).to.include('no-store'));"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "description": "Auth por cookie httpOnly (la que usa el navegador) y guardias CSRF. Requiere haber ejecutado Login: Postman guarda las cookies `at` y `refresh` en su cookie jar. No modifica datos."
     },
     {
       "name": "Cierre de sesión",
@@ -2083,7 +2524,7 @@
                 "refresh"
               ]
             },
-            "description": "Sin cuerpo: lee la cookie `refresh` y la rota. Devuelve un access token nuevo (se guarda en `{{token}}`). Úsalo cuando el token caduque (15 min) o tras cambiar la contraseña. Límite: 20 por minuto por IP.",
+            "description": "Sin cuerpo: lee la cookie `refresh` y la rota; vuelve a fijar las dos cookies. Devuelve un access token nuevo en el cuerpo (se guarda en `{{token}}`). Úsalo cuando el token caduque (15 min) o tras cambiar la contraseña. Límite: 20 por minuto por IP.",
             "auth": {
               "type": "noauth"
             }
@@ -2101,7 +2542,17 @@
                   "  pm.expect(json.data.user).to.include.all.keys('id', 'email', 'role');",
                   "});",
                   "pm.test('Fija la cookie refresh', () => pm.expect(pm.cookies.has('refresh')).to.be.true);",
-                  "pm.collectionVariables.set('token', json.data.token);"
+                  "pm.collectionVariables.set('token', json.data.token);",
+                  "const setCookies = pm.response.headers.filter(h => h.key.toLowerCase() === 'set-cookie').map(h => h.value);",
+                  "const cookie = n => setCookies.find(v => v.startsWith(n + '='));",
+                  "pm.test('Set-Cookie del access token (at): HttpOnly, SameSite=Strict, Path=/api/v1', () => {",
+                  "  const c = cookie('at') || cookie('__Secure-at'); pm.expect(c, 'cookie at').to.be.a('string');",
+                  "  pm.expect(c).to.include('HttpOnly').and.include('SameSite=Strict').and.include('Path=/api/v1');",
+                  "});",
+                  "pm.test('Set-Cookie del refresh: HttpOnly, SameSite=Strict, Path=/api/v1/auth', () => {",
+                  "  const c = cookie('refresh') || cookie('__Secure-refresh'); pm.expect(c, 'cookie refresh').to.be.a('string');",
+                  "  pm.expect(c).to.include('HttpOnly').and.include('SameSite=Strict').and.include('Path=/api/v1/auth');",
+                  "});"
                 ]
               }
             }
@@ -2130,6 +2581,14 @@
                 {
                   "key": "Content-Type",
                   "value": "application/json"
+                },
+                {
+                  "key": "Set-Cookie",
+                  "value": "refresh=<JWT nuevo>; Max-Age=604800; Path=/api/v1/auth; HttpOnly; SameSite=Strict"
+                },
+                {
+                  "key": "Set-Cookie",
+                  "value": "at=<JWT nuevo>; Max-Age=900; Path=/api/v1; HttpOnly; SameSite=Strict"
                 }
               ],
               "body": "{\n  \"data\": {\n    \"token\": \"<access JWT>\",\n    \"user\": {\n      \"id\": 1,\n      \"email\": \"ana@example.com\",\n      \"role\": \"USER\"\n    }\n  }\n}"
@@ -2178,7 +2637,7 @@
                 "logout"
               ]
             },
-            "description": "Revoca la familia del refresh token y vacía la cookie. Idempotente; no exige access token. El access token sigue siendo válido hasta que caduque.",
+            "description": "Revoca la familia del refresh token y vacía las dos cookies (`at` y `refresh`). Idempotente; no exige access token. Un access token ya copiado (p. ej. `{{token}}`) sigue siendo válido hasta que caduque.",
             "auth": {
               "type": "noauth"
             }
@@ -2190,7 +2649,13 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status 204', () => pm.response.to.have.status(204));",
-                  "pm.collectionVariables.unset('token');"
+                  "pm.collectionVariables.unset('token');",
+                  "const setCookies = pm.response.headers.filter(h => h.key.toLowerCase() === 'set-cookie').map(h => h.value);",
+                  "const cookie = n => setCookies.find(v => v.startsWith(n + '='));",
+                  "pm.test('Se vacían las dos cookies (Max-Age=0)', () => {",
+                  "  const at = cookie('at') || cookie('__Secure-at'), rt = cookie('refresh') || cookie('__Secure-refresh');",
+                  "  pm.expect(at, 'at').to.include('Max-Age=0'); pm.expect(rt, 'refresh').to.include('Max-Age=0');",
+                  "});"
                 ]
               }
             }
@@ -2219,6 +2684,10 @@
                 {
                   "key": "Set-Cookie",
                   "value": "refresh=; Max-Age=0; Path=/api/v1/auth; HttpOnly; SameSite=Strict"
+                },
+                {
+                  "key": "Set-Cookie",
+                  "value": "at=; Max-Age=0; Path=/api/v1; HttpOnly; SameSite=Strict"
                 }
               ],
               "body": ""

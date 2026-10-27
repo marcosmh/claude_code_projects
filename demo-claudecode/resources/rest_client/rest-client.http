@@ -8,7 +8,7 @@
 #   2. Pon tu email y contraseña en @email y @password (más abajo). No subas
 #      credenciales reales al repositorio: usa un usuario de pruebas.
 #   3. Ejecuta "Login" (Send Request sobre la línea de la petición). Guarda el
-#      token en {{token}} y la cookie "refresh" (REST Client la conserva).
+#      token en {{token}} y las cookies "at" y "refresh" (REST Client las conserva).
 #   4. Sigue el orden del archivo: "Crear factura" guarda {{id}} para las
 #      peticiones siguientes.
 #
@@ -16,6 +16,10 @@
 #   - REST Client no tiene asserts: cada petición lista bajo "ESPERADO" el
 #     código HTTP y la forma de la respuesta para compararla a ojo.
 #   - El access token dura 15 min. Si caduca (401), vuelve a ejecutar Login.
+#   - La app web usa SOLO cookies httpOnly (at + refresh); este archivo usa
+#     Authorization: Bearer, que gana si llegan las dos. La sección "COOKIES Y
+#     CSRF" prueba la vía de las cookies. Como REST Client reenvía solas las
+#     cookies, los casos "sin credenciales" llevan "# @no-cookie-jar".
 #   - Límites por IP y minuto: 120 lecturas, 30 escrituras, 10 PDF, 10 logins
 #     o cambios de contraseña, 20 refresh. 5 logins fallidos bloquean la
 #     cuenta 15 min (por eso el login inválido usa un email inexistente).
@@ -24,6 +28,8 @@
 
 @baseUrl = http://localhost:4000/api/v1
 @contentType = application/json
+# Origen del frontend (FRONTEND_ORIGIN del backend); solo para la sección COOKIES Y CSRF
+@allowedOrigin = http://localhost:5173
 
 # Credenciales de PRUEBA (cámbialas). Contraseña: 12 a 200 caracteres.
 @email = ana@example.com
@@ -42,11 +48,13 @@
 ###############################################################################
 
 ### Login
-# Devuelve el access token en el cuerpo y fija la cookie httpOnly "refresh"
-# (Path=/api/v1/auth). 10 intentos/min por IP y por email.
+# Devuelve el access token en el cuerpo (para Bearer) y fija DOS cookies
+# httpOnly: "at" (access, Path=/api/v1) y "refresh" (Path=/api/v1/auth).
+# 10 intentos/min por IP y por email.
 #
 # ESPERADO  200 OK
-#   Set-Cookie: refresh=<JWT>; Path=/api/v1/auth; HttpOnly; SameSite=Strict
+#   Set-Cookie: refresh=<JWT>; Max-Age=604800; Path=/api/v1/auth; HttpOnly; SameSite=Strict
+#   Set-Cookie: at=<JWT>; Max-Age=900; Path=/api/v1; HttpOnly; SameSite=Strict
 #   { "data": { "token": "<JWT>", "user": { "id": 1, "email": "...", "role": "USER" } } }
 # ERRORES   401 UNAUTHENTICATED (email o contraseña incorrectos, o cuenta
 #           bloqueada: mismo mensaje), 400 VALIDATION_ERROR, 429 RATE_LIMITED
@@ -72,7 +80,7 @@ Authorization: Bearer {{token}}
 # token nuevo. 20 por minuto por IP.
 #
 # ESPERADO  200 OK  { "data": { "token": "<JWT>", "user": { ... } } }
-#           Set-Cookie: refresh=<JWT nuevo>
+#           Set-Cookie: refresh=<JWT nuevo> y at=<JWT nuevo>
 # ERRORES   401 UNAUTHENTICATED (sin cookie, caducada o reutilizada; si se
 #           reutiliza fuera de la ventana de 10 s se revoca toda la sesión)
 # @name refresh
@@ -262,12 +270,15 @@ Authorization: Bearer {{token}}
 ###############################################################################
 
 ### Sin token -> 401
+# Sin Authorization ni cookies (por eso "@no-cookie-jar").
 # ESPERADO  401  { "error": { "code": "UNAUTHENTICATED", ... } }
+# @no-cookie-jar
 GET {{baseUrl}}/invoices
 
 
 ### Token inválido -> 401
 # ESPERADO  401 UNAUTHENTICATED
+# @no-cookie-jar
 GET {{baseUrl}}/invoices
 Authorization: Bearer token-invalido
 
@@ -328,6 +339,94 @@ Content-Type: {{contentType}}
 
 
 ###############################################################################
+# COOKIES Y CSRF (requiere haber ejecutado Login; no modifica datos)
+# La app web se autentica con la cookie "at", no con Authorization. Una escritura
+# autenticada solo por cookie debe llevar un Origin permitido (o Sec-Fetch-Site
+# same-origin/same-site/none); proxy.ts rechaza además cualquier Origin ajeno.
+###############################################################################
+
+### Me solo con la cookie (sin Authorization)
+# ESPERADO  200 OK  { "data": { "id": 1, "email": "...", "role": "USER" } }
+GET {{baseUrl}}/auth/me
+
+
+### Bearer inválido gana a la cookie -> 401
+# Si llegan las dos credenciales se usa solo Authorization: la cookie válida se
+# ignora y nunca se mezclan.
+# ESPERADO  401 UNAUTHENTICATED
+GET {{baseUrl}}/auth/me
+Authorization: Bearer token-invalido
+
+
+### Escritura por cookie sin Origin -> 403
+# REST Client no envía Origin ni Sec-Fetch-Site: la cookie sola no basta para escribir.
+# ESPERADO  403  { "error": { "code": "FORBIDDEN", "message": "Origen no permitido" } }
+POST {{baseUrl}}/invoices
+Content-Type: {{contentType}}
+
+{
+  "clientName": "Acme SA",
+  "issueDate": "2026-10-01",
+  "dueDate": "2026-10-20",
+  "items": [ { "description": "Servicio", "quantity": 1, "unitPriceCents": 5000 } ]
+}
+
+
+### Escritura por cookie con Origin permitido -> 404
+# Con un Origin permitido la cookie sí autentica la escritura. Se borra un id
+# inexistente para no tocar datos: el 404 demuestra que pasó la autenticación.
+# ESPERADO  404 NOT_FOUND
+DELETE {{baseUrl}}/invoices/999999
+Origin: {{allowedOrigin}}
+
+
+### Escritura con Origin ajeno -> 403
+# Rechazada en proxy.ts aunque el Bearer sea válido.
+# ESPERADO  403 FORBIDDEN
+POST {{baseUrl}}/invoices
+Authorization: Bearer {{token}}
+Origin: http://evil.example
+Content-Type: {{contentType}}
+
+{
+  "clientName": "Acme SA",
+  "issueDate": "2026-10-01",
+  "dueDate": "2026-10-20",
+  "items": [ { "description": "Servicio", "quantity": 1, "unitPriceCents": 5000 } ]
+}
+
+
+### Escritura con Sec-Fetch-Site cross-site -> 403
+# El navegador marca así las peticiones entre sitios; se rechazan aunque el
+# Origin parezca válido.
+# ESPERADO  403 FORBIDDEN
+POST {{baseUrl}}/invoices
+Authorization: Bearer {{token}}
+Origin: {{allowedOrigin}}
+Sec-Fetch-Site: cross-site
+Content-Type: {{contentType}}
+
+{
+  "clientName": "Acme SA",
+  "issueDate": "2026-10-01",
+  "dueDate": "2026-10-20",
+  "items": [ { "description": "Servicio", "quantity": 1, "unitPriceCents": 5000 } ]
+}
+
+
+### Cabeceras de seguridad
+# ESPERADO  200 OK con estas cabeceras (HSTS solo con NODE_ENV=production):
+#   X-Frame-Options: DENY
+#   X-Content-Type-Options: nosniff
+#   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
+#   Content-Security-Policy: frame-ancestors 'none'
+#   Referrer-Policy: no-referrer
+#   Cache-Control: no-store
+GET {{baseUrl}}/stats/summary
+Authorization: Bearer {{token}}
+
+
+###############################################################################
 # CIERRE DE SESIÓN (ejecutar al final, en este orden)
 ###############################################################################
 
@@ -370,9 +469,10 @@ Content-Type: {{contentType}}
 
 
 ### 4) Logout
-# Revoca la familia del refresh y vacía la cookie. Idempotente; no exige access
+# Revoca la familia del refresh y vacía las dos cookies (at y refresh). Idempotente; no exige access
 # token. El access token sigue valiendo hasta que caduque.
 #
 # ESPERADO  204 No Content
 #   Set-Cookie: refresh=; Max-Age=0; Path=/api/v1/auth
+#   Set-Cookie: at=; Max-Age=0; Path=/api/v1
 POST {{baseUrl}}/auth/logout

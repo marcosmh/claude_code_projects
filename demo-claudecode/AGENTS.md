@@ -4,6 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Invoice (facturas) app: Next.js 16 App Router + Tailwind v4 + Prisma 7 (SQLite) + Zod + `@react-pdf/renderer`. UI text is in Spanish. The git root is the parent directory (`claude_code_projects`); this app lives in `demo-claudecode/`.
 
+> **This file describes the legacy root app.** The active app is `backend/` (REST API, Next.js route handlers) + `frontend/` (Vite SPA); read `CLAUDE.md` first. State of the active app as of 2026-10-26: JWT auth with the access token (`at`) and the rotating refresh token (`refresh`) in httpOnly `SameSite=Strict` cookies (Bearer still accepted for scripts), same-origin deployment (Vite proxies `/api` in dev, `VITE_API_URL=/api/v1`), CSRF guards in `backend/src/proxy.ts` and `backend/src/utils/csrf.ts`, no token readable by frontend JavaScript. Pending: login/refresh bodies without the token (`mode: "token"`), `sid` for instant access-token revocation on logout, removal of the `Session` table. Details: `backend/docs/jwt-migration.md` (decision 6).
+
 ## Commands
 
 ```bash
