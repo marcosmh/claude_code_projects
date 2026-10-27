@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { allowedOrigins, corsHeaders, usesRefreshCookie } from "./utils/cors";
+import { accessCookieEnabled } from "./utils/cookies";
 import { failure } from "./utils/http";
 import { LIMITS, RateLimiter, bucketKey, classify } from "./utils/rateLimit";
 
@@ -9,7 +10,7 @@ const rateLimitDisabled = process.env.RATE_LIMIT_DISABLED === "1" && process.env
 
 // Next 16 renamed `middleware` to `proxy`. Handles CORS (incl. preflight) and rate limiting for the API.
 export function proxy(request: NextRequest) {
-  const headers = corsHeaders(request.headers.get("origin"), allowedOrigins(), usesRefreshCookie(request.nextUrl.pathname));
+  const headers = corsHeaders(request.headers.get("origin"), allowedOrigins(), usesRefreshCookie(request.nextUrl.pathname) || accessCookieEnabled());
 
   if (request.method === "OPTIONS") {
     return new NextResponse(null, { status: 204, headers });

@@ -1,7 +1,16 @@
 import { toAuthUserDto, toSessionDto } from "../dto/auth.dto";
 import type { AuthService, SessionTokens } from "../services/AuthService";
 import type { AuthUser } from "../types";
-import { REFRESH_COOKIE, clearedRefreshCookie, readCookie, refreshCookie } from "../utils/cookies";
+import {
+  REFRESH_COOKIE,
+  accessCookie,
+  accessCookieEnabled,
+  clearedAccessCookie,
+  clearedRefreshCookie,
+  readCookie,
+  refreshCookie,
+} from "../utils/cookies";
+import { getJwtConfig } from "../utils/jwt";
 import { RateLimitedError, RefreshReplayInGraceError, UnauthorizedError } from "../utils/errors";
 import { errorResponse, noContent, ok } from "../utils/http";
 import { EMAIL_LOGIN_LIMIT, RateLimiter } from "../utils/rateLimit";
@@ -10,11 +19,21 @@ import { parseBody } from "./requestParsers";
 
 const refreshTokenOf = (request: Request) => readCookie(request.headers.get("cookie"), REFRESH_COOKIE);
 
-/** Session response: access token in the body, rotated refresh token in its httpOnly cookie. */
+/**
+ * Session response: access token in the body, rotated refresh token in its httpOnly cookie. In dual mode the access
+ * token also goes in its own httpOnly cookie (the body keeps it until the cut-over step of decision 6).
+ */
 function sessionResponse(session: SessionTokens): Response {
   const response = ok(toSessionDto(session));
-  response.headers.set("Set-Cookie", refreshCookie(session.refreshToken, session.refreshMaxAgeSeconds));
+  response.headers.append("Set-Cookie", refreshCookie(session.refreshToken, session.refreshMaxAgeSeconds));
+  if (accessCookieEnabled()) response.headers.append("Set-Cookie", accessCookie(session.token, getJwtConfig().accessTtlSeconds));
   return response;
+}
+
+/** Cookies to drop when a session ends or cannot be recovered. The access cookie only exists in dual mode. */
+function clearCookies(response: Response): void {
+  response.headers.append("Set-Cookie", clearedRefreshCookie());
+  if (accessCookieEnabled()) response.headers.append("Set-Cookie", clearedAccessCookie());
 }
 
 export class AuthController {
@@ -45,7 +64,7 @@ export class AuthController {
       // receive, the rotated cookie, so clearing it here would log the legitimate session out.
       if (!(error instanceof RefreshReplayInGraceError)) {
         // The cookie is useless now: tell the browser to drop it.
-        response.headers.set("Set-Cookie", clearedRefreshCookie());
+        clearCookies(response);
       }
       return response;
     }
@@ -54,7 +73,7 @@ export class AuthController {
   async logout(request: Request): Promise<Response> {
     await this.auth.logout(refreshTokenOf(request));
     const response = noContent();
-    response.headers.set("Set-Cookie", clearedRefreshCookie());
+    clearCookies(response);
     return response;
   }
 

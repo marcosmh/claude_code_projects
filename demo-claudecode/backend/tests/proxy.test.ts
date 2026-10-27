@@ -230,3 +230,13 @@ describe("proxy: RATE_LIMIT_DISABLED (solo E2E)", () => {
     expect(p(req("POST", "/api/v1/invoices", headers)).status).toBe(429);
   });
 });
+
+describe("proxy: modo dual (AUTH_COOKIE_ACCESS=1)", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("las credenciales CORS se anuncian en todas las rutas, no solo en /auth/*", () => {
+    expect(proxy(req("OPTIONS", "/api/v1/invoices", { origin: ORIGIN })).headers.get("access-control-allow-credentials")).toBeNull();
+    vi.stubEnv("AUTH_COOKIE_ACCESS", "1");
+    expect(proxy(req("OPTIONS", "/api/v1/invoices", { origin: ORIGIN })).headers.get("access-control-allow-credentials")).toBe("true");
+  });
+});
