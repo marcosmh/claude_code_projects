@@ -3,6 +3,7 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { loadEnv, type Plugin } from "vite";
 import { defineConfig } from "vitest/config";
+import { emitSecurityHeaders } from "./build/securityHeaders.ts";
 
 /**
  * CSP estricta del build (el access token vive en localStorage: un XSS lo leería, así que no se permite ningún script
@@ -42,7 +43,7 @@ function cspMeta(csp: string): Plugin {
     const env = loadEnv(mode, process.cwd(), "VITE_");
     const csp = buildCsp(env.VITE_API_URL ?? "http://localhost:4000/api/v1");
     return {
-    plugins: [react(), tailwindcss(), cspMeta(csp)],
+    plugins: [react(), tailwindcss(), cspMeta(csp), emitSecurityHeaders(csp)],
     resolve: {
       alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
     },
@@ -58,12 +59,12 @@ function cspMeta(csp: string): Plugin {
     test: {
       environment: "jsdom",
       setupFiles: ["./src/test/setup.ts"],
-      include: ["src/**/*.test.{ts,tsx}"],
+      include: ["src/**/*.test.{ts,tsx}", "build/**/*.test.ts"],
       css: false,
       coverage: {
         provider: "v8",
-        include: ["src/**/*.{ts,tsx}"],
-        exclude: ["src/**/*.test.{ts,tsx}", "src/test/**", "src/types/**", "src/main.tsx", "src/vite-env.d.ts"],
+        include: ["src/**/*.{ts,tsx}", "build/**/*.ts"],
+        exclude: ["src/**/*.test.{ts,tsx}", "build/**/*.test.ts", "src/test/**", "src/types/**", "src/main.tsx", "src/vite-env.d.ts"],
         reporter: ["text-summary", "text", "lcov"],
         // Ratchet: floor just under the 2026-10-25 baseline (stmts 99.0, branches 97.1, funcs 98.7, lines 98.8). Never lower.
         thresholds: { statements: 95, branches: 92, functions: 95, lines: 95 },

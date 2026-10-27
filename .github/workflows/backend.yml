@@ -1,0 +1,63 @@
+name: Backend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - demo-claudecode/apps/backend/**
+      - demo-claudecode/packages/**
+      - demo-claudecode/package.json
+      - demo-claudecode/package-lock.json
+      - demo-claudecode/turbo.json
+      - demo-claudecode/tsconfig.base.json
+      - .github/workflows/backend.yml
+  pull_request:
+    paths:
+      - demo-claudecode/apps/backend/**
+      - demo-claudecode/packages/**
+      - demo-claudecode/package.json
+      - demo-claudecode/package-lock.json
+      - demo-claudecode/turbo.json
+      - demo-claudecode/tsconfig.base.json
+      - .github/workflows/backend.yml
+
+# Read-only token; jobs that need more must ask for it.
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+defaults:
+  run:
+    working-directory: demo-claudecode
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: file:./prisma/dev.db
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: demo-claudecode/package-lock.json
+      - uses: actions/cache@v4
+        with:
+          path: demo-claudecode/.turbo
+          key: turbo-${{ github.workflow }}-${{ github.sha }}
+          restore-keys: turbo-${{ github.workflow }}-
+      - run: npm ci
+      - run: npm run typecheck --workspace=@invoices/backend
+      - run: npm run test:coverage --workspace=@invoices/backend
+      - run: npm run build --workspace=@invoices/backend
+
+  # Proves the image still builds (deploy is a separate concern); nothing is pushed.
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -f apps/backend/Dockerfile -t invoices-backend .

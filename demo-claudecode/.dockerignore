@@ -1,0 +1,16 @@
+**/node_modules
+**/.next
+**/.next-e2e
+**/dist
+**/coverage
+**/.turbo
+**/test-results
+**/playwright-report
+**/tsconfig.tsbuildinfo
+**/.env
+**/.env.*
+!**/.env.example
+**/*.db
+**/*.db-journal
+legacy
+scripts/.run

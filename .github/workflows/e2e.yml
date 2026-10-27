@@ -1,0 +1,63 @@
+name: E2E
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - demo-claudecode/apps/**
+      - demo-claudecode/packages/**
+      - demo-claudecode/package.json
+      - demo-claudecode/package-lock.json
+      - demo-claudecode/turbo.json
+      - demo-claudecode/tsconfig.base.json
+      - .github/workflows/e2e.yml
+  pull_request:
+    paths:
+      - demo-claudecode/apps/**
+      - demo-claudecode/packages/**
+      - demo-claudecode/package.json
+      - demo-claudecode/package-lock.json
+      - demo-claudecode/turbo.json
+      - demo-claudecode/tsconfig.base.json
+      - .github/workflows/e2e.yml
+
+# Read-only token; jobs that need more must ask for it.
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+defaults:
+  run:
+    working-directory: demo-claudecode
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: demo-claudecode/package-lock.json
+      - uses: actions/cache@v4
+        with:
+          path: demo-claudecode/.turbo
+          key: turbo-${{ github.workflow }}-${{ github.sha }}
+          restore-keys: turbo-${{ github.workflow }}-
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+        working-directory: demo-claudecode/apps/frontend
+      - run: npm run test:e2e
+        working-directory: demo-claudecode/apps/frontend
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            demo-claudecode/apps/frontend/playwright-report
+            demo-claudecode/apps/frontend/test-results
+          retention-days: 7
