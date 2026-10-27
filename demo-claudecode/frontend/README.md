@@ -6,7 +6,7 @@ React 19 + TypeScript + Vite + React Router + Tailwind v4. Consume la API REST d
 
 ```bash
 npm install
-cp .env.example .env     # opcional: VITE_API_URL (por defecto http://localhost:4000/api/v1)
+cp .env.example .env     # opcional: VITE_API_URL (por defecto http://localhost:4000/api/v1; `/api/v1` usa el proxy de Vite hacia VITE_PROXY_TARGET, por defecto http://localhost:4000)
 npm run dev              # http://localhost:5173 (el backend debe estar en el puerto 4000)
 npm run build            # tsc --noEmit + vite build (salida en dist/)
 npm run preview          # sirve dist/ en el puerto 5173
@@ -80,7 +80,7 @@ Primera vez: `npx playwright install chromium` (en Linux sin dependencias del si
 Decisión del proyecto: el access token es legible por cualquier script de la página, así que un XSS filtraría la sesión (y podría llamar a `/auth/refresh`). Mitigaciones:
 
 - El código no usa `dangerouslySetInnerHTML` ni scripts de terceros (comprobado con `grep`; mantenerlo así).
-- **CSP estricta**, definida en `vite.config.ts` (`buildCsp`): `script-src 'self'` (sin `unsafe-inline`), `style-src 'self'` (más `style-src-attr 'unsafe-inline'` para los atributos `style` de los gráficos), `connect-src 'self'` + el origen de `VITE_API_URL`, `object-src 'none'`, `base-uri 'none'`, `frame-ancestors 'none'`. El script del tema, antes inline, es ahora `public/theme-init.js` (archivo externo, sin hash que mantener).
+- **CSP estricta**, definida en `vite.config.ts` (`buildCsp`): `script-src 'self'` (sin `unsafe-inline`), `style-src 'self'` (más `style-src-attr 'unsafe-inline'` para los atributos `style` de los gráficos), `connect-src 'self'` + el origen de `VITE_API_URL` (si es relativa, p. ej. `/api/v1`, solo `'self'`), `object-src 'none'`, `base-uri 'none'`, `frame-ancestors 'none'`. El script del tema, antes inline, es ahora `public/theme-init.js` (archivo externo, sin hash que mantener).
   - **Build**: se inyecta como `<meta http-equiv="Content-Security-Policy">` en `dist/index.html`. `npm run preview` la envía además como cabecera. Un `<meta>` no admite `frame-ancestors`.
   - **Desarrollo**: sin CSP (Vite necesita scripts inline para HMR).
   - **Producción**: el hosting debe enviar la misma política como cabecera `Content-Security-Policy` (para que `frame-ancestors` funcione), con `connect-src` apuntando al origen real de la API. Valor para el build por defecto: `default-src 'self'; script-src 'self'; style-src 'self'; style-src-attr 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' http://localhost:4000; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'` (cambia `http://localhost:4000`). Si se añade un script o recurso externo, hay que ampliarla a propósito.

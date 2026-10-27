@@ -10,7 +10,8 @@ import { defineConfig } from "vitest/config";
  * funciona en un <meta>: el hosting de producción debe enviar la política completa como cabecera (ver README).
  */
 export function buildCsp(apiUrl: string): string {
-  const apiOrigin = new URL(apiUrl).origin;
+  // A relative URL (`/api/v1`) means same origin: `'self'` already covers it.
+  const apiOrigin = apiUrl.startsWith("/") ? "" : ` ${new URL(apiUrl).origin}`;
   return [
     "default-src 'self'",
     "script-src 'self'",
@@ -18,7 +19,7 @@ export function buildCsp(apiUrl: string): string {
     "style-src-attr 'unsafe-inline'", // atributos style={{}} de los gráficos y badges
     "img-src 'self' data:",
     "font-src 'self' data:",
-    `connect-src 'self' ${apiOrigin}`,
+    `connect-src 'self'${apiOrigin}`,
     "object-src 'none'",
     "base-uri 'none'",
     "form-action 'self'",
@@ -45,7 +46,13 @@ function cspMeta(csp: string): Plugin {
     resolve: {
       alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
     },
-    server: { port: 5173, strictPort: true },
+    server: {
+      port: 5173,
+      strictPort: true,
+      // Same-origin setup (decision 6 of backend/docs/jwt-migration.md): with VITE_API_URL=/api/v1 the browser talks
+      // only to this server and `/api` is forwarded to the backend, so no CORS and the cookies stay first-party.
+      proxy: { "/api": { target: env.VITE_PROXY_TARGET ?? "http://localhost:4000" } },
+    },
     // `npm run preview` sirve el build con la misma política como cabecera (incluye frame-ancestors).
     preview: { headers: { "Content-Security-Policy": csp } },
     test: {
