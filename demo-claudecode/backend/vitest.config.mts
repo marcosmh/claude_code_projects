@@ -11,6 +11,7 @@ export default defineConfig({
     // untrusted default (0) stub it.
     env: { JWT_SECRET: "test-only-secret-not-for-production-0123456789", TRUSTED_PROXY_HOPS: "1" },
     globalSetup: ["tests/globalSetup.ts"],
+    setupFiles: ["tests/setup.ts"],
     fileParallelism: false,
     coverage: {
       provider: "v8",

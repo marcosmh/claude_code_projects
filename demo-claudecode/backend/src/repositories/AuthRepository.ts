@@ -41,6 +41,11 @@ export interface AuthRepository {
   clearLoginFailures(userId: number): Promise<void>;
   /** Replaces the password hash and forgets failures and locks. */
   updatePassword(userId: number, passwordHash: string): Promise<void>;
+  /**
+   * Replaces the password hash with an upgraded hash of the SAME password (scrypt rehash), only if the stored
+   * hash is still `expectedHash`. Touches nothing else (tokenVersion, locks, tokens). Returns whether it wrote.
+   */
+  updatePasswordHash(userId: number, passwordHash: string, expectedHash: string): Promise<boolean>;
   /** Revokes every session of the user except the one with `keepTokenHash`. Returns how many. */
   deleteOtherSessions(userId: number, keepTokenHash: string): Promise<number>;
   /** Assigns every invoice without an owner (created before authentication) to `userId`. Returns how many. */

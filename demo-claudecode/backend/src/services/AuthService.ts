@@ -1,4 +1,4 @@
-import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import type { AuthRepository } from "../repositories/AuthRepository";
 import type { AuthIdentity, AuthUser, UserRole } from "../types";
 import { consoleAudit, type AuditLogger } from "../utils/audit";
@@ -13,7 +13,7 @@ import {
   type JwtConfig,
   type RefreshClaims,
 } from "../utils/jwt";
-import { hashPassword, verifyPassword } from "../utils/password";
+import { decoyHash, hashPassword, needsRehash, verifyPassword } from "../utils/password";
 
 /** Consecutive failures that lock an account, and for how long. */
 export const MAX_FAILED_LOGINS = 5;
@@ -39,10 +39,6 @@ export interface SessionTokens {
 
 export const hashToken = (token: string) => createHash("sha256").update(token).digest("hex");
 
-// Verified when the email is unknown so that a miss costs as much as a wrong password.
-let decoyHash: Promise<string> | undefined;
-const decoy = () => (decoyHash ??= hashPassword(randomBytes(16).toString("hex")));
-
 const isLocked = (user: { lockedUntil: Date | null }, now: Date) => user.lockedUntil !== null && user.lockedUntil > now;
 const toAuthUser = ({ id, email, role }: AuthUser): AuthUser => ({ id, email, role });
 
@@ -65,7 +61,7 @@ export class AuthService {
     // among them get in before the failures were counted. A reservation caps the checks at MAX_FAILED_LOGINS.
     const reserved = record ? await this.repository.reserveLoginAttempt(record.id, MAX_FAILED_LOGINS, lockUntil, now) : false;
     // Always verify (against a decoy when the email is unknown or the account is locked) so every failure costs the same.
-    const valid = await verifyPassword(password, record?.passwordHash ?? (await decoy()));
+    const valid = await verifyPassword(password, record?.passwordHash ?? (await decoyHash()));
     if (!record) {
       this.audit("login_failed", { reason: "unknown_account" });
       throw new UnauthorizedError(LOGIN_FAILED);
@@ -85,6 +81,7 @@ export class AuthService {
       this.audit("login_locked", { userId: record.id, reason: "locked_during_login" });
       throw new UnauthorizedError(LOGIN_FAILED);
     }
+    await this.rehashIfWeak(record.id, password, record.passwordHash);
     await this.repository.deleteExpiredRefreshTokens(now);
     const family = this.newId();
     const refreshExpiresAt = new Date(now.getTime() + this.config().refreshTtlSeconds * 1000);
@@ -224,6 +221,22 @@ export class AuthService {
     const created = await this.repository.createUser({ email, passwordHash: await hashPassword(password), role });
     const claimedInvoices = isFirst ? await this.repository.claimOrphanInvoices(created.id) : 0;
     return { user: toAuthUser(created), claimedInvoices };
+  }
+
+  /**
+   * After a verified login, upgrades a hash made with weaker scrypt parameters. Best effort: a failure is
+   * audited and never breaks the login. It does not touch tokenVersion or any token (the password is the same),
+   * and it only writes if the stored hash is still the one that was verified, so it cannot overwrite a password
+   * changed concurrently.
+   */
+  private async rehashIfWeak(userId: number, password: string, storedHash: string): Promise<void> {
+    if (!needsRehash(storedHash)) return;
+    try {
+      const updated = await this.repository.updatePasswordHash(userId, await hashPassword(password), storedHash);
+      this.audit("password_rehashed", { userId, ...(!updated && { reason: "hash_changed_meanwhile" }) });
+    } catch {
+      this.audit("password_rehash_failed", { userId });
+    }
   }
 
   private async issue(

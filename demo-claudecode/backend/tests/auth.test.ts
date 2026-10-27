@@ -14,7 +14,7 @@ const PASSWORD = "correct horse battery";
 describe("password", () => {
   it("hashes with a random salt and verifies", async () => {
     const [a, b] = [await hashPassword(PASSWORD), await hashPassword(PASSWORD)];
-    expect(a).toMatch(/^scrypt\$32768\$8\$1\$/);
+    expect(a).toMatch(/^scrypt\$4096\$8\$1\$/); // fast test parameters (tests/setup.ts)
     expect(a).not.toBe(b);
     expect(a).not.toContain(PASSWORD);
     expect(await verifyPassword(PASSWORD, a)).toBe(true);

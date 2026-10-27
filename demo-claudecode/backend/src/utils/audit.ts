@@ -8,7 +8,9 @@ export type AuditAction =
   | "refresh_reuse_grace"
   | "logout"
   | "password_changed"
-  | "password_change_failed";
+  | "password_change_failed"
+  | "password_rehashed"
+  | "password_rehash_failed";
 
 /** Deliberately narrow: there is no field that could carry a password, a token or an email. */
 export interface AuditFields {

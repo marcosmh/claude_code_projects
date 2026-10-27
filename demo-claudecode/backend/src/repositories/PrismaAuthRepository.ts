@@ -96,6 +96,14 @@ export class PrismaAuthRepository implements AuthRepository {
     await this.db.user.update({ where: { id: userId }, data: { passwordHash, failedLogins: 0, lockedUntil: null } });
   }
 
+  async updatePasswordHash(userId: number, passwordHash: string, expectedHash: string): Promise<boolean> {
+    const { count } = await this.db.user.updateMany({
+      where: { id: userId, passwordHash: expectedHash },
+      data: { passwordHash },
+    });
+    return count > 0;
+  }
+
   async deleteOtherSessions(userId: number, keepTokenHash: string): Promise<number> {
     const { count } = await this.db.session.deleteMany({ where: { userId, tokenHash: { not: keepTokenHash } } });
     return count;

@@ -1,7 +1,9 @@
 # Plan: migrar la autenticación de sesión opaca a JWT
 
-Estado: **plan aprobado, implementación pendiente de orden del usuario** (decisión del 2026-10-26).
-Nada de este documento está implementado todavía. El código actual usa sesiones con cookie (ver `CLAUDE.md`).
+Estado: **implementado** (commits `63c73bb` y `c825bfc`, 2026-10-26). Este documento queda como registro del plan y de las
+decisiones; el comportamiento real está en el código, en `backend/docs/api.md` y en `backend/README.md`. Las secciones
+"Estado actual" y "Diseño propuesto" describen el diseño original; ver "Qué cambió respecto al plan" y "Pendiente tras la
+implementación" al final.
 
 ## Objetivo
 
@@ -9,9 +11,9 @@ Autenticar con JSON Web Tokens (access + refresh) manteniendo la arquitectura
 `Controller → Service → Repository → Prisma → Database`, el aislamiento por dueño (`ownerId`) y las
 protecciones actuales (límite de intentos, bloqueo de cuenta, rate limiting, guardia de origen).
 
-## Estado actual (lo que se reemplaza)
+## Estado anterior (lo que se reemplazó)
 
-| Pieza | Hoy |
+| Pieza | Antes |
 | --- | --- |
 | Token | Opaco aleatorio de 32 bytes en cookie httpOnly `session`; en BD solo su SHA-256 (`Session`) |
 | Verificación | `AuthService.authenticate` busca la sesión en BD en cada petición |
@@ -137,4 +139,36 @@ El secreto real nunca se versiona ni se imprime en logs. Rotarlo invalida todos 
    **Sin** rutas de administrador hasta que exista un caso de uso.
 5. **Tabla `Session`:** se elimina en una **migración posterior y separada** del corte, una vez que JWT funcione, junto con el código de sesión opaca.
 
-No queda ninguna decisión abierta. La implementación espera la orden explícita del usuario.
+No queda ninguna decisión abierta.
+
+## Qué cambió respecto al plan
+
+La auditoría de seguridad del 2026-10-26 (solo lectura, sin hallazgos críticos) llevó a endurecer lo implementado:
+
+- **Rate limit** (`src/utils/rateLimit.ts`): `X-Forwarded-For` se ignora salvo que `TRUSTED_PROXY_HOPS` > 0 (entrada N-ésima desde
+  la derecha); mapa de cubos con tope de 10.000 claves; sin IP fiable en producción no hay cubo compartido (se usa la credencial
+  o no se limita). Límite adicional de login por email normalizado.
+- **scrypt**: semáforo (`SCRYPT_CONCURRENCY`, por defecto 4) para acotar CPU y memoria. Los parámetros subieron a N=2^17 (M5, hecho; ver abajo).
+- **Bloqueo de cuenta atómico**: el intento se reserva antes de verificar la contraseña (`reserveLoginAttempt`), así que el
+  paralelismo no permite más de 5 verificaciones por ventana.
+- **Ventana de gracia del refresh** (`REFRESH_REUSE_GRACE_SECONDS`, 0-60, por defecto 10): reutilizar un refresh recién rotado da 401
+  sin revocar la familia, sin emitir tokens y sin borrar la cookie nueva. Fuera de la ventana se revoca la familia como se planeó.
+- **Frontend**: el refresh se serializa entre pestañas con `navigator.locks`; si el logout falla, el flag local `loggedOut`
+  impide restaurar la sesión con la cookie viva (ver `frontend/README.md`).
+- Variables nuevas: `REFRESH_REUSE_GRACE_SECONDS`, `TRUSTED_PROXY_HOPS`, `SCRYPT_CONCURRENCY` (documentadas en `backend/.env.example`).
+
+## M5 hecho (2026-10-26): scrypt a N=2^17
+
+- `src/utils/password.ts`: parámetros por defecto N=2^17, r=8, p=1; `maxmem` calculado como 2·128·N·r; al verificar se rechazan parámetros fuera de rango (anti-DoS); `needsRehash(hash)`; hash señuelo (`decoyHash`) con los parámetros vigentes.
+- `AuthService.login`: tras verificar y completar el login, rehash si el hash es más débil, con `AuthRepository.updatePasswordHash(userId, hash, expectedHash)` (condicional al hash verificado; no toca `tokenVersion`, bloqueos ni tokens; el fallo se audita y no rompe el login). La lógica de reserva de intentos no cambió.
+- Medido (16 CPU, WSL2): N=2^15 ~80 ms; N=2^17 ~325 ms por derivación, 4 en paralelo ~460 ms, pico de RSS ~570 MiB (base ~56 MiB). `SCRYPT_CONCURRENCY=4` sigue siendo razonable en un servidor de 1 GiB o más libre; con menos RAM, usar 2.
+- Riesgo residual: los usuarios que no inicien sesión mantienen su hash N=2^15 hasta su próximo login.
+
+## Pendiente tras la implementación
+
+- **B1**: el access token sigue válido hasta 15 min tras el logout (límite de un JWT sin estado); opciones: TTL menor o `sid` de familia.
+- **B2/B3**: validar la entropía del secreto y derivar claves distintas para access y refresh.
+- **B6/B7**: HSTS y `FRONTEND_ORIGIN` obligatorio (con `https://`) en producción.
+- **Limpieza**: la tabla `Session` y los métodos de sesión opaca del repositorio siguen presentes pero sin uso; se retiran en la migración posterior prevista en la decisión 5.
+- Rol `ADMIN` y `withRole` existen sin rutas que los usen (decisión 4).
+- Con varias instancias hace falta un almacén compartido (Redis) para el rate limit.

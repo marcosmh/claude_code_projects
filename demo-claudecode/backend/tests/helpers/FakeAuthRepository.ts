@@ -84,6 +84,12 @@ export class FakeAuthRepository implements AuthRepository {
     this.users.find((u) => u.id === userId)!.passwordHash = passwordHash;
     await this.clearLoginFailures(userId);
   }
+  async updatePasswordHash(userId: number, passwordHash: string, expectedHash: string) {
+    const user = this.users.find((u) => u.id === userId);
+    if (!user || user.passwordHash !== expectedHash) return false;
+    user.passwordHash = passwordHash;
+    return true;
+  }
   async deleteOtherSessions(userId: number, keepTokenHash: string) {
     let count = 0;
     for (const [hash, s] of this.sessions) {

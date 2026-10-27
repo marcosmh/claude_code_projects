@@ -36,6 +36,17 @@ describe("PrismaAuthRepository", () => {
     await expect(repo.createUser({ email: "ana@example.com", passwordHash: "h" })).rejects.toThrow();
   });
 
+  it("updatePasswordHash only writes when the stored hash is the expected one and touches nothing else", async () => {
+    const user = await repo.createUser({ email: "ana@example.com", passwordHash: "old" });
+    await repo.incrementTokenVersion(user.id);
+    expect(await repo.updatePasswordHash(user.id, "new", "stale")).toBe(false);
+    expect((await repo.findUserById(user.id))?.passwordHash).toBe("old");
+    expect(await repo.updatePasswordHash(user.id, "new", "old")).toBe(true);
+    const after = await repo.findUserById(user.id);
+    expect(after?.passwordHash).toBe("new");
+    expect(after?.tokenVersion).toBe(1);
+  });
+
   it("stores sessions by token hash and returns the user without the password hash", async () => {
     const user = await repo.createUser({ email: "ana@example.com", passwordHash: "secret-hash" });
     const expiresAt = new Date("2026-12-01T00:00:00Z");
