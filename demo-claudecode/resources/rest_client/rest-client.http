@@ -1,0 +1,378 @@
+###############################################################################
+# API de Facturas v1: colección para la extensión "REST Client" de VS Code
+# (humao.rest-client). Contrato: backend/docs/api.md
+#
+# USO RÁPIDO
+#   1. Arranca el backend (npm run dev en backend/, puerto 4000) y crea un usuario:
+#        cd backend && npm run user:create -- tu@correo.com
+#   2. Pon tu email y contraseña en @email y @password (más abajo). No subas
+#      credenciales reales al repositorio: usa un usuario de pruebas.
+#   3. Ejecuta "Login" (Send Request sobre la línea de la petición). Guarda el
+#      token en {{token}} y la cookie "refresh" (REST Client la conserva).
+#   4. Sigue el orden del archivo: "Crear factura" guarda {{id}} para las
+#      peticiones siguientes.
+#
+# NOTAS
+#   - REST Client no tiene asserts: cada petición lista bajo "ESPERADO" el
+#     código HTTP y la forma de la respuesta para compararla a ojo.
+#   - El access token dura 15 min. Si caduca (401), vuelve a ejecutar Login.
+#   - Límites por IP y minuto: 120 lecturas, 30 escrituras, 10 PDF, 10 logins
+#     o cambios de contraseña, 20 refresh. 5 logins fallidos bloquean la
+#     cuenta 15 min (por eso el login inválido usa un email inexistente).
+#   - Dinero en centavos enteros; fechas ISO 8601.
+###############################################################################
+
+@baseUrl = http://localhost:4000/api/v1
+@contentType = application/json
+
+# Credenciales de PRUEBA (cámbialas). Contraseña: 12 a 200 caracteres.
+@email = ana@example.com
+@password = cambia-esta-contraseña-123
+@newPassword = una-contraseña-nueva-123
+
+# Variables que se rellenan solas con las respuestas (no las edites).
+@token = {{login.response.body.$.data.token}}
+@id = {{createInvoice.response.body.$.data.id}}
+@invoiceNumber = {{createInvoice.response.body.$.data.number}}
+@refreshedToken = {{refreshAfterPassword.response.body.$.data.token}}
+
+
+###############################################################################
+# AUTH
+###############################################################################
+
+### Login
+# Devuelve el access token en el cuerpo y fija la cookie httpOnly "refresh"
+# (Path=/api/v1/auth). 10 intentos/min por IP y por email.
+#
+# ESPERADO  200 OK
+#   Set-Cookie: refresh=<JWT>; Path=/api/v1/auth; HttpOnly; SameSite=Strict
+#   { "data": { "token": "<JWT>", "user": { "id": 1, "email": "...", "role": "USER" } } }
+# ERRORES   401 UNAUTHENTICATED (email o contraseña incorrectos, o cuenta
+#           bloqueada: mismo mensaje), 400 VALIDATION_ERROR, 429 RATE_LIMITED
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+
+### Me (usuario actual)
+# ESPERADO  200 OK  { "data": { "id": 1, "email": "...", "role": "USER" } }
+# ERRORES   401 UNAUTHENTICATED (sin token, caducado o revocado)
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{token}}
+
+
+### Refresh (renovar access token con la cookie "refresh")
+# Sin cuerpo. Rota la cookie (la anterior queda revocada) y devuelve un access
+# token nuevo. 20 por minuto por IP.
+#
+# ESPERADO  200 OK  { "data": { "token": "<JWT>", "user": { ... } } }
+#           Set-Cookie: refresh=<JWT nuevo>
+# ERRORES   401 UNAUTHENTICATED (sin cookie, caducada o reutilizada; si se
+#           reutiliza fuera de la ventana de 10 s se revoca toda la sesión)
+# @name refresh
+POST {{baseUrl}}/auth/refresh
+
+
+###############################################################################
+# INVOICES
+###############################################################################
+
+### Listar facturas (paginado)
+# Query params, todos opcionales:
+#   status    DRAFT | SENT | PAID   (no existe OVERDUE; usa isOverdue)
+#   search    texto en cliente o número (FAC-0007), máx. 100
+#   page      entero >= 1 (por defecto 1)
+#   pageSize  1 a 100 (por defecto 10)
+#
+# ESPERADO  200 OK
+#   { "data": [ { "id": 21, "number": "FAC-0021", "status": "SENT",
+#                 "isOverdue": false, "totalCents": 11600, ... } ],
+#     "meta": { "page": 1, "pageSize": 10, "total": 1, "totalPages": 1 } }
+GET {{baseUrl}}/invoices
+    ?page=1
+    &pageSize=10
+Authorization: Bearer {{token}}
+
+
+### Listar facturas con filtros
+# ESPERADO  200 OK; todas las facturas devueltas tienen status "SENT"
+GET {{baseUrl}}/invoices
+    ?status=SENT
+    &search=Acme
+    &page=1
+    &pageSize=5
+Authorization: Bearer {{token}}
+
+
+### Crear factura
+# Guarda su id en {{id}} y su número en {{invoiceNumber}}. El número (FAC-0001...)
+# lo asigna el servidor.
+#
+# ESPERADO  201 Created, cabecera Location: /api/v1/invoices/<id>
+#   { "data": { "id": 21, "number": "FAC-0021", "clientName": "Acme SA",
+#               "status": "DRAFT", "isOverdue": false, "taxRate": 16,
+#               "items": [ { "id": 37, "description": "...", "quantity": 2,
+#                            "unitPriceCents": 5000, "amountCents": 10000 }, ... ],
+#               "subtotalCents": 28000, "taxCents": 4480, "totalCents": 32480,
+#               "createdAt": "...", "updatedAt": "..." } }
+#   Comprueba: totalCents == subtotalCents + taxCents (2*5000 + 1.5*12000 = 28000;
+#   IVA 16 % = 4480).
+# ERRORES   400 VALIDATION_ERROR (campos inválidos, con details[].field),
+#           422 UNPROCESSABLE_ENTITY (dueDate < issueDate, sin líneas, quantity <= 0)
+# @name createInvoice
+POST {{baseUrl}}/invoices
+Authorization: Bearer {{token}}
+Content-Type: {{contentType}}
+
+{
+  "clientName": "Acme SA",
+  "clientEmail": "compras@acme.com",
+  "clientAddress": "Av. Reforma 100, CDMX",
+  "issueDate": "2026-10-01",
+  "dueDate": "2026-10-20",
+  "status": "DRAFT",
+  "taxRate": 16,
+  "notes": "Gracias por su compra",
+  "items": [
+    { "description": "Servicio de consultoría", "quantity": 2, "unitPriceCents": 5000 },
+    { "description": "Soporte mensual", "quantity": 1.5, "unitPriceCents": 12000 }
+  ]
+}
+
+
+### Obtener factura por id
+# Path variable: {{id}} (la que guardó "Crear factura"). Una factura ajena se ve
+# igual que una inexistente: 404, nunca 403.
+#
+# ESPERADO  200 OK  { "data": <Invoice> } con el mismo id y número
+# ERRORES   400 VALIDATION_ERROR (id no numérico), 404 NOT_FOUND
+GET {{baseUrl}}/invoices/{{id}}
+Authorization: Bearer {{token}}
+
+
+### Actualizar factura (reemplazo completo)
+# PUT reemplaza campos y líneas (mismo cuerpo que POST); los ids de las líneas
+# cambian. El número no cambia.
+#
+# ESPERADO  200 OK  status "SENT", notes "Actualizada desde REST Client",
+#           una sola línea, subtotalCents 15000 (3 * 5000), mismo number
+# ERRORES   400, 404, 422
+PUT {{baseUrl}}/invoices/{{id}}
+Authorization: Bearer {{token}}
+Content-Type: {{contentType}}
+
+{
+  "clientName": "Acme SA",
+  "clientEmail": "compras@acme.com",
+  "issueDate": "2026-10-01",
+  "dueDate": "2026-10-20",
+  "status": "SENT",
+  "taxRate": 16,
+  "notes": "Actualizada desde REST Client",
+  "items": [
+    { "description": "Servicio de consultoría", "quantity": 3, "unitPriceCents": 5000 }
+  ]
+}
+
+
+### Cambiar estado
+# Cambio rápido: DRAFT | SENT | PAID. Solo toca "status" (y updatedAt); las
+# líneas conservan sus ids.
+#
+# ESPERADO  200 OK  { "data": { ..., "status": "PAID", "isOverdue": false } }
+# ERRORES   400 VALIDATION_ERROR (estado inválido), 404 NOT_FOUND
+PATCH {{baseUrl}}/invoices/{{id}}/status
+Authorization: Bearer {{token}}
+Content-Type: {{contentType}}
+
+{
+  "status": "PAID"
+}
+
+
+### Descargar PDF
+# 10 por minuto. En VS Code usa "Save Response Body" para guardar el archivo.
+#
+# ESPERADO  200 OK
+#   Content-Type: application/pdf
+#   Content-Disposition: inline; filename="FAC-0021.pdf"
+#   El cuerpo empieza por %PDF
+# ERRORES   400, 404 (JSON de error)
+GET {{baseUrl}}/invoices/{{id}}/pdf
+Authorization: Bearer {{token}}
+
+
+### Eliminar factura
+# El número no se reutiliza. Va después de todas las peticiones que usan {{id}}.
+#
+# ESPERADO  204 No Content (sin cuerpo)
+# ERRORES   404 NOT_FOUND
+DELETE {{baseUrl}}/invoices/{{id}}
+Authorization: Bearer {{token}}
+
+
+### Obtener factura eliminada (debe dar 404)
+# ESPERADO  404 Not Found  { "error": { "code": "NOT_FOUND", "message": "..." } }
+GET {{baseUrl}}/invoices/{{id}}
+Authorization: Bearer {{token}}
+
+
+###############################################################################
+# STATS (solo cuentan las facturas del usuario autenticado)
+###############################################################################
+
+### Resumen por estado
+# "overdue" es un subconjunto de SENT (enviadas con vencimiento pasado); los
+# importes incluyen impuestos.
+#
+# ESPERADO  200 OK
+#   { "data": { "byStatus": { "DRAFT": { "count": 4, "totalCents": 8304800 },
+#                             "SENT":  { "count": 9, "totalCents": 20874200 },
+#                             "PAID":  { "count": 8, "totalCents": 17738700 } },
+#               "overdue": { "count": 4, "totalCents": 8270800 },
+#               "totalCount": 21 } }
+#   Comprueba: totalCount == DRAFT.count + SENT.count + PAID.count y
+#   overdue.count <= SENT.count
+GET {{baseUrl}}/stats/summary
+Authorization: Bearer {{token}}
+
+
+### Totales mensuales
+# Query: months = entero 1 a 24 (por defecto 6). Orden cronológico; los meses
+# sin datos van en 0.
+#
+# ESPERADO  200 OK
+#   { "data": [ { "key": "2026-09", "label": "sept", "title": "septiembre de 2026",
+#                 "totalsCents": { "DRAFT": 1392000, "SENT": 7070200, "PAID": 1879200 } } ],
+#     "meta": { "months": 6 } }
+#   Comprueba: data.length == months y meta.months == data.length
+GET {{baseUrl}}/stats/monthly
+    ?months=6
+Authorization: Bearer {{token}}
+
+
+###############################################################################
+# CASOS DE ERROR (todos esperados)
+###############################################################################
+
+### Sin token -> 401
+# ESPERADO  401  { "error": { "code": "UNAUTHENTICATED", ... } }
+GET {{baseUrl}}/invoices
+
+
+### Token inválido -> 401
+# ESPERADO  401 UNAUTHENTICATED
+GET {{baseUrl}}/invoices
+Authorization: Bearer token-invalido
+
+
+### Cuerpo inválido -> 400
+# ESPERADO  400  { "error": { "code": "VALIDATION_ERROR",
+#                  "details": [ { "field": "clientName", "message": "..." }, ... ] } }
+POST {{baseUrl}}/invoices
+Authorization: Bearer {{token}}
+Content-Type: {{contentType}}
+
+{
+  "clientName": "",
+  "issueDate": "no-es-fecha",
+  "dueDate": "2026-10-20",
+  "items": [ { "description": "x", "quantity": 1, "unitPriceCents": 100 } ]
+}
+
+
+### Vencimiento anterior a la emisión -> 422
+# ESPERADO  422  { "error": { "code": "UNPROCESSABLE_ENTITY",
+#                  "details": [ { "field": "dueDate", "message": "..." } ] } }
+POST {{baseUrl}}/invoices
+Authorization: Bearer {{token}}
+Content-Type: {{contentType}}
+
+{
+  "clientName": "Acme SA",
+  "issueDate": "2026-10-20",
+  "dueDate": "2026-10-01",
+  "items": [ { "description": "Servicio", "quantity": 1, "unitPriceCents": 5000 } ]
+}
+
+
+### Id inexistente -> 404
+# ESPERADO  404 NOT_FOUND (también es lo que ve quien pide una factura ajena)
+GET {{baseUrl}}/invoices/999999
+Authorization: Bearer {{token}}
+
+
+### Id no numérico -> 400
+# ESPERADO  400 VALIDATION_ERROR
+GET {{baseUrl}}/invoices/abc
+Authorization: Bearer {{token}}
+
+
+### Login con credenciales inválidas -> 401
+# Usa un email inexistente a propósito para no bloquear tu cuenta. Cuenta para
+# el límite de 10 logins por minuto.
+# ESPERADO  401 UNAUTHENTICATED, sin cabecera Set-Cookie
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "no-existe@example.com",
+  "password": "contraseña-incorrecta-123"
+}
+
+
+###############################################################################
+# CIERRE DE SESIÓN (ejecutar al final, en este orden)
+###############################################################################
+
+### 1) Cambiar contraseña
+# CAMBIA DE VERDAD la contraseña del usuario de @email. Nueva: 12 a 200
+# caracteres y distinta de la actual. Invalida todos los access tokens vivos,
+# incluido {{token}}: por eso el siguiente paso es Refresh.
+#
+# ESPERADO  204 No Content
+# ERRORES   422 (details[].field = currentPassword o newPassword), 400, 401
+POST {{baseUrl}}/auth/password
+Authorization: Bearer {{token}}
+Content-Type: {{contentType}}
+
+{
+  "currentPassword": "{{password}}",
+  "newPassword": "{{newPassword}}"
+}
+
+
+### 2) Refresh tras cambiar la contraseña
+# La cookie "refresh" de este dispositivo sigue válida. Guarda el token nuevo
+# en {{refreshedToken}}.
+# ESPERADO  200 OK con token nuevo
+# @name refreshAfterPassword
+POST {{baseUrl}}/auth/refresh
+
+
+### 3) Restaurar la contraseña original
+# Deja el usuario como estaba para poder repetir la colección.
+# ESPERADO  204 No Content
+POST {{baseUrl}}/auth/password
+Authorization: Bearer {{refreshedToken}}
+Content-Type: {{contentType}}
+
+{
+  "currentPassword": "{{newPassword}}",
+  "newPassword": "{{password}}"
+}
+
+
+### 4) Logout
+# Revoca la familia del refresh y vacía la cookie. Idempotente; no exige access
+# token. El access token sigue valiendo hasta que caduque.
+#
+# ESPERADO  204 No Content
+#   Set-Cookie: refresh=; Max-Age=0; Path=/api/v1/auth
+POST {{baseUrl}}/auth/logout

@@ -1,0 +1,2232 @@
+{
+  "info": {
+    "name": "API de Facturas v1",
+    "_postman_id": "6f1d3c64-2b1e-4a53-9f4c-5a1b7e0c9d21",
+    "description": "Colección de la API REST de facturas (`backend/`, contrato en `backend/docs/api.md`).\n\n**Uso rápido**\n1. Arranca el backend (`npm run dev` en `backend/`, puerto 4000) y crea un usuario con `npm run user:create -- tu@correo.com`.\n2. En la pestaña *Variables* de la colección pon `email` y `password` (la contraseña no se versiona).\n3. Ejecuta **Auth → Login**: guarda `{{token}}` y la cookie `refresh`. Después puedes lanzar la colección completa con el Runner (el orden importa: Crear factura guarda `{{id}}`).\n\n**Notas**\n- La autenticación Bearer está definida a nivel de colección con `{{token}}`; Login, Refresh y Logout la desactivan.\n- Si el token caduca (15 min) o cambias la contraseña, ejecuta **Auth → Refresh**.\n- Límites por IP y minuto: 120 lecturas, 30 escrituras, 10 PDF, 10 logins/cambios de contraseña, 20 refresh. 5 logins fallidos bloquean la cuenta 15 min.\n- Postman no envía `Origin`, por lo que la guardia CORS de escrituras no aplica.\n- Dinero en centavos enteros; fechas ISO 8601.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:4000/api/v1",
+      "type": "string",
+      "description": "URL base de la API"
+    },
+    {
+      "key": "email",
+      "value": "",
+      "type": "string",
+      "description": "Email de un usuario existente (npm run user:create)"
+    },
+    {
+      "key": "password",
+      "value": "",
+      "type": "secret",
+      "description": "Contraseña del usuario (mínimo 12 caracteres)"
+    },
+    {
+      "key": "newPassword",
+      "value": "una-contraseña-nueva-123",
+      "type": "secret",
+      "description": "Solo para 'Cambiar contraseña' (12 a 200 caracteres, distinta de la actual)"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string",
+      "description": "Access token JWT; lo rellenan Login y Refresh"
+    },
+    {
+      "key": "id",
+      "value": "",
+      "type": "string",
+      "description": "Id de la factura de trabajo; lo rellena 'Crear factura'"
+    },
+    {
+      "key": "invoiceNumber",
+      "value": "",
+      "type": "string",
+      "description": "Número de la factura creada (FAC-0001...)"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Inicia sesión. Devuelve el access token en el cuerpo (se guarda en `{{token}}`) y fija la cookie `refresh` (HttpOnly, `Path=/api/v1/auth`), que Postman conserva en su cookie jar. Límite: 10 intentos por minuto por IP y por email; 5 fallos seguidos bloquean la cuenta 15 min.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Devuelve token y usuario', () => {",
+                  "  pm.expect(json.data).to.have.property('token').that.is.a('string');",
+                  "  pm.expect(json.data.user).to.include.all.keys('id', 'email', 'role');",
+                  "});",
+                  "pm.test('Fija la cookie refresh', () => pm.expect(pm.cookies.has('refresh')).to.be.true);",
+                  "pm.collectionVariables.set('token', json.data.token);"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/login",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "login"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Set-Cookie",
+                  "value": "refresh=<JWT>; Max-Age=604800; Path=/api/v1/auth; HttpOnly; SameSite=Strict"
+                }
+              ],
+              "body": "{\n  \"data\": {\n    \"token\": \"<access JWT>\",\n    \"user\": {\n      \"id\": 1,\n      \"email\": \"ana@example.com\",\n      \"role\": \"USER\"\n    }\n  }\n}"
+            },
+            {
+              "name": "401 Credenciales inválidas",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/login",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "login"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": {\n    \"code\": \"UNAUTHENTICATED\",\n    \"message\": \"Email o contraseña incorrectos. Tras 5 intentos fallidos la cuenta se bloquea 15 minutos.\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Refresh (renovar access token)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "refresh"
+              ]
+            },
+            "description": "Sin cuerpo: lee la cookie `refresh` y la rota. Devuelve un access token nuevo (se guarda en `{{token}}`). Úsalo cuando el token caduque (15 min) o tras cambiar la contraseña. Límite: 20 por minuto por IP.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Devuelve token y usuario', () => {",
+                  "  pm.expect(json.data).to.have.property('token').that.is.a('string');",
+                  "  pm.expect(json.data.user).to.include.all.keys('id', 'email', 'role');",
+                  "});",
+                  "pm.test('Fija la cookie refresh', () => pm.expect(pm.cookies.has('refresh')).to.be.true);",
+                  "pm.collectionVariables.set('token', json.data.token);"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/refresh",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "refresh"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"data\": {\n    \"token\": \"<access JWT>\",\n    \"user\": {\n      \"id\": 1,\n      \"email\": \"ana@example.com\",\n      \"role\": \"USER\"\n    }\n  }\n}"
+            },
+            {
+              "name": "401 Sin sesión",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/refresh",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "refresh"
+                  ]
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": {\n    \"code\": \"UNAUTHENTICATED\",\n    \"message\": \"Sesión no válida, inicia sesión de nuevo\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Me (usuario actual)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Devuelve el usuario del access token actual."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const u = pm.response.json().data;",
+                  "pm.test('Estructura del usuario', () => { pm.expect(u).to.have.all.keys('id','email','role'); pm.expect(u.role).to.be.oneOf(['USER','ADMIN']); });"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/me",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "me"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"data\": {\n    \"id\": 1,\n    \"email\": \"ana@example.com\",\n    \"role\": \"USER\"\n  }\n}"
+            },
+            {
+              "name": "401 Sin token",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/me",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "me"
+                  ]
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": {\n    \"code\": \"UNAUTHENTICATED\",\n    \"message\": \"Sesión no válida, inicia sesión de nuevo\"\n  }\n}"
+            }
+          ]
+        }
+      ],
+      "description": "Sesión JWT. Ejecuta Login primero."
+    },
+    {
+      "name": "Invoices",
+      "item": [
+        {
+          "name": "Listar facturas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/invoices?page=1&pageSize=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "invoices"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "SENT",
+                  "description": "DRAFT | SENT | PAID (no existe OVERDUE)",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "Acme",
+                  "description": "Texto en cliente o número (FAC-0007), máx. 100",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Entero >= 1 (por defecto 1)",
+                  "disabled": false
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10",
+                  "description": "1 a 100 (por defecto 10)",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "Listado paginado, por `issueDate` descendente. Todos los parámetros son opcionales; actívalos en la pestaña Params."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Lista y paginación', () => {",
+                  "  pm.expect(json.data).to.be.an('array');",
+                  "  pm.expect(json.meta).to.include.all.keys('page','pageSize','total','totalPages');",
+                  "});",
+                  "pm.test('Cada factura tiene la estructura esperada', () => json.data.forEach((i) => pm.expect(i).to.include.all.keys('id','number','status','isOverdue','totalCents')));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/invoices?page=1&pageSize=10",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "invoices"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "SENT",
+                      "description": "DRAFT | SENT | PAID (no existe OVERDUE)",
+                      "disabled": true
+                    },
+                    {
+                      "key": "search",
+                      "value": "Acme",
+                      "description": "Texto en cliente o número (FAC-0007), máx. 100",
+                      "disabled": true
+                    },
+                    {
+                      "key": "page",
+                      "value": "1",
+                      "description": "Entero >= 1 (por defecto 1)",
+                      "disabled": false
+                    },
+                    {
+                      "key": "pageSize",
+                      "value": "10",
+                      "description": "1 a 100 (por defecto 10)",
+                      "disabled": false
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"data\": [\n    {\n      \"id\": 21,\n      \"number\": \"FAC-0021\",\n      \"clientName\": \"Acme SA\",\n      \"clientEmail\": \"compras@acme.com\",\n      \"clientAddress\": null,\n      \"issueDate\": \"2026-10-01T00:00:00.000Z\",\n      \"dueDate\": \"2026-10-20T00:00:00.000Z\",\n      \"status\": \"SENT\",\n      \"isOverdue\": false,\n      \"taxRate\": 16,\n      \"notes\": null,\n      \"items\": [\n        {\n          \"id\": 37,\n          \"description\": \"Servicio\",\n          \"quantity\": 2,\n          \"unitPriceCents\": 5000,\n          \"amountCents\": 10000\n        }\n      ],\n      \"subtotalCents\": 10000,\n      \"taxCents\": 1600,\n      \"totalCents\": 11600,\n      \"createdAt\": \"2026-10-25T04:13:25.106Z\",\n      \"updatedAt\": \"2026-10-25T04:13:25.112Z\"\n    }\n  ],\n  \"meta\": {\n    \"page\": 1,\n    \"pageSize\": 10,\n    \"total\": 1,\n    \"totalPages\": 1\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Listar facturas con filtros",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/invoices?status=SENT&search=Acme&page=1&pageSize=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "invoices"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "SENT",
+                  "description": "DRAFT | SENT | PAID",
+                  "disabled": false
+                },
+                {
+                  "key": "search",
+                  "value": "Acme",
+                  "description": "Cliente o número",
+                  "disabled": false
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "",
+                  "disabled": false
+                },
+                {
+                  "key": "pageSize",
+                  "value": "5",
+                  "description": "",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "Mismo endpoint con `status` y `search`."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Lista y paginación', () => {",
+                  "  pm.expect(json.data).to.be.an('array');",
+                  "  pm.expect(json.meta).to.include.all.keys('page','pageSize','total','totalPages');",
+                  "});",
+                  "pm.test('Cada factura tiene la estructura esperada', () => json.data.forEach((i) => pm.expect(i).to.include.all.keys('id','number','status','isOverdue','totalCents')));",
+                  "pm.test('Todas cumplen el filtro de estado', () => json.data.forEach((i) => pm.expect(i.status).to.eql('SENT')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear factura",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/invoices",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "invoices"
+              ]
+            },
+            "description": "Crea una factura. 201 con cabecera `Location`. El test guarda su id en `{{id}}` para las siguientes peticiones. El número (`FAC-0001`...) lo asigna el servidor.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-01\",\n  \"dueDate\": \"2026-10-20\",\n  \"status\": \"DRAFT\",\n  \"taxRate\": 16,\n  \"notes\": \"Gracias por su compra\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 2,\n      \"unitPriceCents\": 5000\n    },\n    {\n      \"description\": \"Soporte mensual\",\n      \"quantity\": 1.5,\n      \"unitPriceCents\": 12000\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Location apunta a la factura', () => pm.expect(pm.response.headers.get('Location')).to.match(/\\/api\\/v1\\/invoices\\/\\d+$/));",
+                  "const inv = pm.response.json().data;",
+                  "pm.test('Estructura de la factura', () => {",
+                  "  pm.expect(inv).to.include.all.keys('id','number','clientName','issueDate','dueDate','status','isOverdue','taxRate','items','subtotalCents','taxCents','totalCents');",
+                  "  pm.expect(inv.number).to.match(/^FAC-\\d{4,}$/);",
+                  "  pm.expect(inv.status).to.be.oneOf(['DRAFT','SENT','PAID']);",
+                  "  pm.expect(inv.items).to.be.an('array').that.is.not.empty;",
+                  "  pm.expect(inv.totalCents).to.equal(inv.subtotalCents + inv.taxCents);",
+                  "});",
+                  "pm.test('Totales correctos (2*5000 + 1.5*12000 = 28000, IVA 16%)', () => { pm.expect(inv.subtotalCents).to.eql(28000); pm.expect(inv.taxCents).to.eql(4480); pm.expect(inv.totalCents).to.eql(32480); });",
+                  "pm.collectionVariables.set('id', inv.id);",
+                  "pm.collectionVariables.set('invoiceNumber', inv.number);"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/invoices",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "invoices"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-01\",\n  \"dueDate\": \"2026-10-20\",\n  \"status\": \"DRAFT\",\n  \"taxRate\": 16,\n  \"notes\": \"Gracias por su compra\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 2,\n      \"unitPriceCents\": 5000\n    },\n    {\n      \"description\": \"Soporte mensual\",\n      \"quantity\": 1.5,\n      \"unitPriceCents\": 12000\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Location",
+                  "value": "/api/v1/invoices/21"
+                }
+              ],
+              "body": "{\n  \"data\": {\n    \"id\": 21,\n    \"number\": \"FAC-0021\",\n    \"clientName\": \"Acme SA\",\n    \"clientEmail\": \"compras@acme.com\",\n    \"clientAddress\": null,\n    \"issueDate\": \"2026-10-01T00:00:00.000Z\",\n    \"dueDate\": \"2026-10-20T00:00:00.000Z\",\n    \"status\": \"SENT\",\n    \"isOverdue\": false,\n    \"taxRate\": 16,\n    \"notes\": null,\n    \"items\": [\n      {\n        \"id\": 37,\n        \"description\": \"Servicio\",\n        \"quantity\": 2,\n        \"unitPriceCents\": 5000,\n        \"amountCents\": 10000\n      }\n    ],\n    \"subtotalCents\": 10000,\n    \"taxCents\": 1600,\n    \"totalCents\": 11600,\n    \"createdAt\": \"2026-10-25T04:13:25.106Z\",\n    \"updatedAt\": \"2026-10-25T04:13:25.112Z\"\n  }\n}"
+            },
+            {
+              "name": "400 Datos inválidos",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/invoices",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "invoices"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-01\",\n  \"dueDate\": \"2026-10-20\",\n  \"status\": \"DRAFT\",\n  \"taxRate\": 16,\n  \"notes\": \"Gracias por su compra\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 2,\n      \"unitPriceCents\": 5000\n    },\n    {\n      \"description\": \"Soporte mensual\",\n      \"quantity\": 1.5,\n      \"unitPriceCents\": 12000\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"Datos de entrada inválidos\",\n    \"details\": [\n      {\n        \"field\": \"clientName\",\n        \"message\": \"El cliente es obligatorio\"\n      },\n      {\n        \"field\": \"issueDate\",\n        \"message\": \"Fecha de emisión inválida (use ISO 8601)\"\n      }\n    ]\n  }\n}"
+            },
+            {
+              "name": "422 Vencimiento anterior a la emisión",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/invoices",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "invoices"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-01\",\n  \"dueDate\": \"2026-10-20\",\n  \"status\": \"DRAFT\",\n  \"taxRate\": 16,\n  \"notes\": \"Gracias por su compra\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 2,\n      \"unitPriceCents\": 5000\n    },\n    {\n      \"description\": \"Soporte mensual\",\n      \"quantity\": 1.5,\n      \"unitPriceCents\": 12000\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": {\n    \"code\": \"UNPROCESSABLE_ENTITY\",\n    \"message\": \"La factura incumple reglas de negocio\",\n    \"details\": [\n      {\n        \"field\": \"dueDate\",\n        \"message\": \"El vencimiento no puede ser anterior a la emisión\"\n      }\n    ]\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Obtener factura por id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/invoices/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "invoices",
+                "{{id}}"
+              ]
+            },
+            "description": "Path variable: `{{id}}` (la que guardó **Crear factura**). Una factura ajena se ve igual que una inexistente: 404."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const inv = pm.response.json().data;",
+                  "pm.test('Es la factura pedida', () => pm.expect(String(inv.id)).to.eql(pm.collectionVariables.get('id')));",
+                  "pm.test('Estructura de la factura', () => {",
+                  "  pm.expect(inv).to.include.all.keys('id','number','clientName','issueDate','dueDate','status','isOverdue','taxRate','items','subtotalCents','taxCents','totalCents');",
+                  "  pm.expect(inv.number).to.match(/^FAC-\\d{4,}$/);",
+                  "  pm.expect(inv.status).to.be.oneOf(['DRAFT','SENT','PAID']);",
+                  "  pm.expect(inv.items).to.be.an('array').that.is.not.empty;",
+                  "  pm.expect(inv.totalCents).to.equal(inv.subtotalCents + inv.taxCents);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/invoices/{{id}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "invoices",
+                    "{{id}}"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"data\": {\n    \"id\": 21,\n    \"number\": \"FAC-0021\",\n    \"clientName\": \"Acme SA\",\n    \"clientEmail\": \"compras@acme.com\",\n    \"clientAddress\": null,\n    \"issueDate\": \"2026-10-01T00:00:00.000Z\",\n    \"dueDate\": \"2026-10-20T00:00:00.000Z\",\n    \"status\": \"SENT\",\n    \"isOverdue\": false,\n    \"taxRate\": 16,\n    \"notes\": null,\n    \"items\": [\n      {\n        \"id\": 37,\n        \"description\": \"Servicio\",\n        \"quantity\": 2,\n        \"unitPriceCents\": 5000,\n        \"amountCents\": 10000\n      }\n    ],\n    \"subtotalCents\": 10000,\n    \"taxCents\": 1600,\n    \"totalCents\": 11600,\n    \"createdAt\": \"2026-10-25T04:13:25.106Z\",\n    \"updatedAt\": \"2026-10-25T04:13:25.112Z\"\n  }\n}"
+            },
+            {
+              "name": "404 No existe",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/invoices/{{id}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "invoices",
+                    "{{id}}"
+                  ]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": {\n    \"code\": \"NOT_FOUND\",\n    \"message\": \"Factura no encontrada\"\n  }\n}"
+            },
+            {
+              "name": "400 Id no numérico",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/invoices/{{id}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "invoices",
+                    "{{id}}"
+                  ]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"Identificador inválido\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Actualizar factura (reemplazo completo)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/invoices/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "invoices",
+                "{{id}}"
+              ]
+            },
+            "description": "Reemplaza campos y líneas (mismo cuerpo que POST). Los ids de las líneas cambian.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-01\",\n  \"dueDate\": \"2026-10-20\",\n  \"status\": \"SENT\",\n  \"taxRate\": 16,\n  \"notes\": \"Actualizada desde Postman\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 3,\n      \"unitPriceCents\": 5000\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const inv = pm.response.json().data;",
+                  "pm.test('Se aplicaron los cambios', () => { pm.expect(inv.status).to.eql('SENT'); pm.expect(inv.notes).to.eql('Actualizada desde Postman'); pm.expect(inv.items).to.have.length(1); });",
+                  "pm.test('Conserva el número', () => pm.expect(inv.number).to.eql(pm.collectionVariables.get('invoiceNumber')));",
+                  "pm.test('Subtotal 3*5000 = 15000', () => pm.expect(inv.subtotalCents).to.eql(15000));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/invoices/{{id}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "invoices",
+                    "{{id}}"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-01\",\n  \"dueDate\": \"2026-10-20\",\n  \"status\": \"SENT\",\n  \"taxRate\": 16,\n  \"notes\": \"Actualizada desde Postman\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 3,\n      \"unitPriceCents\": 5000\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"data\": {\n    \"id\": 21,\n    \"number\": \"FAC-0021\",\n    \"clientName\": \"Acme SA\",\n    \"clientEmail\": \"compras@acme.com\",\n    \"clientAddress\": null,\n    \"issueDate\": \"2026-10-01T00:00:00.000Z\",\n    \"dueDate\": \"2026-10-20T00:00:00.000Z\",\n    \"status\": \"SENT\",\n    \"isOverdue\": false,\n    \"taxRate\": 16,\n    \"notes\": null,\n    \"items\": [\n      {\n        \"id\": 37,\n        \"description\": \"Servicio\",\n        \"quantity\": 2,\n        \"unitPriceCents\": 5000,\n        \"amountCents\": 10000\n      }\n    ],\n    \"subtotalCents\": 10000,\n    \"taxCents\": 1600,\n    \"totalCents\": 11600,\n    \"createdAt\": \"2026-10-25T04:13:25.106Z\",\n    \"updatedAt\": \"2026-10-25T04:13:25.112Z\"\n  }\n}"
+            },
+            {
+              "name": "404 No existe",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/invoices/{{id}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "invoices",
+                    "{{id}}"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-01\",\n  \"dueDate\": \"2026-10-20\",\n  \"status\": \"SENT\",\n  \"taxRate\": 16,\n  \"notes\": \"Actualizada desde Postman\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 3,\n      \"unitPriceCents\": 5000\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": {\n    \"code\": \"NOT_FOUND\",\n    \"message\": \"Factura no encontrada\"\n  }\n}"
+            },
+            {
+              "name": "422 Reglas de negocio",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/invoices/{{id}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "invoices",
+                    "{{id}}"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-01\",\n  \"dueDate\": \"2026-10-20\",\n  \"status\": \"SENT\",\n  \"taxRate\": 16,\n  \"notes\": \"Actualizada desde Postman\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 3,\n      \"unitPriceCents\": 5000\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": {\n    \"code\": \"UNPROCESSABLE_ENTITY\",\n    \"message\": \"La factura incumple reglas de negocio\",\n    \"details\": [\n      {\n        \"field\": \"dueDate\",\n        \"message\": \"El vencimiento no puede ser anterior a la emisión\"\n      }\n    ]\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Cambiar estado",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/invoices/{{id}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "invoices",
+                "{{id}}",
+                "status"
+              ]
+            },
+            "description": "Cambio rápido de estado (`DRAFT` | `SENT` | `PAID`). Solo toca `status`; las líneas conservan sus ids.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"PAID\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const inv = pm.response.json().data;",
+                  "pm.test('Estado PAID y no vencida', () => { pm.expect(inv.status).to.eql('PAID'); pm.expect(inv.isOverdue).to.be.false; });"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/invoices/{{id}}/status",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "invoices",
+                    "{{id}}",
+                    "status"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"PAID\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"data\": {\n    \"id\": 21,\n    \"number\": \"FAC-0021\",\n    \"clientName\": \"Acme SA\",\n    \"clientEmail\": \"compras@acme.com\",\n    \"clientAddress\": null,\n    \"issueDate\": \"2026-10-01T00:00:00.000Z\",\n    \"dueDate\": \"2026-10-20T00:00:00.000Z\",\n    \"status\": \"PAID\",\n    \"isOverdue\": false,\n    \"taxRate\": 16,\n    \"notes\": null,\n    \"items\": [\n      {\n        \"id\": 37,\n        \"description\": \"Servicio\",\n        \"quantity\": 2,\n        \"unitPriceCents\": 5000,\n        \"amountCents\": 10000\n      }\n    ],\n    \"subtotalCents\": 10000,\n    \"taxCents\": 1600,\n    \"totalCents\": 11600,\n    \"createdAt\": \"2026-10-25T04:13:25.106Z\",\n    \"updatedAt\": \"2026-10-25T04:13:25.112Z\"\n  }\n}"
+            },
+            {
+              "name": "400 Estado inválido",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/invoices/{{id}}/status",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "invoices",
+                    "{{id}}",
+                    "status"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"PAID\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"Datos de entrada inválidos\",\n    \"details\": [\n      {\n        \"field\": \"status\",\n        \"message\": \"Estado inválido\"\n      }\n    ]\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Descargar PDF",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/invoices/{{id}}/pdf",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "invoices",
+                "{{id}}",
+                "pdf"
+              ]
+            },
+            "description": "Devuelve el PDF de la factura. En Postman usa **Send and Download** para guardarlo. Límite: 10 por minuto."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Content-Type application/pdf', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/pdf'));",
+                  "pm.test('Content-Disposition con el número', () => pm.expect(pm.response.headers.get('Content-Disposition')).to.include('.pdf'));",
+                  "pm.test('Es un PDF', () => pm.expect(pm.response.text().slice(0, 4)).to.eql('%PDF'));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK (application/pdf)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/invoices/{{id}}/pdf",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "invoices",
+                    "{{id}}",
+                    "pdf"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/pdf"
+                },
+                {
+                  "key": "Content-Disposition",
+                  "value": "inline; filename=\"FAC-0021.pdf\""
+                }
+              ],
+              "body": ""
+            },
+            {
+              "name": "404 No existe",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/invoices/{{id}}/pdf",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "invoices",
+                    "{{id}}",
+                    "pdf"
+                  ]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": {\n    \"code\": \"NOT_FOUND\",\n    \"message\": \"Factura no encontrada\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Eliminar factura",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/invoices/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "invoices",
+                "{{id}}"
+              ]
+            },
+            "description": "Borra la factura (204 sin cuerpo). El número no se reutiliza. Debe ir después del resto de peticiones que usan `{{id}}`."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "204 No Content",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/invoices/{{id}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "invoices",
+                    "{{id}}"
+                  ]
+                }
+              },
+              "status": "No Content",
+              "code": 204,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": ""
+            },
+            {
+              "name": "404 No existe",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/invoices/{{id}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "invoices",
+                    "{{id}}"
+                  ]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": {\n    \"code\": \"NOT_FOUND\",\n    \"message\": \"Factura no encontrada\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Obtener factura eliminada (404)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/invoices/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "invoices",
+                "{{id}}"
+              ]
+            },
+            "description": "Comprueba que la factura borrada ya no existe."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Error NOT_FOUND', () => pm.expect(pm.response.json().error.code).to.eql('NOT_FOUND'));"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "description": "CRUD de facturas. Orden: Crear → Obtener → Actualizar → Cambiar estado → PDF → Eliminar."
+    },
+    {
+      "name": "Stats",
+      "item": [
+        {
+          "name": "Resumen por estado",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/stats/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "stats",
+                "summary"
+              ]
+            },
+            "description": "Conteo e importe (con impuestos) por estado. `overdue` es un subconjunto de `SENT`."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json().data;",
+                  "pm.test('Estructura', () => { pm.expect(d.byStatus).to.have.all.keys('DRAFT','SENT','PAID'); pm.expect(d.overdue).to.include.all.keys('count','totalCents'); });",
+                  "pm.test('totalCount es la suma de byStatus', () => pm.expect(d.totalCount).to.eql(d.byStatus.DRAFT.count + d.byStatus.SENT.count + d.byStatus.PAID.count));",
+                  "pm.test('overdue <= SENT', () => pm.expect(d.overdue.count).to.be.at.most(d.byStatus.SENT.count));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/stats/summary",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "stats",
+                    "summary"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"data\": {\n    \"byStatus\": {\n      \"DRAFT\": {\n        \"count\": 4,\n        \"totalCents\": 8304800\n      },\n      \"SENT\": {\n        \"count\": 9,\n        \"totalCents\": 20874200\n      },\n      \"PAID\": {\n        \"count\": 8,\n        \"totalCents\": 17738700\n      }\n    },\n    \"overdue\": {\n      \"count\": 4,\n      \"totalCents\": 8270800\n    },\n    \"totalCount\": 21\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Totales mensuales",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/stats/monthly?months=6",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "stats",
+                "monthly"
+              ],
+              "query": [
+                {
+                  "key": "months",
+                  "value": "6",
+                  "description": "Entero 1 a 24 (por defecto 6)",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "Totales por mes de emisión y estado, de los últimos `months` meses (1 a 24, por defecto 6), en orden cronológico."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Un elemento por mes pedido', () => pm.expect(json.data).to.have.length(Number(pm.request.url.query.get('months'))));",
+                  "pm.test('Estructura de cada mes', () => json.data.forEach((m) => { pm.expect(m).to.include.all.keys('key','label','title','totalsCents'); pm.expect(m.key).to.match(/^\\d{4}-\\d{2}$/); pm.expect(m.totalsCents).to.have.all.keys('DRAFT','SENT','PAID'); }));",
+                  "pm.test('meta.months', () => pm.expect(json.meta.months).to.eql(json.data.length));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/stats/monthly?months=6",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "stats",
+                    "monthly"
+                  ],
+                  "query": [
+                    {
+                      "key": "months",
+                      "value": "6",
+                      "description": "Entero 1 a 24 (por defecto 6)",
+                      "disabled": false
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"data\": [\n    {\n      \"key\": \"2026-09\",\n      \"label\": \"sept\",\n      \"title\": \"septiembre de 2026\",\n      \"totalsCents\": {\n        \"DRAFT\": 1392000,\n        \"SENT\": 7070200,\n        \"PAID\": 1879200\n      }\n    }\n  ],\n  \"meta\": {\n    \"months\": 1\n  }\n}"
+            }
+          ]
+        }
+      ],
+      "description": "Estadísticas del usuario autenticado."
+    },
+    {
+      "name": "Errors",
+      "item": [
+        {
+          "name": "Sin token → 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/invoices",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "invoices"
+              ]
+            },
+            "description": "Sin `Authorization` la API responde 401 `UNAUTHENTICATED`.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));",
+                  "pm.test('Código UNAUTHENTICATED', () => pm.expect(pm.response.json().error.code).to.eql('UNAUTHENTICATED'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Token inválido → 401",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer token-invalido",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/invoices",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "invoices"
+              ]
+            },
+            "description": "Con un token manipulado también es 401.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cuerpo inválido → 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/invoices",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "invoices"
+              ]
+            },
+            "description": "Faltan campos obligatorios: 400 con `details[].field`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clientName\": \"\",\n  \"issueDate\": \"no-es-fecha\",\n  \"dueDate\": \"2026-10-20\",\n  \"items\": [\n    {\n      \"description\": \"x\",\n      \"quantity\": 1,\n      \"unitPriceCents\": 100\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                  "const e = pm.response.json().error;",
+                  "pm.test('VALIDATION_ERROR con details', () => { pm.expect(e.code).to.eql('VALIDATION_ERROR'); pm.expect(e.details).to.be.an('array').that.is.not.empty; });"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "400 Bad Request",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/invoices",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "invoices"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"clientName\": \"\",\n  \"issueDate\": \"no-es-fecha\",\n  \"dueDate\": \"2026-10-20\",\n  \"items\": [\n    {\n      \"description\": \"x\",\n      \"quantity\": 1,\n      \"unitPriceCents\": 100\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"Datos de entrada inválidos\",\n    \"details\": [\n      {\n        \"field\": \"clientName\",\n        \"message\": \"El cliente es obligatorio\"\n      },\n      {\n        \"field\": \"issueDate\",\n        \"message\": \"Fecha de emisión inválida (use ISO 8601)\"\n      }\n    ]\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Vencimiento anterior a la emisión → 422",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/invoices",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "invoices"
+              ]
+            },
+            "description": "Regla de negocio: `dueDate >= issueDate`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-20\",\n  \"dueDate\": \"2026-10-01\",\n  \"status\": \"DRAFT\",\n  \"taxRate\": 16,\n  \"notes\": \"Gracias por su compra\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 2,\n      \"unitPriceCents\": 5000\n    },\n    {\n      \"description\": \"Soporte mensual\",\n      \"quantity\": 1.5,\n      \"unitPriceCents\": 12000\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 422', () => pm.response.to.have.status(422));",
+                  "pm.test('UNPROCESSABLE_ENTITY', () => pm.expect(pm.response.json().error.code).to.eql('UNPROCESSABLE_ENTITY'));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "422 Unprocessable Entity",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/invoices",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "invoices"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-20\",\n  \"dueDate\": \"2026-10-01\",\n  \"status\": \"DRAFT\",\n  \"taxRate\": 16,\n  \"notes\": \"Gracias por su compra\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 2,\n      \"unitPriceCents\": 5000\n    },\n    {\n      \"description\": \"Soporte mensual\",\n      \"quantity\": 1.5,\n      \"unitPriceCents\": 12000\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": {\n    \"code\": \"UNPROCESSABLE_ENTITY\",\n    \"message\": \"La factura incumple reglas de negocio\",\n    \"details\": [\n      {\n        \"field\": \"dueDate\",\n        \"message\": \"El vencimiento no puede ser anterior a la emisión\"\n      }\n    ]\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Id inexistente → 404",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/invoices/999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "invoices",
+                "999999"
+              ]
+            },
+            "description": "Una factura inexistente (o ajena) es 404, nunca 403."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 404', () => pm.response.to.have.status(404));",
+                  "pm.test('NOT_FOUND', () => pm.expect(pm.response.json().error.code).to.eql('NOT_FOUND'));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/invoices/999999",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "invoices",
+                    "999999"
+                  ]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": {\n    \"code\": \"NOT_FOUND\",\n    \"message\": \"Factura no encontrada\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Id no numérico → 400",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/invoices/abc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "invoices",
+                "abc"
+              ]
+            },
+            "description": "El id debe ser un entero positivo."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login con credenciales inválidas → 401",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Usa un email inexistente a propósito para no bloquear tu cuenta. Cuenta para el límite de 10 logins por minuto.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"no-existe@example.com\",\n  \"password\": \"contraseña-incorrecta-123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));",
+                  "pm.test('Sin cookie refresh nueva', () => pm.expect(pm.response.headers.has('Set-Cookie')).to.be.false);"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "description": "Casos de error esperados (401, 400, 404, 422)."
+    },
+    {
+      "name": "Cierre de sesión",
+      "item": [
+        {
+          "name": "Cambiar contraseña",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "password"
+              ]
+            },
+            "description": "Cambia la contraseña (nueva: 12 a 200 caracteres y distinta de la actual). Invalida los access tokens vivos, incluido `{{token}}`: después ejecuta **Refresh**. El test intercambia `{{password}}` y `{{newPassword}}` para que la colección siga funcionando y puedas volver a ejecutarla. Una contraseña actual incorrecta cuenta como intento fallido (bloqueo de cuenta). Déjala al final de la ejecución.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"{{password}}\",\n  \"newPassword\": \"{{newPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 204', () => pm.response.to.have.status(204));",
+                  "const prev = pm.collectionVariables.get('password');",
+                  "pm.collectionVariables.set('password', pm.collectionVariables.get('newPassword'));",
+                  "pm.collectionVariables.set('newPassword', prev);",
+                  "pm.collectionVariables.unset('token');"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "204 No Content",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/password",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "password"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"currentPassword\": \"{{password}}\",\n  \"newPassword\": \"{{newPassword}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "No Content",
+              "code": 204,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": ""
+            },
+            {
+              "name": "422 Contraseña actual incorrecta",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/password",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "password"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"currentPassword\": \"{{password}}\",\n  \"newPassword\": \"{{newPassword}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": {\n    \"code\": \"UNPROCESSABLE_ENTITY\",\n    \"message\": \"Datos de entrada inválidos\",\n    \"details\": [\n      {\n        \"field\": \"currentPassword\",\n        \"message\": \"La contraseña actual no es correcta\"\n      }\n    ]\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Refresh (renovar access token)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "refresh"
+              ]
+            },
+            "description": "Sin cuerpo: lee la cookie `refresh` y la rota. Devuelve un access token nuevo (se guarda en `{{token}}`). Úsalo cuando el token caduque (15 min) o tras cambiar la contraseña. Límite: 20 por minuto por IP.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Devuelve token y usuario', () => {",
+                  "  pm.expect(json.data).to.have.property('token').that.is.a('string');",
+                  "  pm.expect(json.data.user).to.include.all.keys('id', 'email', 'role');",
+                  "});",
+                  "pm.test('Fija la cookie refresh', () => pm.expect(pm.cookies.has('refresh')).to.be.true);",
+                  "pm.collectionVariables.set('token', json.data.token);"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/refresh",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "refresh"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"data\": {\n    \"token\": \"<access JWT>\",\n    \"user\": {\n      \"id\": 1,\n      \"email\": \"ana@example.com\",\n      \"role\": \"USER\"\n    }\n  }\n}"
+            },
+            {
+              "name": "401 Sin sesión",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/refresh",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "refresh"
+                  ]
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": {\n    \"code\": \"UNAUTHENTICATED\",\n    \"message\": \"Sesión no válida, inicia sesión de nuevo\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "logout"
+              ]
+            },
+            "description": "Revoca la familia del refresh token y vacía la cookie. Idempotente; no exige access token. El access token sigue siendo válido hasta que caduque.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 204', () => pm.response.to.have.status(204));",
+                  "pm.collectionVariables.unset('token');"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "204 No Content",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/logout",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "logout"
+                  ]
+                }
+              },
+              "status": "No Content",
+              "code": 204,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Set-Cookie",
+                  "value": "refresh=; Max-Age=0; Path=/api/v1/auth; HttpOnly; SameSite=Strict"
+                }
+              ],
+              "body": ""
+            }
+          ]
+        }
+      ],
+      "description": "Al final de la ejecución: cambiar la contraseña invalida el access token, así que Refresh lo renueva y Logout cierra la sesión. Para volver a probar, ejecuta Login otra vez."
+    }
+  ]
+}
