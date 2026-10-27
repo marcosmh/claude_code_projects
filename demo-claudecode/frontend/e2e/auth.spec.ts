@@ -70,9 +70,10 @@ test.describe("autenticación", () => {
     await expect(page).toHaveURL(/\/dashboard$/);
 
     // Se cierra la sesión por otra vía (p. ej. otra pestaña) y el access token de esta caduca: sin refresh válido,
-    // la app vuelve al inicio de sesión sin recargar.
+    // la app vuelve al inicio de sesión sin recargar. Se invalida el token (no se borra): `tokenStorage` conserva una
+    // copia en memoria, y un JWT sin caducar sigue siendo válido aunque se cierre la sesión.
     await page.request.post(`${API}/auth/logout`);
-    await page.evaluate(() => localStorage.removeItem("accessToken"));
+    await page.evaluate(() => localStorage.setItem("accessToken", "token-caducado"));
     await page.getByRole("link", { name: "Facturas" }).click();
 
     await expect(page).toHaveURL(/\/login$/);
@@ -158,7 +159,10 @@ sessionTest.describe("renovación transparente de la sesión", () => {
     await page.evaluate(() => localStorage.setItem("accessToken", "token-caducado"));
     const refreshes: string[] = [];
     page.on("request", (r) => r.url().endsWith("/auth/refresh") && refreshes.push(r.url()));
+    // El encabezado aparece antes de que lleguen el 401 y el refresh: se espera a la petición repetida con éxito.
+    const retried = page.waitForResponse((r) => r.url().includes("/invoices?") && r.status() === 200);
     await page.getByRole("link", { name: "Facturas" }).click();
+    await retried;
 
     await expect(page.getByRole("heading", { level: 1, name: "Facturas" })).toBeVisible();
     await expect(page).toHaveURL(/\/invoices$/);
