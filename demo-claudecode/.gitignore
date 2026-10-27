@@ -53,3 +53,8 @@ users.json
 
 # start_apps/stop_apps runtime files
 scripts/.run/
+
+# monorepo
+.turbo
+legacy/node_modules
+legacy/.next
