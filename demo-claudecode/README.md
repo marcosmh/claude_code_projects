@@ -113,7 +113,7 @@ SQLite (`apps/backend/prisma/dev.db`). Modelos: `User`, `RefreshToken`, `Invoice
 
 ## CI/CD y despliegue
 
-- GitHub Actions en `.github/workflows/`: `backend.yml`, `frontend.yml`, `packages.yml` y `e2e.yml`, con filtros por rutas. El `ci.yml` antiguo se conserva hasta que los nuevos pasen en verde.
+- GitHub Actions en `.github/workflows/`: `backend.yml`, `frontend.yml`, `packages.yml` y `e2e.yml`, con filtros por rutas. Todos pasan en verde en GitHub; el `ci.yml` antiguo se eliminó.
 - Backend y frontend se construyen en Docker por separado (`apps/*/Dockerfile`, con `turbo prune`). El diseño asume **mismo origen**: nginx sirve la SPA y reenvía `/api` al backend.
 - `docker-compose.yml` levanta la pila completa para probar la integración.
 
@@ -121,4 +121,4 @@ Guía completa en [`docs/deployment.md`](docs/deployment.md).
 
 ## Estado
 
-La migración a monorepo está hecha salvo la validación final: ejecutar los workflows en GitHub, probar las colecciones de la API con Newman/httpyac y comprobar el despliegue bajo https real. Pendiente a más largo plazo: PostgreSQL, rutas de administración, recuperación de contraseña, módulo de clientes y envío por email.
+La migración a monorepo está hecha salvo un punto de la validación final: comprobar el despliegue bajo https real. Pendiente a más largo plazo: PostgreSQL, rutas de administración, recuperación de contraseña, módulo de clientes y envío por email.
