@@ -1,3 +1,4 @@
+import { toCents } from "@invoices/shared-utils";
 import { useMemo, useState } from "react";
 import { Link } from "react-router";
 import { useFieldArray, useForm, useWatch, type FieldPath } from "react-hook-form";
@@ -38,7 +39,7 @@ export function InvoiceForm({ initial, onSubmit, cancelTo }: InvoiceFormProps) {
   const totals = useMemo(
     () =>
       previewTotals(
-        items.map((l) => ({ quantity: Number(l.quantity) || 0, unitPriceCents: Math.round(Number(l.price || 0) * 100) })),
+        items.map((l) => ({ quantity: Number(l.quantity) || 0, unitPriceCents: toCents(Number(l.price || 0)) })),
         Number(taxRate || 0),
       ),
     [items, taxRate],

@@ -58,3 +58,5 @@ scripts/.run/
 .turbo
 legacy/node_modules
 legacy/.next
+coverage
+node_modules

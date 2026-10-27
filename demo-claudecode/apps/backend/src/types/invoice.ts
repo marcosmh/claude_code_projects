@@ -1,4 +1,6 @@
-export type InvoiceStatus = "DRAFT" | "SENT" | "PAID";
+import type { InvoiceStatus } from "@invoices/shared-types";
+
+export type { InvoiceStatus };
 
 export interface InvoiceItem {
   id: number;

@@ -6,6 +6,8 @@ const nextConfig: NextConfig = {
   turbopack: { root: path.join(import.meta.dirname, "../..") },
   // E2E runs a second server from this same directory; it needs its own build dir to avoid the dev lock.
   distDir: process.env.NEXT_DIST_DIR ?? ".next",
+  // Workspace packages ship TypeScript source (no build step), so Next must compile them.
+  transpilePackages: ["@invoices/shared-types", "@invoices/shared-utils", "@invoices/shared-validation"],
   // API-only backend. No pages; CORS is handled in src/proxy.ts.
   serverExternalPackages: ["@react-pdf/renderer", "better-sqlite3"],
   poweredByHeader: false,

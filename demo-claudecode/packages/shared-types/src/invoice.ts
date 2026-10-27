@@ -1,0 +1,48 @@
+export const STATUSES = ["DRAFT", "SENT", "PAID"] as const;
+export type InvoiceStatus = (typeof STATUSES)[number];
+
+export function isInvoiceStatus(value: string): value is InvoiceStatus {
+  return (STATUSES as readonly string[]).includes(value);
+}
+
+export const STATUS_LABELS: Record<InvoiceStatus, string> = {
+  DRAFT: "Borrador",
+  SENT: "Enviada",
+  PAID: "Pagada",
+};
+
+/** REST wire shape (dates as ISO strings, money in cents). Contract: apps/backend/docs/api.md. */
+export interface InvoiceItemResponse {
+  id: number;
+  description: string;
+  quantity: number;
+  unitPriceCents: number;
+  amountCents: number;
+}
+
+export interface InvoiceResponse {
+  id: number;
+  number: string;
+  clientName: string;
+  clientEmail: string | null;
+  clientAddress: string | null;
+  issueDate: string;
+  dueDate: string;
+  status: InvoiceStatus;
+  isOverdue: boolean;
+  taxRate: number;
+  notes: string | null;
+  items: InvoiceItemResponse[];
+  subtotalCents: number;
+  taxCents: number;
+  totalCents: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PaginationMeta {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}

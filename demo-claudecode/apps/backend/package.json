@@ -16,6 +16,9 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@invoices/shared-types": "*",
+    "@invoices/shared-utils": "*",
+    "@invoices/shared-validation": "*",
     "@prisma/adapter-better-sqlite3": "^7.10.1",
     "@prisma/client": "^7.10.1",
     "@react-pdf/renderer": "^4.9.0",

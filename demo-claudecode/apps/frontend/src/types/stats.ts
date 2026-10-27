@@ -1,19 +1,5 @@
-import type { Status } from "./invoice";
+import type { MonthBucketResponse, StatsSummaryResponse, StatusBucket } from "@invoices/shared-types";
 
-export interface StatusTotals {
-  count: number;
-  totalCents: number;
-}
-
-export interface StatsSummary {
-  byStatus: Record<Status, StatusTotals>;
-  overdue: StatusTotals;
-  totalCount: number;
-}
-
-export interface MonthBucket {
-  key: string;
-  label: string;
-  title: string;
-  totalsCents: Record<Status, number>;
-}
+export type StatusTotals = StatusBucket;
+export type StatsSummary = StatsSummaryResponse;
+export type MonthBucket = MonthBucketResponse;

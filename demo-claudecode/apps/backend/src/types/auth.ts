@@ -1,11 +1,6 @@
-export type UserRole = "USER" | "ADMIN";
+import type { AuthUser, UserRole } from "@invoices/shared-types";
 
-/** The authenticated user as the rest of the app sees it (never carries the password hash). */
-export interface AuthUser {
-  id: number;
-  email: string;
-  role: UserRole;
-}
+export type { AuthUser, UserRole };
 
 /** What authenticating a request needs: the user plus the facts that can revoke a live access token. */
 export interface AuthIdentity extends AuthUser {

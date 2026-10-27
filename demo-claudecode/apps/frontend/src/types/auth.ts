@@ -1,12 +1,6 @@
-export type UserRole = "USER" | "ADMIN";
+import type { SessionBodyDto } from "@invoices/shared-types";
 
-export interface AuthUser {
-  id: number;
-  email: string;
-  role: UserRole;
-}
+export type { AuthUser, UserRole } from "@invoices/shared-types";
 
 /** Cuerpo de `/auth/login` y `/auth/refresh`: el usuario. Los tokens viajan solo en cookies httpOnly. */
-export interface AuthSession {
-  user: AuthUser;
-}
+export type AuthSession = SessionBodyDto;

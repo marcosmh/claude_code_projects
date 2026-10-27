@@ -1,3 +1,4 @@
+import { AUTH_LIMITS } from "@invoices/shared-validation";
 import { z } from "zod";
 
 export const loginSchema = z.object({
@@ -10,7 +11,10 @@ export type LoginValues = z.infer<typeof loginSchema>;
 export const passwordSchema = z
   .object({
     currentPassword: z.string().min(1, "Escribe tu contraseña actual"),
-    newPassword: z.string().min(12, "Usa al menos 12 caracteres").max(200, "Máximo 200 caracteres"),
+    newPassword: z
+      .string()
+      .min(AUTH_LIMITS.passwordMin, `Usa al menos ${AUTH_LIMITS.passwordMin} caracteres`)
+      .max(AUTH_LIMITS.passwordMax, `Máximo ${AUTH_LIMITS.passwordMax} caracteres`),
     confirm: z.string().min(1, "Repite la nueva contraseña"),
   })
   .refine((v) => v.confirm === "" || v.newPassword === v.confirm, {

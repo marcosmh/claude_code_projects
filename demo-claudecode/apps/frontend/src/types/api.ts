@@ -1,9 +1,1 @@
-export interface ApiErrorDetail {
-  field?: string;
-  message: string;
-}
-
-export interface ApiEnvelope<T, M = undefined> {
-  data: T;
-  meta?: M;
-}
+export type { ApiEnvelope, ApiErrorDetail } from "@invoices/shared-types";

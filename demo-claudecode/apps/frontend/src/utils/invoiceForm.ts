@@ -1,3 +1,4 @@
+import { toCents } from "@invoices/shared-utils";
 import { z } from "zod";
 import type { ApiErrorDetail } from "@/types/api";
 import { STATUSES, type Invoice, type InvoiceRequest } from "@/types/invoice";
@@ -65,7 +66,7 @@ export const invoiceFormSchema = z
       items: v.items.map((l) => ({
         description: l.description,
         quantity: Number(l.quantity),
-        unitPriceCents: Math.round(Number(l.price || 0) * 100),
+        unitPriceCents: toCents(Number(l.price || 0)),
       })),
     }),
   );

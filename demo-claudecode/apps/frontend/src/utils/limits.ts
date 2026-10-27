@@ -1,17 +1,11 @@
+import { LIMITS as SHARED_LIMITS } from "@invoices/shared-validation";
+
 /**
- * Límites de entrada del backend (ver `backend/docs/api.md` y `LIMITS` en
- * `backend/src/validators/invoice.validator.ts`). Se validan aquí para avisar antes de enviar;
- * si cambian en el backend, hay que cambiarlos aquí también.
+ * Límites de entrada: la fuente única es `@invoices/shared-validation` (el backend los aplica).
+ * Aquí se validan solo para avisar antes de enviar; el precio del formulario va en unidades de moneda.
  */
 export const LIMITS = {
-  clientName: 200,
-  clientEmail: 254,
-  clientAddress: 500,
-  notes: 2000,
-  description: 500,
-  items: 100,
-  quantity: 100_000,
-  /** Precio máximo en unidades de moneda (el backend limita a 100 000 000 centavos). */
-  price: 1_000_000,
-  taxRate: 100,
+  ...SHARED_LIMITS,
+  /** Precio máximo en unidades de moneda (el backend limita `unitPriceCents`). */
+  price: SHARED_LIMITS.unitPriceCents / 100,
 } as const;

@@ -1,6 +1,7 @@
 import { z } from "zod";
+import { AUTH_LIMITS } from "@invoices/shared-validation";
 
-export const AUTH_LIMITS = { email: 254, passwordMin: 12, passwordMax: 200 } as const;
+export { AUTH_LIMITS };
 
 const email = z
   .string("El email es obligatorio")
