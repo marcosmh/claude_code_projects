@@ -81,6 +81,25 @@ describe("proxy: escrituras desde otro origen (CSRF)", () => {
     expect(proxy(req("POST", "/api/v1/invoices", { "x-forwarded-for": ip })).status).toBe(200);
     expect(proxy(req("GET", "/api/v1/invoices", { origin: "http://evil.com", "x-forwarded-for": ip })).status).toBe(200);
   });
+
+  it.each(["POST", "PUT", "PATCH", "DELETE"])("%s con Sec-Fetch-Site: cross-site -> 403, incluso con Origin permitido o ausente", async (method) => {
+    const ip = freshIp();
+    const withOrigin = proxy(req(method, "/api/v1/invoices/1", { origin: ORIGIN, "sec-fetch-site": "cross-site", "x-forwarded-for": ip }));
+    expect(withOrigin.status).toBe(403);
+    expect((await withOrigin.json()).error.code).toBe("FORBIDDEN");
+    expect(proxy(req(method, "/api/v1/invoices/1", { "sec-fetch-site": "cross-site", "x-forwarded-for": ip })).status).toBe(403);
+  });
+
+  it.each(["same-origin", "same-site", "none"])("escritura con Sec-Fetch-Site: %s pasa", (site) => {
+    const h = { origin: ORIGIN, "sec-fetch-site": site, "x-forwarded-for": freshIp() };
+    expect(proxy(req("POST", "/api/v1/invoices", h)).status).toBe(200);
+  });
+
+  it("Sec-Fetch-Site: cross-site no bloquea lecturas ni el preflight", () => {
+    const ip = freshIp();
+    expect(proxy(req("GET", "/api/v1/invoices", { "sec-fetch-site": "cross-site", "x-forwarded-for": ip })).status).toBe(200);
+    expect(proxy(req("OPTIONS", "/api/v1/invoices", { origin: ORIGIN, "sec-fetch-site": "cross-site" })).status).toBe(204);
+  });
 });
 
 describe("proxy: rate limiting", () => {

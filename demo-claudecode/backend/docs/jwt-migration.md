@@ -139,7 +139,19 @@ El secreto real nunca se versiona ni se imprime en logs. Rotarlo invalida todos 
    **Sin** rutas de administrador hasta que exista un caso de uso.
 5. **Tabla `Session`:** se elimina en una **migración posterior y separada** del corte, una vez que JWT funcione, junto con el código de sesión opaca.
 
-No queda ninguna decisión abierta.
+6. **Access token en cookie HttpOnly (decidida el 2026-10-26, EN CURSO; sustituye la parte del access token de la decisión 1).**
+   - Despliegue elegido: **mismo origen** (reverse proxy que sirve el SPA y `/api` bajo el mismo host; en desarrollo, proxy de Vite).
+     Sin CORS en producción, `SameSite=Strict` sin colisiones, `connect-src 'self'`.
+   - Cookies: `at` (access, 15 min, `Path=/api/v1`) y `rt` (refresh, `Path=/api/v1/auth`), ambas `HttpOnly; Secure; SameSite=Strict`;
+     prefijo `__Secure-` en producción, nombres planos en desarrollo/e2e. Login y refresh devuelven solo `{ user }`.
+   - Bearer se conserva para scripts (`mode: "token"` en el login); si llegan Bearer y cookie, gana el Bearer.
+   - CSRF: `SameSite=Strict` + guardia de `Origin` + `Sec-Fetch-Site` + cabecera custom en escrituras autenticadas por cookie.
+   - Riesgo residual: un XSS activo sigue pudiendo actuar como el usuario mientras la pestaña esté abierta; la CSP estricta sigue siendo obligatoria.
+   - Pasos: (1) esta decisión; (2) cabeceras de seguridad; (3) CSRF en `proxy.ts`; (4) backend dual tras flag; (5) frontend sin token;
+     (6) corte; (7) limpieza (`accessToken` heredado y tabla `Session`).
+   - Estado: pasos 1 a 3 hechos; lo demás **no está implementado**: hoy el access token sigue en `localStorage` y `Authorization: Bearer`.
+
+Las decisiones 1 a 5 siguen vigentes salvo lo que sustituye la 6.
 
 ## Qué cambió respecto al plan
 
@@ -168,7 +180,7 @@ La auditoría de seguridad del 2026-10-26 (solo lectura, sin hallazgos críticos
 
 - **B1**: el access token sigue válido hasta 15 min tras el logout (límite de un JWT sin estado); opciones: TTL menor o `sid` de familia.
 - **B2/B3**: validar la entropía del secreto y derivar claves distintas para access y refresh.
-- **B6/B7**: HSTS y `FRONTEND_ORIGIN` obligatorio (con `https://`) en producción.
+- **B6** (HSTS, `X-Frame-Options`, `Permissions-Policy`) hecho en `next.config.ts`. **B7**: `FRONTEND_ORIGIN` obligatorio (con `https://`) en producción.
 - **Limpieza**: la tabla `Session` y los métodos de sesión opaca del repositorio siguen presentes pero sin uso; se retiran en la migración posterior prevista en la decisión 5.
 - Rol `ADMIN` y `withRole` existen sin rutas que los usen (decisión 4).
 - Con varias instancias hace falta un almacén compartido (Redis) para el rate limit.

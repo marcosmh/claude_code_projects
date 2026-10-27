@@ -19,7 +19,13 @@ export function proxy(request: NextRequest) {
   // origin must never get through (defence in depth on top of SameSite=Strict).
   // Requests without Origin (curl, server-to-server) carry no browser cookie jar and are unaffected.
   const origin = request.headers.get("origin");
-  if (origin && request.method !== "GET" && request.method !== "HEAD" && !allowedOrigins().includes(origin)) {
+  const isWrite = request.method !== "GET" && request.method !== "HEAD";
+  if (isWrite && origin && !allowedOrigins().includes(origin)) {
+    return failure(403, "FORBIDDEN", "Origen no permitido");
+  }
+  // Fetch Metadata is set by the browser and cannot be forged by page scripts: a write that the browser itself
+  // marks as cross-site is refused even when Origin is missing or looks fine. Absent header (curl, old browsers) is not blocked.
+  if (isWrite && request.headers.get("sec-fetch-site") === "cross-site") {
     return failure(403, "FORBIDDEN", "Origen no permitido");
   }
 
