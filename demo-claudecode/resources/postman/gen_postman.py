@@ -158,9 +158,10 @@ auth_items = [
         examples=[example("204 No Content", 204, "No Content", None),
                   example("422 Contraseña actual incorrecta", 422, "Unprocessable Entity", {"error": {"code": "UNPROCESSABLE_ENTITY", "message": "Datos de entrada inválidos", "details": [{"field": "currentPassword", "message": "La contraseña actual no es correcta"}]}})]),
     req("Logout", "POST", "/auth/logout",
-        "Revoca la familia del refresh token y vacía las dos cookies (`at` y `refresh`). Idempotente; no exige access token. Un access token ya copiado (p. ej. `{{token}}`) sigue siendo válido hasta que caduque.",
+        "Revoca la familia del refresh token y vacía las dos cookies (`at` y `refresh`). Idempotente; no exige access token. El access token de la sesión deja de valer al instante (`sid`): ver **Access token tras el logout → 401**.",
         auth=False,
         tests=["pm.test('Status 204', () => pm.response.to.have.status(204));",
+               "pm.collectionVariables.set('revokedToken', pm.collectionVariables.get('token'));",
                "pm.collectionVariables.unset('token');"] + CLEARED_COOKIES,
         examples=[example("204 No Content", 204, "No Content", None, [{"key": "Set-Cookie", "value": "refresh=; Max-Age=0; Path=/api/v1/auth; HttpOnly; SameSite=Strict"}, {"key": "Set-Cookie", "value": "at=; Max-Age=0; Path=/api/v1; HttpOnly; SameSite=Strict"}])]),
 ]
@@ -341,6 +342,12 @@ cookie_items = [
                "pm.test('Cache-Control: no-store', () => pm.expect(h('Cache-Control')).to.include('no-store'));"]),
 ]
 
+after_logout = req("Access token tras el logout → 401", "GET", "/auth/me",
+    "El access token de la sesión cerrada (guardado en `{{revokedToken}}` por Logout) ya no vale, aunque no haya caducado: lleva el `sid` de la familia revocada. Sin cookies.",
+    auth=False, extra_headers=[{"key": "Authorization", "value": "Bearer {{revokedToken}}", "type": "text"}] + NO_COOKIES,
+    tests=["pm.test('Status 401', () => pm.response.to.have.status(401));",
+           "pm.test('UNAUTHENTICATED', () => pm.expect(pm.response.json().error.code).to.eql('UNAUTHENTICATED'));"])
+
 collection = {
     "info": {
         "name": "API de Facturas v1",
@@ -369,6 +376,7 @@ collection = {
         {"key": "token", "value": "", "type": "string", "description": "Access token JWT; lo rellenan Login y Refresh"},
         {"key": "allowedOrigin", "value": "http://localhost:5173", "type": "string", "description": "Origen del frontend (FRONTEND_ORIGIN del backend); solo para la carpeta Cookies y CSRF"},
         {"key": "id", "value": "", "type": "string", "description": "Id de la factura de trabajo; lo rellena 'Crear factura'"},
+        {"key": "revokedToken", "value": "", "type": "string", "description": "Access token de la sesión que cerró Logout; lo rellena Logout"},
         {"key": "invoiceNumber", "value": "", "type": "string", "description": "Número de la factura creada (FAC-0001...)"},
     ],
     "item": [
@@ -378,7 +386,7 @@ collection = {
         {"name": "Errors", "item": errors_items, "description": "Casos de error esperados (401, 400, 404, 422). Las cookies de sesión se anulan donde hace falta probar \"sin credenciales\"."},
         {"name": "Cookies y CSRF", "item": cookie_items,
          "description": "Auth por cookie httpOnly (la que usa el navegador) y guardias CSRF. Requiere haber ejecutado Login: Postman guarda las cookies `at` y `refresh` en su cookie jar. No modifica datos."},
-        {"name": "Cierre de sesión", "item": [auth_items[3], auth_items[1], auth_items[4]],
+        {"name": "Cierre de sesión", "item": [auth_items[3], auth_items[1], auth_items[4], after_logout],
          "description": "Al final de la ejecución: cambiar la contraseña invalida el access token, así que Refresh lo renueva y Logout cierra la sesión. Para volver a probar, ejecuta Login otra vez."},
     ],
 }

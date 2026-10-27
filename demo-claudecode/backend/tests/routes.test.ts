@@ -261,16 +261,16 @@ describe("autenticación y autorización", () => {
     const [, payload] = real.split(".");
     const none = `${Buffer.from(JSON.stringify({ alg: "none", typ: "at+jwt" })).toString("base64url")}.${payload}.`;
     const config = loadJwtConfig({ JWT_SECRET: "x".repeat(40) });
-    const foreign = await signAccessToken(config, { userId: 1, role: "ADMIN", version: 0 }, "j", new Date());
+    const foreign = await signAccessToken(config, { userId: 1, role: "ADMIN", version: 0, sessionId: "fam" }, "j", new Date());
     const expired = await signAccessToken(
       loadJwtConfig({ JWT_SECRET: process.env.JWT_SECRET }),
-      { userId: 1, role: "USER", version: 0 },
+      { userId: 1, role: "USER", version: 0, sessionId: "fam" },
       "j",
       new Date(Date.now() - 3_600_000),
     );
     const otherAudience = await signAccessToken(
       loadJwtConfig({ JWT_SECRET: process.env.JWT_SECRET, JWT_AUDIENCE: "other" }),
-      { userId: 1, role: "USER", version: 0 },
+      { userId: 1, role: "USER", version: 0, sessionId: "fam" },
       "j",
       new Date(),
     );
@@ -299,7 +299,7 @@ describe("autenticación y autorización", () => {
     const { data } = await res.json();
     expect(data).toEqual({ token: expect.any(String), user: { id: expect.any(Number), email: "ana@example.com", role: "USER" } });
     expect(JSON.stringify(data)).not.toMatch(/hash|scrypt|refresh/i);
-    expect(Object.keys(decodeJwt(data.token)).sort()).toEqual(["aud", "exp", "iat", "iss", "jti", "role", "sub", "ver"]);
+    expect(Object.keys(decodeJwt(data.token)).sort()).toEqual(["aud", "exp", "iat", "iss", "jti", "role", "sid", "sub", "ver"]);
   });
 
   it("login: mismo 401 y mensaje para email desconocido y contraseña incorrecta", async () => {

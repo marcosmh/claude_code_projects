@@ -24,6 +24,8 @@ export interface AccessClaims {
   role: UserRole;
   /** `User.tokenVersion` at issue time. */
   version: number;
+  /** Refresh-token family (the login session) this token belongs to; revoking the family kills the token at once. */
+  sessionId: string;
   jti: string;
 }
 
@@ -95,7 +97,7 @@ export async function signAccessToken(
   jti: string,
   now: Date,
 ): Promise<string> {
-  return new SignJWT({ role: claims.role, ver: claims.version })
+  return new SignJWT({ role: claims.role, ver: claims.version, sid: claims.sessionId })
     .setProtectedHeader({ alg: ALGORITHM, typ: ACCESS_TYP })
     .setSubject(String(claims.userId))
     .setIssuer(config.issuer)
@@ -148,11 +150,12 @@ async function verify(config: JwtConfig, token: string, typ: string, now: Date) 
 export async function verifyAccessToken(config: JwtConfig, token: string, now: Date): Promise<AccessClaims> {
   const payload = await verify(config, token, ACCESS_TYP, now);
   const userId = Number(payload.sub);
-  const { role, ver, jti } = payload as { role?: unknown; ver?: unknown; jti?: string };
+  const { role, ver, sid, jti } = payload as { role?: unknown; ver?: unknown; sid?: unknown; jti?: string };
   if (!Number.isSafeInteger(userId) || userId <= 0) throw new InvalidTokenError();
   if (!ROLES.includes(role as UserRole)) throw new InvalidTokenError();
   if (typeof ver !== "number" || !Number.isInteger(ver) || !jti) throw new InvalidTokenError();
-  return { userId, role: role as UserRole, version: ver, jti };
+  if (typeof sid !== "string" || !sid) throw new InvalidTokenError();
+  return { userId, role: role as UserRole, version: ver, sessionId: sid, jti };
 }
 
 export async function verifyRefreshToken(config: JwtConfig, token: string, now: Date): Promise<RefreshClaims> {

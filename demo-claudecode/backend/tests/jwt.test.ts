@@ -18,11 +18,11 @@ const key = (s: string) => new TextEncoder().encode(s);
 const sec = (d: Date) => Math.floor(d.getTime() / 1000);
 
 const access = (over: Partial<JwtConfig> = {}) =>
-  signAccessToken({ ...config, ...over }, { userId: 7, role: "USER", version: 3 }, "jti-1", NOW);
+  signAccessToken({ ...config, ...over }, { userId: 7, role: "USER", version: 3, sessionId: "fam-1" }, "jti-1", NOW);
 
 /** A well-formed access token forged with the knobs the tests need to turn. */
-function forge(opts: { alg?: "HS256" | "HS512"; secret?: string; iss?: string; aud?: string; exp?: number; typ?: string } = {}) {
-  return new SignJWT({ role: "USER", ver: 3 })
+function forge(opts: { alg?: "HS256" | "HS512"; secret?: string; iss?: string; aud?: string; exp?: number; typ?: string; noSid?: boolean } = {}) {
+  return new SignJWT({ role: "USER", ver: 3, ...(opts.noSid ? {} : { sid: "fam-1" }) })
     .setProtectedHeader({ alg: opts.alg ?? "HS256", typ: opts.typ ?? "at+jwt" })
     .setSubject("7")
     .setIssuer(opts.iss ?? config.issuer)
@@ -77,9 +77,14 @@ describe("access token", () => {
   it("carries only the minimal claims", async () => {
     const token = await access();
     expect(decodeProtectedHeader(token)).toEqual({ alg: "HS256", typ: "at+jwt" });
-    expect(Object.keys(decodeJwt(token)).sort()).toEqual(["aud", "exp", "iat", "iss", "jti", "role", "sub", "ver"]);
-    expect(decodeJwt(token)).toMatchObject({ sub: "7", role: "USER", ver: 3, exp: sec(NOW) + 900, iat: sec(NOW) });
-    expect(await verifyAccessToken(config, token, NOW)).toEqual({ userId: 7, role: "USER", version: 3, jti: "jti-1" });
+    expect(Object.keys(decodeJwt(token)).sort()).toEqual(["aud", "exp", "iat", "iss", "jti", "role", "sid", "sub", "ver"]);
+    expect(decodeJwt(token)).toMatchObject({ sub: "7", role: "USER", ver: 3, sid: "fam-1", exp: sec(NOW) + 900, iat: sec(NOW) });
+    expect(await verifyAccessToken(config, token, NOW)).toEqual({ userId: 7, role: "USER", version: 3, sessionId: "fam-1", jti: "jti-1" });
+  });
+
+  it("rejects a token without the session id (sid): it could not be revoked", async () => {
+    await expect(verifyAccessToken(config, await forge({ noSid: true }), NOW)).rejects.toBeInstanceOf(InvalidTokenError);
+    await expect(verifyAccessToken(config, await forge(), NOW)).resolves.toMatchObject({ sessionId: "fam-1" });
   });
 
   it("rejects a token signed with another secret", async () => {

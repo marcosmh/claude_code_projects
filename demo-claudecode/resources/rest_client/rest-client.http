@@ -470,9 +470,19 @@ Content-Type: {{contentType}}
 
 ### 4) Logout
 # Revoca la familia del refresh y vacía las dos cookies (at y refresh). Idempotente; no exige access
-# token. El access token sigue valiendo hasta que caduque.
+# token.
 #
 # ESPERADO  204 No Content
 #   Set-Cookie: refresh=; Max-Age=0; Path=/api/v1/auth
 #   Set-Cookie: at=; Max-Age=0; Path=/api/v1
+# El access token de la sesión deja de valer al instante (ver la petición siguiente).
 POST {{baseUrl}}/auth/logout
+
+
+### 5) Access token tras el logout -> 401
+# El access token de la sesión cerrada (el que dio el refresh del paso 2) lleva
+# el sid de la familia revocada: ya no vale aunque no haya caducado.
+# ESPERADO  401 UNAUTHENTICATED
+# @no-cookie-jar
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{refreshedToken}}

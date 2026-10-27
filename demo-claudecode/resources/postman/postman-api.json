@@ -59,6 +59,12 @@
       "description": "Id de la factura de trabajo; lo rellena 'Crear factura'"
     },
     {
+      "key": "revokedToken",
+      "value": "",
+      "type": "string",
+      "description": "Access token de la sesión que cerró Logout; lo rellena Logout"
+    },
+    {
       "key": "invoiceNumber",
       "value": "",
       "type": "string",
@@ -2637,7 +2643,7 @@
                 "logout"
               ]
             },
-            "description": "Revoca la familia del refresh token y vacía las dos cookies (`at` y `refresh`). Idempotente; no exige access token. Un access token ya copiado (p. ej. `{{token}}`) sigue siendo válido hasta que caduque.",
+            "description": "Revoca la familia del refresh token y vacía las dos cookies (`at` y `refresh`). Idempotente; no exige access token. El access token de la sesión deja de valer al instante (`sid`): ver **Access token tras el logout → 401**.",
             "auth": {
               "type": "noauth"
             }
@@ -2649,6 +2655,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status 204', () => pm.response.to.have.status(204));",
+                  "pm.collectionVariables.set('revokedToken', pm.collectionVariables.get('token'));",
                   "pm.collectionVariables.unset('token');",
                   "const setCookies = pm.response.headers.filter(h => h.key.toLowerCase() === 'set-cookie').map(h => h.value);",
                   "const cookie = n => setCookies.find(v => v.startsWith(n + '='));",
@@ -2691,6 +2698,51 @@
                 }
               ],
               "body": ""
+            }
+          ]
+        },
+        {
+          "name": "Access token tras el logout → 401",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{revokedToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "at=; refresh=",
+                "type": "text",
+                "description": "Anula las cookies del cookie jar para esta petición"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            },
+            "description": "El access token de la sesión cerrada (guardado en `{{revokedToken}}` por Logout) ya no vale, aunque no haya caducado: lleva el `sid` de la familia revocada. Sin cookies.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));",
+                  "pm.test('UNAUTHENTICATED', () => pm.expect(pm.response.json().error.code).to.eql('UNAUTHENTICATED'));"
+                ]
+              }
             }
           ]
         }

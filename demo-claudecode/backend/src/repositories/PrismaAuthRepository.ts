@@ -164,6 +164,14 @@ export class PrismaAuthRepository implements AuthRepository {
     });
   }
 
+  async isRefreshFamilyLive(family: string, now: Date): Promise<boolean> {
+    const live = await this.db.refreshToken.findFirst({
+      where: { family, revokedAt: null, expiresAt: { gt: now } },
+      select: { id: true },
+    });
+    return live !== null;
+  }
+
   async revokeRefreshTokenFamily(family: string, now: Date): Promise<number> {
     const { count } = await this.db.refreshToken.updateMany({
       where: { family, revokedAt: null },

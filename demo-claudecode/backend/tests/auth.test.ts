@@ -1,3 +1,4 @@
+import { decodeJwt } from "jose";
 import { beforeEach, describe, expect, it } from "vitest";
 import { AuthService, LOCK_MS, MAX_FAILED_LOGINS, hashToken } from "../src/services/AuthService";
 import type { AuditAction } from "../src/utils/audit";
@@ -173,8 +174,48 @@ describe("AuthService", () => {
     });
 
     it("a token signed with the right key for a role the user lacks still gets the DB role", async () => {
-      const forged = await signAccessToken(config, { userId: 1, role: "ADMIN", version: 0 }, "j", h.t);
+      const { token } = await h.service.login("ana@example.com", PASSWORD);
+      const sessionId = decodeJwt(token).sid as string;
+      const forged = await signAccessToken(config, { userId: 1, role: "ADMIN", version: 0, sessionId }, "j", h.t);
       expect((await h.service.authenticate(forged)).role).toBe("USER");
+    });
+
+    it("logout cuts the access token at once, even though it has not expired", async () => {
+      const { token, refreshToken } = await h.service.login("ana@example.com", PASSWORD);
+      await expect(h.service.authenticate(token)).resolves.toBeDefined();
+      await h.service.logout(refreshToken);
+      await expect(h.service.authenticate(token)).rejects.toBeInstanceOf(UnauthorizedError);
+    });
+
+    it("an access token survives rotation (same session) but dies with the session's expiry", async () => {
+      const first = await h.service.login("ana@example.com", PASSWORD);
+      const second = await h.service.refresh(first.refreshToken);
+      await expect(h.service.authenticate(first.token)).resolves.toBeDefined();
+      await expect(h.service.authenticate(second.token)).resolves.toBeDefined();
+      h.advance(7 * 86_400_000);
+      await expect(h.service.authenticate(second.token)).rejects.toBeInstanceOf(UnauthorizedError);
+    });
+
+    it("reuse of a rotated refresh token revokes the family and its access tokens", async () => {
+      const first = await h.service.login("ana@example.com", PASSWORD);
+      const second = await h.service.refresh(first.refreshToken);
+      h.advance(GRACE_MS + 1000);
+      await expect(h.service.refresh(first.refreshToken)).rejects.toBeInstanceOf(UnauthorizedError);
+      await expect(h.service.authenticate(second.token)).rejects.toBeInstanceOf(UnauthorizedError);
+    });
+
+    it("another device's password change cuts the access tokens of the other sessions", async () => {
+      const laptop = await h.service.login("ana@example.com", PASSWORD);
+      const phone = await h.service.login("ana@example.com", PASSWORD);
+      await h.service.changePassword(laptop.user.id, laptop.refreshToken, PASSWORD, "otra contraseña larga 456");
+      await expect(h.service.authenticate(phone.token)).rejects.toBeInstanceOf(UnauthorizedError);
+    });
+
+    it("a locked-out or logged-out session cannot be revived by presenting its access token again", async () => {
+      const { token, refreshToken } = await h.service.login("ana@example.com", PASSWORD);
+      await h.service.logout(refreshToken);
+      await h.service.logout(refreshToken);
+      await expect(h.service.authenticate(token)).rejects.toBeInstanceOf(UnauthorizedError);
     });
   });
 

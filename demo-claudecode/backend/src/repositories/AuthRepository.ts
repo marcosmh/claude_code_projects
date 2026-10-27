@@ -72,6 +72,8 @@ export interface AuthRepository {
     now: Date,
   ): Promise<RefreshTokenRecord | null>;
   /** Revokes every still-active token of the family. Returns how many. */
+  /** True while the family still has an unrevoked, unexpired refresh token (the session is alive). */
+  isRefreshFamilyLive(family: string, now: Date): Promise<boolean>;
   revokeRefreshTokenFamily(family: string, now: Date): Promise<number>;
   /** Revokes every still-active refresh token of the user. Returns how many. */
   revokeAllRefreshTokens(userId: number, now: Date): Promise<number>;

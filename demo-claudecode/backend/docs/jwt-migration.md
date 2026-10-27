@@ -26,7 +26,7 @@ protecciones actuales (límite de intentos, bloqueo de cuenta, rate limiting, gu
 ## Diseño propuesto
 
 - **Librería:** `jose` (JWT/JWS, HS256, sin dependencias nativas).
-- **Access token** (corto, por defecto 15 min): claims mínimos `sub` (id de usuario), `role`, `ver`
+- **Access token** (corto, por defecto 15 min): claims mínimos `sub` (id de usuario), `role`, `ver`, `sid` (familia del refresh, añadido por B1)
   (versión de tokens del usuario), `jti`, `iat`, `exp`, `iss`, `aud`. Sin email, sin datos sensibles.
   Se verifica con algoritmo fijado a HS256 (se rechaza `none` y cualquier otro algoritmo), `iss` y `aud`.
 - **Refresh token** (largo, por defecto 7 días): también JWT firmado, con `jti` y `family`.
@@ -119,7 +119,7 @@ El secreto real nunca se versiona ni se imprime en logs. Rotarlo invalida todos 
 
 - **Todos los usuarios deberán iniciar sesión de nuevo** al desplegar (las sesiones opacas dejan de valer).
 - Si cambia `JWT_SECRET`, también se cierran todas las sesiones.
-- Un access token robado vale hasta 15 min como máximo; `tokenVersion` lo corta al cambiar la contraseña.
+- Un access token robado vale hasta 15 min como máximo; `tokenVersion` lo corta al cambiar la contraseña y, desde B1, el logout, la reutilización del refresh y el cambio de contraseña desde otro dispositivo lo cortan al instante (`sid`).
 - Sin Redis, el rate limiting sigue en memoria por proceso (límite conocido, ya existente).
 
 ## Decisiones (adoptadas el 2026-10-26: las recomendaciones del asistente, pedidas por el usuario)
@@ -178,7 +178,7 @@ La auditoría de seguridad del 2026-10-26 (solo lectura, sin hallazgos críticos
 
 ## Pendiente tras la implementación
 
-- **B1**: el access token sigue válido hasta 15 min tras el logout (límite de un JWT sin estado); opciones: TTL menor o `sid` de familia.
+- **B1 (hecho)**: el access token lleva `sid` (familia del refresh) y `authenticate` comprueba que la familia siga viva (una consulta por índice, en paralelo a la del usuario). El logout, la reutilización del refresh y el cambio de contraseña en otro dispositivo cortan el access token al instante. Los access tokens emitidos antes sin `sid` dejan de valer (se renuevan con el refresh o con un nuevo login). Límite que queda: si el logout nunca llega al servidor, la sesión sigue viva.
 - **B2/B3**: validar la entropía del secreto y derivar claves distintas para access y refresh.
 - **B6** (HSTS, `X-Frame-Options`, `Permissions-Policy`) hecho en `next.config.ts`. **B7**: `FRONTEND_ORIGIN` obligatorio (con `https://`) en producción.
 - **Limpieza**: la tabla `Session` y los métodos de sesión opaca del repositorio siguen presentes pero sin uso; se retiran en la migración posterior prevista en la decisión 5.

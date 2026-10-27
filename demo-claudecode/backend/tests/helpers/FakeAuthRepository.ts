@@ -154,6 +154,9 @@ export class FakeAuthRepository implements AuthRepository {
     current.replacedBy = created.id;
     return created;
   }
+  async isRefreshFamilyLive(family: string, now: Date) {
+    return this.refreshTokens.some((t) => t.family === family && !t.revokedAt && t.expiresAt > now);
+  }
   async revokeRefreshTokenFamily(family: string, now: Date) {
     const active = this.refreshTokens.filter((t) => t.family === family && !t.revokedAt);
     active.forEach((t) => (t.revokedAt = now));

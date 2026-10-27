@@ -137,8 +137,10 @@ export class AuthService {
 
   /**
    * Resolves an access token to its user, or throws 401. Checks signature, algorithm, exp, iss, aud, then
-   * that the user still exists, is not locked and still has the token's `ver` (a password change bumps it).
-   * One read by primary key; role and email come from it, not from the token.
+   * that the user still exists, is not locked and still has the token's `ver` (a password change bumps it), and
+   * that the session (the refresh family in `sid`) was not revoked: logout, reuse detection and a password change
+   * on another device cut the access token at once instead of letting it live out its 15 minutes.
+   * Two reads in parallel (user by primary key, family by index); role and email come from the user, not the token.
    */
   async authenticate(accessToken: string | null): Promise<AuthUser> {
     if (!accessToken) throw new UnauthorizedError(NOT_SIGNED_IN);
@@ -149,8 +151,11 @@ export class AuthService {
     } catch (error) {
       throw new UnauthorizedError(error instanceof InvalidTokenError && error.expired ? TOKEN_EXPIRED : NOT_SIGNED_IN);
     }
-    const identity = await this.repository.findAuthIdentity(claims.userId);
-    if (!identity || identity.tokenVersion !== claims.version || isLocked(identity, now)) {
+    const [identity, sessionLive] = await Promise.all([
+      this.repository.findAuthIdentity(claims.userId),
+      this.repository.isRefreshFamilyLive(claims.sessionId, now),
+    ]);
+    if (!identity || !sessionLive || identity.tokenVersion !== claims.version || isLocked(identity, now)) {
       throw new UnauthorizedError(NOT_SIGNED_IN);
     }
     return toAuthUser(identity);
@@ -247,7 +252,12 @@ export class AuthService {
   ): Promise<SessionTokens> {
     const config = this.config();
     const [token, refreshToken] = await Promise.all([
-      signAccessToken(config, { userId: identity.id, role: identity.role, version: identity.tokenVersion }, this.newId(), now),
+      signAccessToken(
+        config,
+        { userId: identity.id, role: identity.role, version: identity.tokenVersion, sessionId: refresh.family },
+        this.newId(),
+        now,
+      ),
       signRefreshToken(config, refresh, now, refreshExpiresAt),
     ]);
     const refreshMaxAgeSeconds = Math.max(0, Math.floor((refreshExpiresAt.getTime() - now.getTime()) / 1000));
