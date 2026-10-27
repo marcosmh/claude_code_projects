@@ -50,6 +50,55 @@ describe("loadJwtConfig", () => {
     expect(message).not.toContain(short);
   });
 
+  it("signs refresh tokens with a different key than access tokens", async () => {
+    expect(config.refreshSecret).not.toEqual(config.accessSecret);
+    const refresh = await signRefreshToken(config, { jti: "r1", family: "fam-1" }, NOW, new Date(NOW.getTime() + 60_000));
+    await expect(verifyRefreshToken(config, refresh, NOW)).resolves.toMatchObject({ family: "fam-1" });
+    // A refresh-typed token signed with the access key is rejected: leaking one key does not forge the other type.
+    const forged = await new SignJWT({ family: "fam-1" })
+      .setProtectedHeader({ alg: "HS256", typ: "rt+jwt" })
+      .setIssuer(config.issuer)
+      .setAudience(config.audience)
+      .setJti("r2")
+      .setIssuedAt(sec(NOW))
+      .setExpirationTime(sec(NOW) + 60)
+      .sign(config.accessSecret);
+    await expect(verifyRefreshToken(config, forged, NOW)).rejects.toBeInstanceOf(InvalidTokenError);
+  });
+
+  it("derives the refresh key outside production and uses JWT_REFRESH_SECRET when given", () => {
+    const explicit = loadJwtConfig({ JWT_SECRET: SECRET, JWT_REFRESH_SECRET: "another-refresh-secret-0123456789-0123456789" });
+    expect(explicit.refreshSecret).toEqual(key("another-refresh-secret-0123456789-0123456789"));
+    expect(() => loadJwtConfig({ JWT_SECRET: SECRET, JWT_REFRESH_SECRET: SECRET })).toThrow(/distinto/);
+    expect(() => loadJwtConfig({ JWT_SECRET: SECRET, JWT_REFRESH_SECRET: "short" })).toThrow(/JWT_REFRESH_SECRET.*32 bytes/);
+  });
+
+  describe("en producción", () => {
+    const prod = { NODE_ENV: "production", JWT_SECRET: "Zq8vK2mXp4Lr9TnW7yBc3HdF6gJsA1eU", JWT_REFRESH_SECRET: "Rt5hN8cV2xMb7QkP4wEj9LsD3fGa6YuZ" };
+
+    it("acepta dos secretos distintos y con entropía", () => {
+      expect(() => loadJwtConfig(prod)).not.toThrow();
+    });
+
+    it("exige JWT_REFRESH_SECRET explícito", () => {
+      expect(() => loadJwtConfig({ ...prod, JWT_REFRESH_SECRET: undefined })).toThrow(/JWT_REFRESH_SECRET/);
+    });
+
+    it("rechaza secretos predecibles sin imprimirlos", () => {
+      for (const weak of ["a".repeat(40), "change-me-change-me-change-me-12345", "my-super-secret-key-0123456789abcdef"]) {
+        let message = "";
+        try {
+          loadJwtConfig({ ...prod, JWT_SECRET: weak });
+        } catch (error) {
+          message = (error as Error).message;
+        }
+        expect(message).toMatch(/predecible/);
+        expect(message).not.toContain(weak);
+      }
+      expect(() => loadJwtConfig({ ...prod, JWT_REFRESH_SECRET: "b".repeat(40) })).toThrow(/JWT_REFRESH_SECRET.*predecible/);
+    });
+  });
+
   it("measures bytes, not characters", () => {
     expect(() => loadJwtConfig({ JWT_SECRET: "ñ".repeat(16) })).not.toThrow(); // 16 chars = 32 bytes
     expect(() => loadJwtConfig({ JWT_SECRET: "x".repeat(31) })).toThrow();

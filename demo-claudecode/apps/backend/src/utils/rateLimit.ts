@@ -111,7 +111,7 @@ export function bucketKey(
   if (ip) return `ip:${ip}`;
   if (!production) return "local";
   const bearer = headers.get("authorization")?.match(/^Bearer\s+(\S+)$/i)?.[1];
-  const refresh = headers.get("cookie")?.match(/(?:^|;\s*)refresh=([^;]+)/)?.[1];
+  const refresh = headers.get("cookie")?.match(/(?:^|;\s*)(?:__Secure-)?refresh=([^;]+)/)?.[1];
   const credential = bearer ?? refresh;
   return credential ? `cred:${credential.slice(-32)}` : null;
 }

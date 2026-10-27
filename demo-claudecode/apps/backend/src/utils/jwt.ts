@@ -1,16 +1,22 @@
+import { createHmac } from "node:crypto";
 import { SignJWT, jwtVerify } from "jose";
 import type { UserRole } from "../types";
 
 /** The only algorithm accepted for signing and verifying. `none` and every other algorithm are rejected. */
 const ALGORITHM = "HS256";
 const MIN_SECRET_BYTES = 32;
+/** Production secrets need at least this many distinct characters (a 32-byte `aaaa...` is not a key). */
+const MIN_DISTINCT_CHARS = 12;
 // Token types are told apart by the JOSE `typ` header, so a refresh token can never pass as an access token.
 const ACCESS_TYP = "at+jwt";
 const REFRESH_TYP = "rt+jwt";
 const ROLES: readonly UserRole[] = ["USER", "ADMIN"];
 
 export interface JwtConfig {
-  secret: Uint8Array;
+  /** Signs and verifies access tokens. */
+  accessSecret: Uint8Array;
+  /** Signs and verifies refresh tokens: a different key, so one leaked key cannot forge the other token type. */
+  refreshSecret: Uint8Array;
   accessTtlSeconds: number;
   refreshTtlSeconds: number;
   /** Seconds after a rotation during which re-presenting the old refresh token is a plain 401 (0 = off). */
@@ -57,19 +63,48 @@ function parseGrace(value: string | undefined): number {
   return seconds;
 }
 
+/** Rejects obviously weak secrets: too few distinct characters, or a well-known placeholder. */
+function assertEntropy(name: string, secret: string): void {
+  const distinct = new Set(secret).size;
+  const placeholder = /change.?me|secret|password|example|your[-_ ]?key/i.test(secret);
+  if (distinct < MIN_DISTINCT_CHARS || placeholder) {
+    throw new Error(`${name} es demasiado predecible: genera uno con \`openssl rand -base64 48\``);
+  }
+}
+
+function readSecret(name: string, value: string | undefined, production: boolean): Uint8Array {
+  if (!value) throw new Error(`${name} no está definido: genera uno con \`openssl rand -base64 48\``);
+  const bytes = new TextEncoder().encode(value);
+  if (bytes.length < MIN_SECRET_BYTES) {
+    throw new Error(`${name} debe tener al menos ${MIN_SECRET_BYTES} bytes (tiene ${bytes.length})`);
+  }
+  if (production) assertEntropy(name, value);
+  return bytes;
+}
+
 /**
- * Reads and validates the JWT settings. Fails (never printing the secret) when JWT_SECRET is missing or
- * shorter than 32 bytes, or when a duration is malformed.
+ * Reads and validates the JWT settings. Fails (never printing a secret) when JWT_SECRET is missing or shorter than
+ * 32 bytes, or when a duration is malformed. In production it also requires an explicit JWT_REFRESH_SECRET that
+ * differs from JWT_SECRET, and rejects low-entropy secrets. Outside production a missing JWT_REFRESH_SECRET is
+ * derived from JWT_SECRET (HMAC with a fixed label), so the two keys still differ without extra setup.
  */
 export function loadJwtConfig(env: Record<string, string | undefined> = process.env): JwtConfig {
-  const secret = env.JWT_SECRET;
-  if (!secret) throw new Error("JWT_SECRET no está definido: genera uno con `openssl rand -base64 48`");
-  const bytes = new TextEncoder().encode(secret);
-  if (bytes.length < MIN_SECRET_BYTES) {
-    throw new Error(`JWT_SECRET debe tener al menos ${MIN_SECRET_BYTES} bytes (tiene ${bytes.length})`);
+  const production = env.NODE_ENV === "production";
+  const accessSecret = readSecret("JWT_SECRET", env.JWT_SECRET, production);
+  let refreshSecret: Uint8Array;
+  if (env.JWT_REFRESH_SECRET) {
+    if (env.JWT_REFRESH_SECRET === env.JWT_SECRET) {
+      throw new Error("JWT_REFRESH_SECRET debe ser distinto de JWT_SECRET");
+    }
+    refreshSecret = readSecret("JWT_REFRESH_SECRET", env.JWT_REFRESH_SECRET, production);
+  } else if (production) {
+    throw new Error("JWT_REFRESH_SECRET no está definido: en producción es obligatorio y distinto de JWT_SECRET");
+  } else {
+    refreshSecret = createHmac("sha256", accessSecret).update("facturas:refresh-token-key").digest();
   }
   return {
-    secret: bytes,
+    accessSecret,
+    refreshSecret,
     accessTtlSeconds: parseDuration(env.JWT_EXPIRES_IN || "15m", "JWT_EXPIRES_IN"),
     refreshTtlSeconds: parseDuration(env.JWT_REFRESH_EXPIRES_IN || "7d", "JWT_REFRESH_EXPIRES_IN"),
     refreshReuseGraceSeconds: parseGrace(env.REFRESH_REUSE_GRACE_SECONDS),
@@ -105,7 +140,7 @@ export async function signAccessToken(
     .setJti(jti)
     .setIssuedAt(seconds(now))
     .setExpirationTime(seconds(now) + config.accessTtlSeconds)
-    .sign(config.secret);
+    .sign(config.accessSecret);
 }
 
 export async function signRefreshToken(
@@ -121,7 +156,7 @@ export async function signRefreshToken(
     .setJti(claims.jti)
     .setIssuedAt(seconds(now))
     .setExpirationTime(seconds(expiresAt))
-    .sign(config.secret);
+    .sign(config.refreshSecret);
 }
 
 /** Thrown for any token that is not acceptable; `expired` lets callers pick a friendlier message. */
@@ -131,9 +166,9 @@ export class InvalidTokenError extends Error {
   }
 }
 
-async function verify(config: JwtConfig, token: string, typ: string, now: Date) {
+async function verify(config: JwtConfig, secret: Uint8Array, token: string, typ: string, now: Date) {
   try {
-    const { payload } = await jwtVerify(token, config.secret, {
+    const { payload } = await jwtVerify(token, secret, {
       algorithms: [ALGORITHM],
       issuer: config.issuer,
       audience: config.audience,
@@ -148,7 +183,7 @@ async function verify(config: JwtConfig, token: string, typ: string, now: Date) 
 }
 
 export async function verifyAccessToken(config: JwtConfig, token: string, now: Date): Promise<AccessClaims> {
-  const payload = await verify(config, token, ACCESS_TYP, now);
+  const payload = await verify(config, config.accessSecret, token, ACCESS_TYP, now);
   const userId = Number(payload.sub);
   const { role, ver, sid, jti } = payload as { role?: unknown; ver?: unknown; sid?: unknown; jti?: string };
   if (!Number.isSafeInteger(userId) || userId <= 0) throw new InvalidTokenError();
@@ -159,7 +194,7 @@ export async function verifyAccessToken(config: JwtConfig, token: string, now: D
 }
 
 export async function verifyRefreshToken(config: JwtConfig, token: string, now: Date): Promise<RefreshClaims> {
-  const payload = await verify(config, token, REFRESH_TYP, now);
+  const payload = await verify(config, config.refreshSecret, token, REFRESH_TYP, now);
   const { family, jti } = payload as { family?: unknown; jti?: string };
   if (typeof family !== "string" || !family || !jti) throw new InvalidTokenError();
   return { jti, family };

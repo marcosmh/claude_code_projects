@@ -1,4 +1,6 @@
 export const REFRESH_COOKIE = "refresh";
+/** Production name: the `__Secure-` prefix makes browsers refuse the cookie unless it is Secure (dev runs on http). */
+export const refreshCookieName = (secure = isSecure()) => (secure ? `__Secure-${REFRESH_COOKIE}` : REFRESH_COOKIE);
 /** The browser only sends the refresh cookie to the auth endpoints, never to invoices or stats. */
 export const REFRESH_COOKIE_PATH = "/api/v1/auth";
 
@@ -37,11 +39,11 @@ function isSecure() {
 }
 
 export function refreshCookie(token: string, maxAgeSeconds: number, secure = isSecure()): string {
-  return [`${REFRESH_COOKIE}=${token}`, `Max-Age=${Math.max(0, Math.floor(maxAgeSeconds))}`, ...attributes(REFRESH_COOKIE_PATH, secure)].join("; ");
+  return [`${refreshCookieName(secure)}=${token}`, `Max-Age=${Math.max(0, Math.floor(maxAgeSeconds))}`, ...attributes(REFRESH_COOKIE_PATH, secure)].join("; ");
 }
 
 export function clearedRefreshCookie(secure = isSecure()): string {
-  return [`${REFRESH_COOKIE}=`, "Max-Age=0", ...attributes(REFRESH_COOKIE_PATH, secure)].join("; ");
+  return [`${refreshCookieName(secure)}=`, "Max-Age=0", ...attributes(REFRESH_COOKIE_PATH, secure)].join("; ");
 }
 
 export function accessCookie(token: string, maxAgeSeconds: number, secure = isSecure()): string {

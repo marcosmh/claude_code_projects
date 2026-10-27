@@ -29,6 +29,18 @@ describe("arranque", () => {
     await expect((await load()).register()).resolves.toBeUndefined();
   });
 
+  it("en producción no arranca con un FRONTEND_ORIGIN inaceptable", async () => {
+    vi.stubEnv("NEXT_RUNTIME", "nodejs");
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("JWT_SECRET", "Zq8vK2mXp4Lr9TnW7yBc3HdF6gJsA1eU");
+    vi.stubEnv("JWT_REFRESH_SECRET", "Rt5hN8cV2xMb7QkP4wEj9LsD3fGa6YuZ");
+    vi.stubEnv("FRONTEND_ORIGIN", "http://localhost:5173");
+    await expect((await load()).register()).rejects.toThrow(/FRONTEND_ORIGIN/);
+
+    vi.stubEnv("FRONTEND_ORIGIN", "https://app.example.com");
+    await expect((await load()).register()).resolves.toBeUndefined();
+  });
+
   it("fuera del runtime de Node no valida nada", async () => {
     vi.stubEnv("NEXT_RUNTIME", "edge");
     vi.stubEnv("JWT_SECRET", "");

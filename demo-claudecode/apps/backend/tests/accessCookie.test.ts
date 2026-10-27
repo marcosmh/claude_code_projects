@@ -31,12 +31,15 @@ describe("isSameSiteWrite", () => {
   it("las lecturas siempre pasan", () => {
     expect(isSameSiteWrite(req("GET", { origin: "http://evil.com" }), ALLOWED)).toBe(true);
   });
-  it("una escritura necesita Origin permitido o, sin Origin, Fetch Metadata no cross-site", () => {
+  it("una escritura necesita Origin permitido o, sin Origin, Fetch Metadata same-origin o none", () => {
     expect(isSameSiteWrite(req("POST", { origin: ORIGIN }), ALLOWED)).toBe(true);
     expect(isSameSiteWrite(req("POST", { origin: "http://evil.com" }), ALLOWED)).toBe(false);
-    for (const site of ["same-origin", "same-site", "none"]) expect(isSameSiteWrite(req("DELETE", { "sec-fetch-site": site }), ALLOWED)).toBe(true);
+    for (const site of ["same-origin", "none"]) expect(isSameSiteWrite(req("DELETE", { "sec-fetch-site": site }), ALLOWED)).toBe(true);
     expect(isSameSiteWrite(req("POST", { "sec-fetch-site": "cross-site" }), ALLOWED)).toBe(false);
     expect(isSameSiteWrite(req("POST"), ALLOWED)).toBe(false);
+  });
+  it("same-site sin Origin se rechaza: un subdominio hermano no es nuestro frontend", () => {
+    expect(isSameSiteWrite(req("POST", { "sec-fetch-site": "same-site" }), ALLOWED)).toBe(false);
   });
 });
 

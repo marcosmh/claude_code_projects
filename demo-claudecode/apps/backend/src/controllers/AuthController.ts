@@ -2,7 +2,7 @@ import { toAuthUserDto, toSessionDto } from "../dto/auth.dto";
 import type { AuthService, SessionTokens } from "../services/AuthService";
 import type { AuthUser } from "../types";
 import {
-  REFRESH_COOKIE,
+  refreshCookieName,
   accessCookie,
   accessCookieEnabled,
   clearedAccessCookie,
@@ -17,7 +17,7 @@ import { EMAIL_LOGIN_LIMIT, RateLimiter } from "../utils/rateLimit";
 import { changePasswordSchema, loginBodySchema } from "../validators/auth.validator";
 import { parseBody } from "./requestParsers";
 
-const refreshTokenOf = (request: Request) => readCookie(request.headers.get("cookie"), REFRESH_COOKIE);
+const refreshTokenOf = (request: Request) => readCookie(request.headers.get("cookie"), refreshCookieName());
 
 /**
  * Session response: access token in the body, rotated refresh token in its httpOnly cookie. In dual mode the access

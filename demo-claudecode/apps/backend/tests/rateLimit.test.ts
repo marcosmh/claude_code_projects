@@ -95,6 +95,7 @@ describe("classify y clientKey", () => {
     expect(a).toMatch(/^cred:/);
     expect(a).not.toBe(b);
     expect(bucketKey(h({ cookie: "x=1; refresh=abc.def.ghi" }), true, 0)).toBe("cred:abc.def.ghi");
+    expect(bucketKey(h({ cookie: "x=1; __Secure-refresh=abc.def.ghi" }), true, 0)).toBe("cred:abc.def.ghi");
     expect(bucketKey(h({ "x-forwarded-for": "5.5.5.5" }), true, 0)).toBeNull();
   });
 

@@ -179,8 +179,8 @@ La auditoría de seguridad del 2026-10-26 (solo lectura, sin hallazgos críticos
 ## Pendiente tras la implementación
 
 - **B1 (hecho)**: el access token lleva `sid` (familia del refresh) y `authenticate` comprueba que la familia siga viva (una consulta por índice, en paralelo a la del usuario). El logout, la reutilización del refresh y el cambio de contraseña en otro dispositivo cortan el access token al instante. Los access tokens emitidos antes sin `sid` dejan de valer (se renuevan con el refresh o con un nuevo login). Límite que queda: si el logout nunca llega al servidor, la sesión sigue viva.
-- **B2/B3**: validar la entropía del secreto y derivar claves distintas para access y refresh.
-- **B6** (HSTS, `X-Frame-Options`, `Permissions-Policy`) hecho en `next.config.ts`. **B7**: `FRONTEND_ORIGIN` obligatorio (con `https://`) en producción.
+- **B2/B3** (hecho, fase 6 del monorepo): claves distintas para access y refresh. `JWT_REFRESH_SECRET` es obligatorio y distinto de `JWT_SECRET` en producción; fuera de producción, si falta, se deriva de `JWT_SECRET` con HMAC. En producción ambos secretos se rechazan si son predecibles (menos de 12 caracteres distintos o un valor de ejemplo). Rotación con `kid` y clave anterior: pendiente.
+- **B6** (HSTS, `X-Frame-Options`, `Permissions-Policy`) hecho en `next.config.ts`. **B7** (hecho, fase 6): en producción `FRONTEND_ORIGIN` es obligatorio y cada origen debe ser https, sin comodín, sin localhost y sin ruta; el servidor no arranca si no (`assertProductionOrigins`). Además, la cookie de refresh se llama `__Secure-refresh` en producción (los clientes con sesión abierta tendrán que iniciar sesión una vez tras el despliegue) y `isSameSiteWrite` ya no acepta `Sec-Fetch-Site: same-site` cuando no hay `Origin`.
 - **Limpieza**: la tabla `Session` y los métodos de sesión opaca del repositorio siguen presentes pero sin uso; se retiran en la migración posterior prevista en la decisión 5.
 - Rol `ADMIN` y `withRole` existen sin rutas que los usen (decisión 4).
 - Con varias instancias hace falta un almacén compartido (Redis) para el rate limit.

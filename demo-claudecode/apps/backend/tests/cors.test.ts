@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { allowedOrigins, corsHeaders, usesRefreshCookie } from "../src/utils/cors";
+import { allowedOrigins, assertProductionOrigins, corsHeaders, usesRefreshCookie } from "../src/utils/cors";
 
 describe("cors", () => {
   it("usa localhost:5173 por defecto y admite lista", () => {
@@ -28,5 +28,34 @@ describe("cors", () => {
   it("solo las rutas que leen o fijan la cookie del refresh usan credenciales", () => {
     for (const route of ["login", "refresh", "logout", "password"]) expect(usesRefreshCookie(`/api/v1/auth/${route}`)).toBe(true);
     for (const path of ["/api/v1/auth/me", "/api/v1/invoices", "/api/v1/stats/summary"]) expect(usesRefreshCookie(path)).toBe(false);
+  });
+});
+
+describe("assertProductionOrigins", () => {
+  const prod = (FRONTEND_ORIGIN?: string) => ({ NODE_ENV: "production", FRONTEND_ORIGIN });
+
+  it("fuera de producción no valida nada", () => {
+    expect(() => assertProductionOrigins({ NODE_ENV: "development" })).not.toThrow();
+    expect(() => assertProductionOrigins({ FRONTEND_ORIGIN: "*" })).not.toThrow();
+  });
+  it("en producción exige FRONTEND_ORIGIN", () => {
+    expect(() => assertProductionOrigins(prod(undefined))).toThrow(/obligatorio/);
+    expect(() => assertProductionOrigins(prod("  "))).toThrow(/obligatorio/);
+  });
+  it("acepta uno o varios orígenes https", () => {
+    expect(() => assertProductionOrigins(prod("https://app.example.com"))).not.toThrow();
+    expect(() => assertProductionOrigins(prod("https://app.example.com/, https://admin.example.com:8443"))).not.toThrow();
+  });
+  it.each([
+    ["http://app.example.com", /https/],
+    ["https://*.example.com", /comodines/],
+    ["*", /no válido|comodines/],
+    ["https://localhost:5173", /localhost/],
+    ["https://127.0.0.1", /localhost/],
+    ["https://app.example.com/app", /solo un origen/],
+    ["https://user:pw@app.example.com", /solo un origen/],
+    ["not a url", /no válido/],
+  ])("rechaza %s", (origin, message) => {
+    expect(() => assertProductionOrigins(prod(origin))).toThrow(message);
   });
 });

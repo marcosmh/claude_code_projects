@@ -2,7 +2,7 @@ import { decodeJwt } from "jose";
 import { beforeEach, describe, expect, it } from "vitest";
 import { AuthService, LOCK_MS, MAX_FAILED_LOGINS, hashToken } from "../src/services/AuthService";
 import type { AuditAction } from "../src/utils/audit";
-import { REFRESH_COOKIE, clearedRefreshCookie, readCookie, refreshCookie } from "../src/utils/cookies";
+import { REFRESH_COOKIE, clearedRefreshCookie, readCookie, refreshCookie, refreshCookieName } from "../src/utils/cookies";
 import { loadJwtConfig, signAccessToken } from "../src/utils/jwt";
 import { ConflictError, RefreshReplayInGraceError, UnauthorizedError, ValidationError } from "../src/utils/errors";
 import { hashPassword, verifyPassword } from "../src/utils/password";
@@ -43,6 +43,13 @@ describe("cookies", () => {
     expect(dev).toBe(`${REFRESH_COOKIE}=tok; Max-Age=3600; Path=/api/v1/auth; HttpOnly; SameSite=Strict`);
     expect(refreshCookie("tok", 3600, true)).toMatch(/; Secure$/);
     expect(refreshCookie("tok", -5, false)).toMatch(/Max-Age=0;/);
+  });
+
+  it("en producción la cookie de refresh lleva el prefijo __Secure- (y Secure)", () => {
+    expect(refreshCookieName(false)).toBe("refresh");
+    expect(refreshCookieName(true)).toBe("__Secure-refresh");
+    expect(refreshCookie("tok", 3600, true)).toMatch(/^__Secure-refresh=tok; .*; Secure$/);
+    expect(clearedRefreshCookie(true)).toMatch(/^__Secure-refresh=; Max-Age=0; .*; Secure$/);
   });
 
   it("clearedRefreshCookie expires immediately on the same path", () => {
