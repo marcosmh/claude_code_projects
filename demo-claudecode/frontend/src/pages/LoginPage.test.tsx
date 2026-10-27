@@ -8,11 +8,11 @@ import { createQueryClient } from "@/queryClient";
 import { useToastStore } from "@/store/toastStore";
 import { UserMenu } from "@/components/layout/UserMenu";
 import { LoginPage } from "./LoginPage";
-import { clearAccessToken, getAccessToken, setAccessToken } from "@/services/tokenStorage";
+import { clearLoggedOutLocally, isLoggedOutLocally } from "@/services/sessionFlags";
 
 afterEach(() => {
   vi.unstubAllGlobals();
-  clearAccessToken();
+  clearLoggedOutLocally();
   useToastStore.setState({ toasts: [] });
 });
 
@@ -90,7 +90,7 @@ describe("LoginPage", () => {
   });
 
   it("los datos cacheados de otra cuenta se descartan al iniciar sesión", async () => {
-    vi.stubGlobal("fetch", reply({ data: { token: "jwt", user: { id: 2, email: "bea@example.com", role: "ADMIN" } } }, 200));
+    vi.stubGlobal("fetch", reply({ data: { user: { id: 2, email: "bea@example.com", role: "ADMIN" } } }, 200));
     const { user, client } = renderLogin();
     client.setQueryData(queryKeys.invoices, ["factura de otra cuenta"]);
 
@@ -101,7 +101,7 @@ describe("LoginPage", () => {
     expect(await screen.findByText("Panel")).toBeInTheDocument();
     expect(client.getQueryData(queryKeys.invoices)).toBeUndefined();
     expect(client.getQueryData(queryKeys.session)).toEqual({ id: 2, email: "bea@example.com", role: "ADMIN" });
-    expect(getAccessToken()).toBe("jwt");
+    expect(window.localStorage.getItem("accessToken")).toBeNull();
   });
 });
 
@@ -110,7 +110,6 @@ describe("UserMenu", () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Failed to fetch")));
     const client = createQueryClient();
     client.setQueryData(queryKeys.session, { id: 1, email: "ana@example.com", role: "USER" });
-    setAccessToken("jwt");
     render(
       <QueryClientProvider client={client}>
         <MemoryRouter>
@@ -123,7 +122,7 @@ describe("UserMenu", () => {
 
     await vi.waitFor(() => expect(useToastStore.getState().toasts[0]?.message).toContain("el servidor no pudo revocarla"));
     expect(client.getQueryData(queryKeys.session)).toBeNull();
-    expect(getAccessToken()).toBeNull();
+    expect(isLoggedOutLocally()).toBe(true);
   });
 
   it("no muestra nada sin sesión", () => {

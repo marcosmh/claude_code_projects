@@ -27,6 +27,7 @@ export default defineConfig({
         FRONTEND_ORIGIN: WEB_URL,
         NEXT_DIST_DIR: ".next-e2e",
         RATE_LIMIT_DISABLED: "1",
+        AUTH_COOKIE_ACCESS: "1", // access token en cookie httpOnly (decisión 6 de backend/docs/jwt-migration.md)
         JWT_SECRET: "e2e-only-secret-not-for-production-0123456789", // desechable: solo firma tokens del e2e.db
         USER_PASSWORD: "e2e-password-123", // cuenta desechable de e2e.db; debe coincidir con E2E_USER
       },
@@ -36,7 +37,8 @@ export default defineConfig({
       url: WEB_URL,
       reuseExistingServer: false,
       timeout: 60_000,
-      env: { VITE_API_URL: `http://localhost:${API_PORT}/api/v1` },
+      // Mismo origen, como en producción: el navegador solo habla con Vite y este reenvía /api al backend del e2e.
+      env: { VITE_API_URL: "/api/v1", VITE_PROXY_TARGET: `http://localhost:${API_PORT}` },
     },
   ],
 });

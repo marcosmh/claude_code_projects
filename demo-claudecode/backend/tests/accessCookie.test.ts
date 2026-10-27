@@ -41,10 +41,11 @@ describe("isSameSiteWrite", () => {
 });
 
 describe("credentialFrom (modo dual)", () => {
-  it("con el flag apagado la cookie se ignora", () => {
+  it("con el flag apagado (AUTH_COOKIE_ACCESS=0) la cookie se ignora", () => {
+    vi.stubEnv("AUTH_COOKIE_ACCESS", "0");
     expect(credentialFrom(req("GET", { cookie: "at=abc" }))).toEqual({ token: null, source: null });
   });
-  it("con el flag encendido lee la cookie, y el Bearer gana si llegan los dos", () => {
+  it("por defecto lee la cookie, y el Bearer gana si llegan los dos", () => {
     vi.stubEnv("AUTH_COOKIE_ACCESS", "1");
     expect(credentialFrom(req("GET", { cookie: "at=abc" }))).toEqual({ token: "abc", source: "cookie" });
     expect(credentialFrom(req("GET", { cookie: "at=abc", authorization: "Bearer xyz" }))).toEqual({ token: "xyz", source: "bearer" });
@@ -83,11 +84,12 @@ describe("AuthController: Set-Cookie", () => {
       body: JSON.stringify({ email: "a@b.co", password: "una-contraseña-larga" }),
     });
 
-  it("sin el flag solo pone la cookie del refresh", async () => {
+  it("con AUTH_COOKIE_ACCESS=0 solo pone la cookie del refresh", async () => {
+    vi.stubEnv("AUTH_COOKIE_ACCESS", "0");
     const res = await controller().login(login());
     expect(res.headers.getSetCookie()).toEqual([expect.stringMatching(/^refresh=refresh\.jwt;/)]);
   });
-  it("con el flag pone también la cookie del access con la vida del token, y el cuerpo conserva el token", async () => {
+  it("por defecto pone también la cookie del access con la vida del token, y el cuerpo conserva el token", async () => {
     vi.stubEnv("AUTH_COOKIE_ACCESS", "1");
     const res = await controller().login(login());
     expect(res.headers.getSetCookie()).toEqual([
@@ -96,7 +98,8 @@ describe("AuthController: Set-Cookie", () => {
     ]);
     expect((await res.json()).data.token).toBe("access.jwt");
   });
-  it("el logout limpia las dos cookies solo con el flag", async () => {
+  it("el logout limpia las dos cookies salvo con AUTH_COOKIE_ACCESS=0", async () => {
+    vi.stubEnv("AUTH_COOKIE_ACCESS", "0");
     const off = await controller().logout(req("POST"));
     expect(off.headers.getSetCookie()).toHaveLength(1);
     vi.stubEnv("AUTH_COOKIE_ACCESS", "1");

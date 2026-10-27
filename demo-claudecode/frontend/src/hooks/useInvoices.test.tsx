@@ -23,7 +23,7 @@ describe("useInvoices", () => {
     expect(result.current.isPending).toBe(true);
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toEqual({ items: [{ id: 1 }], meta });
-    const url = new URL(fetchMock.mock.calls[0]?.[0] as string);
+    const url = new URL(fetchMock.mock.calls[0]?.[0] as string, "http://localhost");
     expect(url.searchParams.get("status")).toBe("SENT");
     expect(url.searchParams.get("search")).toBe("acme");
     expect(url.searchParams.get("page")).toBe("2");

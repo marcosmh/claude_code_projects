@@ -6,8 +6,7 @@ export interface AuthUser {
   role: UserRole;
 }
 
-/** Cuerpo de `/auth/login` y `/auth/refresh`: access token (JWT) y usuario. */
+/** Cuerpo de `/auth/login` y `/auth/refresh`: el usuario. Los tokens viajan solo en cookies httpOnly. */
 export interface AuthSession {
-  token: string;
   user: AuthUser;
 }

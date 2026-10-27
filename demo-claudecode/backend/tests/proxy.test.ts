@@ -11,6 +11,8 @@ const req = (method: string, path: string, headers: Record<string, string> = {})
   new NextRequest(`http://localhost:4000${path}`, { method, headers });
 
 describe("proxy: CORS", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
   it("preflight de un origen permitido -> 204 con cabeceras CORS", () => {
     const res = proxy(req("OPTIONS", "/api/v1/invoices", { origin: ORIGIN }));
     expect(res.status).toBe(204);
@@ -52,7 +54,8 @@ describe("proxy: CORS", () => {
     },
   );
 
-  it.each(["/api/v1/invoices", "/api/v1/stats/summary", "/api/v1/auth/me"])("no permite credenciales en %s", (path) => {
+  it.each(["/api/v1/invoices", "/api/v1/stats/summary", "/api/v1/auth/me"])("con AUTH_COOKIE_ACCESS=0 no permite credenciales en %s", (path) => {
+    vi.stubEnv("AUTH_COOKIE_ACCESS", "0");
     const res = proxy(req("OPTIONS", path, { origin: ORIGIN }));
     expect(res.headers.get("access-control-allow-credentials")).toBeNull();
   });
@@ -231,10 +234,11 @@ describe("proxy: RATE_LIMIT_DISABLED (solo E2E)", () => {
   });
 });
 
-describe("proxy: modo dual (AUTH_COOKIE_ACCESS=1)", () => {
+describe("proxy: modo dual (AUTH_COOKIE_ACCESS)", () => {
   afterEach(() => vi.unstubAllEnvs());
 
   it("las credenciales CORS se anuncian en todas las rutas, no solo en /auth/*", () => {
+    vi.stubEnv("AUTH_COOKIE_ACCESS", "0");
     expect(proxy(req("OPTIONS", "/api/v1/invoices", { origin: ORIGIN })).headers.get("access-control-allow-credentials")).toBeNull();
     vi.stubEnv("AUTH_COOKIE_ACCESS", "1");
     expect(proxy(req("OPTIONS", "/api/v1/invoices", { origin: ORIGIN })).headers.get("access-control-allow-credentials")).toBe("true");

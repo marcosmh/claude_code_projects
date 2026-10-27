@@ -33,7 +33,7 @@ export const invoicesService = {
     await request<void>(`/invoices/${id}`, { method: "DELETE" });
   },
 
-  /** PDF de la factura. Se descarga con `Authorization` (un enlace directo no la enviaría). */
+  /** PDF de la factura. Se descarga con `fetch` (cookies de sesión) y no con un enlace directo. */
   async pdf(id: number): Promise<Blob> {
     return requestBlob(`/invoices/${id}/pdf`);
   },

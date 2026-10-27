@@ -1,8 +1,8 @@
 import type { ApiEnvelope, ApiErrorDetail } from "@/types/api";
 import type { AuthSession } from "@/types/auth";
-import { clearAccessToken, getAccessToken, setAccessToken } from "./tokenStorage";
+import { lastRefreshAt, markRefreshedNow } from "./sessionFlags";
 
-export const API_URL = (import.meta.env.VITE_API_URL ?? "http://localhost:4000/api/v1").replace(/\/+$/, "");
+export const API_URL = (import.meta.env.VITE_API_URL ?? "/api/v1").replace(/\/+$/, "");
 
 /** Error normalizado de la API: `{ error: { code, message, details } }` o fallo de red. */
 export class ApiError extends Error {
@@ -26,7 +26,7 @@ let unauthorizedHandler: (() => void) | undefined;
 
 /**
  * Se invoca cuando la API responde 401 a una petición normal y la renovación de la sesión (`/auth/refresh`) tampoco
- * la recupera (sesión caducada o revocada). Antes de llamarlo, `apiClient` ya ha borrado el access token.
+ * la recupera (sesión caducada o revocada).
  * Las rutas `/auth/*` quedan fuera: ahí un 401 es una respuesta esperada (credenciales erróneas, sin sesión).
  */
 export function setUnauthorizedHandler(handler: (() => void) | undefined) {
@@ -90,23 +90,19 @@ async function toApiError(response: Response): Promise<ApiError> {
   return new ApiError(response.status, "UNKNOWN_ERROR", "El servidor respondió con un error inesperado");
 }
 
-/** Únicas rutas que usan la cookie httpOnly del refresh token y necesitan `credentials: "include"`. */
-const COOKIE_PATHS: ReadonlySet<string> = new Set(["/auth/login", "/auth/refresh", "/auth/logout", "/auth/password"]);
-
 const isAuthPath = (path: string) => path.startsWith("/auth/");
 
-/** Una sola petición HTTP, sin lógica de sesión. Convierte los fallos de red en `ApiError`. */
-async function send(path: string, { method = "GET", body, query, signal }: RequestOptions, token: string | null): Promise<Response> {
-  const headers: Record<string, string> = {};
-  if (body !== undefined) headers["Content-Type"] = "application/json";
-  if (token) headers.Authorization = `Bearer ${token}`;
+/**
+ * Una sola petición HTTP, sin lógica de sesión. Convierte los fallos de red en `ApiError`. Los tokens viajan en cookies
+ * httpOnly, por eso todas las peticiones llevan `credentials: "include"` (con el mismo origen no hay CORS de por medio).
+ */
+async function send(path: string, { method = "GET", body, query, signal }: RequestOptions): Promise<Response> {
   try {
     return await fetch(buildUrl(path, query), {
       method,
       signal,
-      // Solo las cuatro rutas /auth con cookie la envían; el resto se autentica con `Authorization`.
-      ...(COOKIE_PATHS.has(path) ? { credentials: "include" as const } : {}),
-      headers: Object.keys(headers).length > 0 ? headers : undefined,
+      credentials: "include",
+      headers: body === undefined ? undefined : { "Content-Type": "application/json" },
       body: body === undefined ? undefined : JSON.stringify(body),
     });
   } catch (error) {
@@ -116,15 +112,10 @@ async function send(path: string, { method = "GET", body, query, signal }: Reque
 }
 
 async function requestRefresh(): Promise<AuthSession> {
-  const response = await send("/auth/refresh", { method: "POST" }, null);
-  if (!response.ok) {
-    const error = await toApiError(response);
-    // Refresh rechazado: no hay sesión recuperable, el access token guardado ya no sirve.
-    if (error.status === 401) clearAccessToken();
-    throw error;
-  }
+  const response = await send("/auth/refresh", { method: "POST" });
+  if (!response.ok) throw await toApiError(response);
   const session = ((await response.json()) as ApiEnvelope<AuthSession>).data;
-  setAccessToken(session.token);
+  markRefreshedNow();
   return session;
 }
 
@@ -141,15 +132,13 @@ function withRefreshLock<T>(task: () => Promise<T>): Promise<T> {
 let refreshInFlight: Promise<AuthSession | null> | null = null;
 
 /**
- * Single-flight de esta pestaña + lock entre pestañas. Con `staleToken` definido, dentro del lock se vuelve a leer el
- * access token: si ya es otro (otra pestaña renovó mientras esperábamos) no se llama al refresh y devuelve `null`.
+ * Single-flight de esta pestaña + lock entre pestañas. Con `sentAt` definido (instante en que se envió la petición que
+ * dio 401), dentro del lock se comprueba si alguna pestaña renovó después: entonces no se llama al refresh y devuelve
+ * `null`, y quien llama repite su petición con las cookies nuevas.
  */
-function sharedRefresh(staleToken?: string | null): Promise<AuthSession | null> {
+function sharedRefresh(sentAt?: number): Promise<AuthSession | null> {
   refreshInFlight ??= withRefreshLock(async () => {
-    if (staleToken !== undefined) {
-      const current = getAccessToken();
-      if (current !== null && current !== staleToken) return null;
-    }
+    if (sentAt !== undefined && lastRefreshAt() > sentAt) return null;
     return requestRefresh();
   }).finally(() => {
     refreshInFlight = null;
@@ -158,25 +147,24 @@ function sharedRefresh(staleToken?: string | null): Promise<AuthSession | null> 
 }
 
 /**
- * Renueva el access token con la cookie del refresh (single-flight: las llamadas concurrentes comparten una sola
- * petición, imprescindible porque el refresh rota y reutilizar uno viejo revoca toda la sesión).
- * Guarda el token nuevo y devuelve la sesión; lanza `ApiError` (401 si no hay sesión recuperable).
+ * Renueva la sesión con la cookie del refresh (single-flight: las llamadas concurrentes comparten una sola petición,
+ * imprescindible porque el refresh rota y reutilizar uno viejo revoca toda la sesión). El servidor fija las cookies
+ * nuevas; devuelve la sesión y lanza `ApiError` (401 si no hay sesión recuperable).
  */
 export async function refreshSession(): Promise<AuthSession> {
-  // `null` solo si nos unimos a una renovación que se resolvió reutilizando el token de otra pestaña: se repite.
+  // `null` solo si nos unimos a una renovación que se resolvió porque otra pestaña ya había renovado: se repite.
   return (await sharedRefresh()) ?? refreshSession();
 }
 
 /**
- * Tras un 401: `true` si hay un access token distinto del que falló (otra petición o pestaña ya renovó) o si el
- * refresh lo consigue; `false` si el refresh dice que no hay sesión. Otros fallos del refresh (red, 5xx, 429) se
- * propagan: no son motivo para cerrar la sesión.
+ * Tras un 401: `true` si ya hay una renovación posterior al envío (otra petición o pestaña) o si el refresh lo
+ * consigue; `false` si el refresh dice que no hay sesión. Otros fallos del refresh (red, 5xx, 429) se propagan: no son
+ * motivo para cerrar la sesión.
  */
-async function recoverFromUnauthorized(failedToken: string | null): Promise<boolean> {
-  const current = getAccessToken();
-  if (current !== null && current !== failedToken) return true;
+async function recoverFromUnauthorized(sentAt: number): Promise<boolean> {
+  if (lastRefreshAt() > sentAt) return true;
   try {
-    await sharedRefresh(failedToken);
+    await sharedRefresh(sentAt);
     return true;
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) return false;
@@ -187,16 +175,15 @@ async function recoverFromUnauthorized(failedToken: string | null): Promise<bool
 /**
  * Ejecuta la petición con la lógica de sesión y devuelve la respuesta ya validada (`ok`).
  * Ante un 401 fuera de `/auth/*` intenta una renovación y repite la petición UNA vez (sin bucles: el reintento no
- * vuelve a renovar). Si no se recupera, borra el token y avisa al manejador de sesión caducada.
+ * vuelve a renovar). Si no se recupera, avisa al manejador de sesión caducada.
  */
 async function execute(path: string, options: RequestOptions): Promise<Response> {
-  const sentToken = getAccessToken();
-  let response = await send(path, options, sentToken);
+  const sentAt = Date.now();
+  let response = await send(path, options);
 
   if (response.status === 401 && !isAuthPath(path)) {
-    if (await recoverFromUnauthorized(sentToken)) response = await send(path, options, getAccessToken());
+    if (await recoverFromUnauthorized(sentAt)) response = await send(path, options);
     if (response.status === 401) {
-      clearAccessToken();
       const error = await toApiError(response);
       unauthorizedHandler?.();
       throw error;

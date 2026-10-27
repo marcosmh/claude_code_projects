@@ -45,7 +45,7 @@ test.describe("autenticación", () => {
     await expect(page).toHaveURL(/\/login$/);
   });
 
-  test("cerrar sesión revoca el refresh y borra el token: ya no hay acceso a las rutas protegidas", async ({ page }) => {
+  test("cerrar sesión revoca el refresh y borra las cookies: ya no hay acceso a las rutas protegidas", async ({ page }) => {
     await page.goto("/login");
     await page.getByLabel("Email").fill(E2E_USER.email);
     await page.getByLabel("Contraseña").fill(E2E_USER.password);
@@ -56,6 +56,9 @@ test.describe("autenticación", () => {
     await expect(page).toHaveURL(/\/login$/);
 
     expect(await page.evaluate(() => localStorage.getItem("accessToken"))).toBeNull();
+    const names = (await page.context().cookies()).map((c) => c.name);
+    expect(names).not.toContain("at");
+    expect(names).not.toContain("refresh");
 
     await page.goto("/dashboard");
     await expect(page).toHaveURL(/\/login$/);
@@ -93,11 +96,11 @@ test.describe("autenticación", () => {
     await page.getByRole("button", { name: "Iniciar sesión" }).click();
     await expect(page).toHaveURL(/\/dashboard$/);
 
-    // Se cierra la sesión por otra vía (p. ej. otra pestaña) y el access token de esta caduca: sin refresh válido,
-    // la app vuelve al inicio de sesión sin recargar. Se invalida el token (no se borra): `tokenStorage` conserva una
-    // copia en memoria, y un JWT sin caducar sigue siendo válido aunque se cierre la sesión.
+    // Se cierra la sesión por otra vía (p. ej. otra pestaña) y la cookie del access token de esta caduca: sin refresh
+    // válido, la app vuelve al inicio de sesión sin recargar. El logout ya borra las cookies del contexto; se pone una
+    // cookie `at` inválida (un JWT sin caducar seguiría valiendo aunque se cierre la sesión).
     await page.request.post(`${API}/auth/logout`);
-    await page.evaluate(() => localStorage.setItem("accessToken", "token-caducado"));
+    await page.context().addCookies([{ name: "at", value: "token-caducado", domain: "localhost", path: "/api/v1", httpOnly: true }]);
     await page.getByRole("link", { name: "Facturas" }).click();
 
     await expect(page).toHaveURL(/\/login$/);
@@ -145,6 +148,9 @@ test.describe("cambio de contraseña", () => {
       await expect(page.getByText("Contraseña actualizada")).toBeVisible();
 
       await page.getByRole("button", { name: "Cerrar sesión" }).click();
+      // Se espera a que el logout termine: navegar antes lo aborta en el navegador, el servidor revoca el refresh pero las
+      // cookies no llegan a borrarse y el access token (válido hasta 15 min) restauraría la sesión.
+      await expect(page).toHaveURL(/\/login$/);
       await signIn(E2E_USER.password);
       await expect(page.getByRole("alert")).toContainText("Email o contraseña incorrectos");
       await signIn(NEW);
@@ -167,20 +173,24 @@ test.describe("cambio de contraseña", () => {
 
 // Estos casos usan el `test` con sesión (fixtures.ts): el contexto ya tiene la cookie del refresh.
 sessionTest.describe("renovación transparente de la sesión", () => {
-  sessionTest("sin access token en localStorage, la app recupera la sesión por el refresh", async ({ page }) => {
+  sessionTest("sin la cookie del access token, la app recupera la sesión por el refresh", async ({ page }) => {
+    await page.context().clearCookies({ name: "at" });
     await page.goto("/invoices");
     await expect(page.getByRole("heading", { level: 1, name: "Facturas" })).toBeVisible();
     await expect(page).toHaveURL(/\/invoices$/);
-    expect(await page.evaluate(() => localStorage.getItem("accessToken"))).toBeTruthy();
+    expect((await page.context().cookies()).map((c) => c.name)).toContain("at");
+    // El token nunca llega al JavaScript de la página.
+    expect(await page.evaluate(() => localStorage.getItem("accessToken"))).toBeNull();
   });
 
   sessionTest("un access token caducado se renueva solo y la petición se repite", async ({ page }) => {
     await page.goto("/dashboard");
     await expect(page.getByRole("heading", { level: 1, name: "Dashboard" })).toBeVisible();
-    const before = await page.evaluate(() => localStorage.getItem("accessToken"));
+    const cookie = async () => (await page.context().cookies()).find((c) => c.name === "at")?.value;
+    const before = await cookie();
 
-    // Se corrompe el token guardado (equivale a uno caducado): el backend responde 401.
-    await page.evaluate(() => localStorage.setItem("accessToken", "token-caducado"));
+    // Se corrompe la cookie del access token (equivale a una caducada): el backend responde 401.
+    await page.context().addCookies([{ name: "at", value: "token-caducado", domain: "localhost", path: "/api/v1", httpOnly: true }]);
     const refreshes: string[] = [];
     page.on("request", (r) => r.url().endsWith("/auth/refresh") && refreshes.push(r.url()));
     // El encabezado aparece antes de que lleguen el 401 y el refresh: se espera a la petición repetida con éxito.
@@ -191,7 +201,7 @@ sessionTest.describe("renovación transparente de la sesión", () => {
     await expect(page.getByRole("heading", { level: 1, name: "Facturas" })).toBeVisible();
     await expect(page).toHaveURL(/\/invoices$/);
     expect(refreshes).toHaveLength(1);
-    const after = await page.evaluate(() => localStorage.getItem("accessToken"));
+    const after = await cookie();
     expect(after).not.toBe("token-caducado");
     expect(after).toBeTruthy();
     expect(before).toBeTruthy();

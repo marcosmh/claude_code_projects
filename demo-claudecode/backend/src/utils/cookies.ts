@@ -16,10 +16,11 @@ export function readCookie(header: string | null, name: string): string | null {
 export const ACCESS_COOKIE_PATH = "/api/v1";
 
 /**
- * Dual mode (decision 6 of docs/jwt-migration.md): with `AUTH_COOKIE_ACCESS=1` login and refresh also set the access
- * token in an httpOnly cookie and `withAuth` accepts it. Off by default; off means nothing here changes.
+ * Dual mode (decision 6 of docs/jwt-migration.md): login and refresh also set the access token in an httpOnly cookie
+ * and `withAuth` accepts it. On by default because the frontend no longer sends `Authorization`; `AUTH_COOKIE_ACCESS=0`
+ * turns it off (Bearer-only clients keep working either way).
  */
-export const accessCookieEnabled = () => process.env.AUTH_COOKIE_ACCESS === "1";
+export const accessCookieEnabled = () => process.env.AUTH_COOKIE_ACCESS !== "0";
 
 // The `__Secure-` prefix makes browsers refuse the cookie unless it is Secure, so it only exists in production
 // (dev and E2E run over plain http).

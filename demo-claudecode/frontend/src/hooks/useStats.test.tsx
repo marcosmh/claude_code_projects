@@ -27,7 +27,7 @@ describe("useStats", () => {
     const b = renderHook(() => useMonthlyStats(12), { wrapper });
     await waitFor(() => expect(b.result.current.isSuccess).toBe(true));
 
-    const months = fetchMock.mock.calls.map((c) => new URL(c[0] as string).searchParams.get("months"));
+    const months = fetchMock.mock.calls.map((c) => new URL(c[0] as string, "http://localhost").searchParams.get("months"));
     expect(months).toEqual(["6", "12"]);
   });
 

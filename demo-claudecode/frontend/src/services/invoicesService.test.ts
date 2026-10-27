@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { InvoiceRequest } from "@/types/invoice";
 import { API_URL } from "./apiClient";
-import { clearAccessToken, setAccessToken } from "./tokenStorage";
 import { invoicesService } from "./invoicesService";
 
 const json = (body: unknown, init?: ResponseInit) => new Response(JSON.stringify(body), init);
@@ -34,7 +33,7 @@ describe("invoicesService", () => {
     const result = await invoicesService.list({ status: "PAID", search: "", page: 1, pageSize: 10 });
 
     expect(result).toEqual({ items: [{ id: 1 }], meta });
-    const url = new URL(fetchMock.mock.calls[0]?.[0] as string);
+    const url = new URL(fetchMock.mock.calls[0]?.[0] as string, "http://localhost");
     expect(url.pathname.endsWith("/invoices")).toBe(true);
     expect(url.searchParams.get("status")).toBe("PAID");
     expect(url.searchParams.has("search")).toBe(false);
@@ -89,8 +88,7 @@ describe("invoicesService", () => {
     await expect(invoicesService.get(9)).rejects.toMatchObject({ status: 404, code: "NOT_FOUND" });
   });
 
-  it("pdf descarga el binario con Authorization", async () => {
-    setAccessToken("jwt-pdf");
+  it("pdf descarga el binario con las cookies de sesión, sin Authorization", async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response("%PDF-1.4", { status: 200, headers: { "Content-Type": "application/pdf" } }));
     vi.stubGlobal("fetch", fetchMock);
 
@@ -99,7 +97,7 @@ describe("invoicesService", () => {
     expect(blob.type).toBe("application/pdf");
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).toBe(`${API_URL}/invoices/12/pdf`);
-    expect((init.headers as Record<string, string>).Authorization).toBe("Bearer jwt-pdf");
-    clearAccessToken();
+    expect(init.credentials).toBe("include");
+    expect((init.headers as Record<string, string> | undefined)?.Authorization).toBeUndefined();
   });
 });

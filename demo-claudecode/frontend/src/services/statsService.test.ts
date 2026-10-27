@@ -10,7 +10,7 @@ describe("statsService", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(statsService.summary()).resolves.toEqual(summary);
-    expect(new URL(fetchMock.mock.calls[0]?.[0] as string).pathname.endsWith("/stats/summary")).toBe(true);
+    expect(new URL(fetchMock.mock.calls[0]?.[0] as string, "http://localhost").pathname.endsWith("/stats/summary")).toBe(true);
   });
 
   it("monthly envía months en la query", async () => {
@@ -18,7 +18,7 @@ describe("statsService", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(statsService.monthly(6)).resolves.toEqual([{ key: "2026-10" }]);
-    const url = new URL(fetchMock.mock.calls[0]?.[0] as string);
+    const url = new URL(fetchMock.mock.calls[0]?.[0] as string, "http://localhost");
     expect(url.pathname.endsWith("/stats/monthly")).toBe(true);
     expect(url.searchParams.get("months")).toBe("6");
   });

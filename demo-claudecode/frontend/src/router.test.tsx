@@ -5,7 +5,6 @@ import { createMemoryRouter, RouterProvider } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createQueryClient } from "./queryClient";
 import { createAppRouter, routes } from "./router";
-import { clearAccessToken, setAccessToken } from "./services/tokenStorage";
 
 const summary = {
   byStatus: { DRAFT: { count: 0, totalCents: 0 }, SENT: { count: 0, totalCents: 0 }, PAID: { count: 0, totalCents: 0 } },
@@ -22,7 +21,7 @@ const noSession = () => respond({ error: { code: "UNAUTHENTICATED", message: "In
 function api(path: string, session: () => Promise<Response> = () => respond({ data: ANA })) {
   if (path.endsWith("/auth/me")) return session();
   // Renovación: concede un token nuevo mientras la sesión exista y 401 si no.
-  if (path.endsWith("/auth/refresh")) return session().then((r) => (r.ok ? respond({ data: { token: "t2", user: ANA } }) : r));
+  if (path.endsWith("/auth/refresh")) return session().then((r) => (r.ok ? respond({ data: { user: ANA } }) : r));
   if (path.endsWith("/stats/summary")) return respond({ data: summary });
   if (path.endsWith("/stats/monthly")) return respond({ data: [] });
   if (path.endsWith("/invoices")) return respond({ data: [], meta });
@@ -30,12 +29,10 @@ function api(path: string, session: () => Promise<Response> = () => respond({ da
 }
 
 beforeEach(() => {
-  setAccessToken("t1");
-  vi.stubGlobal("fetch", vi.fn().mockImplementation((url: string) => api(new URL(url).pathname)));
+  vi.stubGlobal("fetch", vi.fn().mockImplementation((url: string) => api(new URL(url, "http://localhost").pathname)));
 });
 afterEach(() => {
   vi.unstubAllGlobals();
-  clearAccessToken();
 });
 
 function renderAt(path: string) {
@@ -99,7 +96,7 @@ describe("router", () => {
 
 describe("router: sesión", () => {
   it("sin sesión, una ruta protegida redirige a /login", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockImplementation((url: string) => api(new URL(url).pathname, noSession)));
+    vi.stubGlobal("fetch", vi.fn().mockImplementation((url: string) => api(new URL(url, "http://localhost").pathname, noSession)));
     const { router } = renderAt("/invoices");
     expect(await screen.findByRole("heading", { level: 1, name: "Iniciar sesión" })).toBeInTheDocument();
     expect(router.state.location.pathname).toBe("/login");
@@ -111,7 +108,7 @@ describe("router: sesión", () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockImplementation((url: string) => {
-        const path = new URL(url).pathname;
+        const path = new URL(url, "http://localhost").pathname;
         if (path.endsWith("/auth/login")) {
           signedIn = true;
           return respond({ data: { token: "t3", user: ANA } });
@@ -147,7 +144,7 @@ describe("router: sesión", () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockImplementation((url: string) => {
-        const path = new URL(url).pathname;
+        const path = new URL(url, "http://localhost").pathname;
         if (path.endsWith("/auth/logout")) {
           signedIn = false;
           return Promise.resolve(new Response(null, { status: 204 }));
@@ -167,22 +164,23 @@ describe("router: sesión", () => {
 });
 
 describe("router: renovación transparente", () => {
-  it("sin access token, la sesión se recupera por el refresh antes de redirigir a /login", async () => {
-    clearAccessToken();
-    const fetchMock = vi.fn().mockImplementation((url: string) => api(new URL(url).pathname));
+  it("sin access token (401 en /auth/me), la sesión se recupera por el refresh antes de redirigir a /login", async () => {
+    const fetchMock = vi.fn().mockImplementation((url: string) => {
+      const path = new URL(url, "http://localhost").pathname;
+      return path.endsWith("/auth/me") ? noSession() : api(path);
+    });
     vi.stubGlobal("fetch", fetchMock);
 
     const { router } = renderAt("/invoices");
 
     expect(await screen.findByRole("heading", { level: 1, name: "Facturas" })).toBeInTheDocument();
     expect(router.state.location.pathname).toBe("/invoices");
-    const called = fetchMock.mock.calls.map((c) => new URL(c[0] as string).pathname);
+    const called = fetchMock.mock.calls.map((c) => new URL(c[0] as string, "http://localhost").pathname);
     expect(called).toContain("/api/v1/auth/refresh");
   });
 
   it("sin access token y sin refresh válido, redirige a /login", async () => {
-    clearAccessToken();
-    vi.stubGlobal("fetch", vi.fn().mockImplementation((url: string) => api(new URL(url).pathname, noSession)));
+    vi.stubGlobal("fetch", vi.fn().mockImplementation((url: string) => api(new URL(url, "http://localhost").pathname, noSession)));
     const { router } = renderAt("/invoices");
     expect(await screen.findByRole("heading", { level: 1, name: "Iniciar sesión" })).toBeInTheDocument();
     expect(router.state.location.pathname).toBe("/login");

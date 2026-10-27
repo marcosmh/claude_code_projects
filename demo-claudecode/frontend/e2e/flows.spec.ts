@@ -101,8 +101,8 @@ test.describe("flujos de usuario", () => {
   test("el PDF de una factura se genera", async ({ page, api }) => {
     const { id } = await createInvoice(api);
     await page.goto(`/invoices/${id}`);
-    // "Ver PDF" descarga el PDF con Authorization y lo abre en una pestaña nueva desde un blob.
-    // El PDF se pide con Authorization y responde 200. No se espera la URL blob: Chromium headless no tiene visor
+    // "Ver PDF" descarga el PDF con las cookies de sesión y lo abre en una pestaña nueva desde un blob.
+    // El PDF se pide con las cookies y responde 200. No se espera la URL blob: Chromium headless no tiene visor
     // de PDF y esa navegación se aborta (ERR_ABORTED) aunque la app funcione.
     const pdfResponse = page.waitForResponse((r) => r.url().endsWith(`/invoices/${id}/pdf`));
     await Promise.all([page.waitForEvent("popup"), page.getByRole("button", { name: "Ver PDF" }).click()]);

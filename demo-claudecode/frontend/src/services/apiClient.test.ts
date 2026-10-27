@@ -1,13 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError, buildUrl, refreshSession, request, setUnauthorizedHandler } from "./apiClient";
-import { clearAccessToken, getAccessToken, setAccessToken } from "./tokenStorage";
+import { clearLoggedOutLocally, isLoggedOutLocally, lastRefreshAt, markLoggedOutLocally, purgeLegacyAccessToken } from "./sessionFlags";
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 
 beforeEach(() => {
   window.localStorage.clear();
-  clearAccessToken();
 });
 afterEach(() => vi.unstubAllGlobals());
 
@@ -19,7 +18,7 @@ describe("apiClient", () => {
     const result = await request<number[], { page: number }>("/invoices", { query: { page: 1, search: "" } });
 
     expect(result).toEqual({ data: [1], meta: { page: 1 } });
-    expect(fetchMock.mock.calls[0]?.[0]).toBe("http://localhost:4000/api/v1/invoices?page=1");
+    expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/v1/invoices?page=1");
   });
 
   it("envía el cuerpo como JSON", async () => {
@@ -96,148 +95,124 @@ describe("apiClient", () => {
 
   it("buildUrl omite parámetros vacíos", () => {
     expect(buildUrl("/invoices", { status: "PAID", search: undefined, page: 2 })).toBe(
-      "http://localhost:4000/api/v1/invoices?status=PAID&page=2",
+      "/api/v1/invoices?status=PAID&page=2",
     );
   });
 });
 
-describe("request: sesión con JWT", () => {
+describe("request: sesión con cookies httpOnly", () => {
   const unauthorized = () => json({ error: { code: "UNAUTHENTICATED", message: "Inicia sesión" } }, 401);
-  const session = (token: string) => json({ data: { token, user: { id: 1, email: "a@b.co", role: "USER" } } });
+  const USER = { id: 1, email: "a@b.co", role: "USER" };
+  const session = () => json({ data: { user: USER } });
   type Call = [string, RequestInit];
-  const authHeader = (call: unknown) => (((call as Call)[1].headers ?? {}) as Record<string, string>).Authorization;
-  const urlOf = (call: unknown) => (call as Call)[0].replace("http://localhost:4000/api/v1", "");
+  const urlOf = (call: unknown) => (call as Call)[0].replace("/api/v1", "");
 
   afterEach(() => {
     setUnauthorizedHandler(undefined);
     vi.restoreAllMocks();
   });
 
-  it("envía Authorization: Bearer con el token guardado y sin credentials en rutas normales", async () => {
-    setAccessToken("tok-1");
-    const fetchMock = vi.fn().mockResolvedValue(json({ data: 1 }));
-    vi.stubGlobal("fetch", fetchMock);
+  it.each(["/invoices", "/auth/me", "/auth/login", "/auth/refresh", "/auth/logout", "/auth/password"])(
+    "%s envía credentials: include y nunca Authorization",
+    async (path) => {
+      const fetchMock = vi.fn().mockResolvedValue(json({ data: {} }));
+      vi.stubGlobal("fetch", fetchMock);
+      await request(path);
+      const init = (fetchMock.mock.calls[0] as Call)[1];
+      expect(init.credentials).toBe("include");
+      expect((init.headers as Record<string, string> | undefined)?.Authorization).toBeUndefined();
+    },
+  );
 
-    await request("/invoices");
-
-    const init = (fetchMock.mock.calls[0] as Call)[1];
-    expect((init.headers as Record<string, string>).Authorization).toBe("Bearer tok-1");
-    expect(init.credentials).toBeUndefined();
-  });
-
-  it("sin token no envía Authorization", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(json({ data: 1 }));
-    vi.stubGlobal("fetch", fetchMock);
-    await request("/invoices");
-    expect(authHeader(fetchMock.mock.calls[0])).toBeUndefined();
-  });
-
-  it.each(["/auth/login", "/auth/refresh", "/auth/logout", "/auth/password"])("%s envía credentials: include", async (path) => {
-    const fetchMock = vi.fn().mockResolvedValue(json({ data: 1 }));
-    vi.stubGlobal("fetch", fetchMock);
-    await request(path, { method: "POST" });
-    expect((fetchMock.mock.calls[0] as Call)[1].credentials).toBe("include");
-  });
-
-  it("/auth/me lleva Bearer pero no credentials", async () => {
-    setAccessToken("tok-1");
-    const fetchMock = vi.fn().mockResolvedValue(json({ data: 1 }));
-    vi.stubGlobal("fetch", fetchMock);
-    await request("/auth/me");
-    expect(authHeader(fetchMock.mock.calls[0])).toBe("Bearer tok-1");
-    expect((fetchMock.mock.calls[0] as Call)[1].credentials).toBeUndefined();
-  });
-
-  it("ante un 401 renueva con /auth/refresh y repite la petición una vez con el token nuevo", async () => {
-    setAccessToken("viejo");
+  it("ante un 401 renueva con /auth/refresh y repite la petición una vez", async () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(unauthorized())
-      .mockResolvedValueOnce(session("nuevo"))
-      .mockResolvedValueOnce(json({ data: "ok" }));
+      .mockResolvedValueOnce(session())
+      .mockResolvedValueOnce(json({ data: [1] }));
     vi.stubGlobal("fetch", fetchMock);
-    const handler = vi.fn();
-    setUnauthorizedHandler(handler);
 
-    await expect(request("/invoices")).resolves.toEqual({ data: "ok" });
+    await expect(request("/invoices")).resolves.toEqual({ data: [1] });
 
     expect(fetchMock.mock.calls.map(urlOf)).toEqual(["/invoices", "/auth/refresh", "/invoices"]);
-    expect((fetchMock.mock.calls[1] as Call)[1].credentials).toBe("include");
-    expect(authHeader(fetchMock.mock.calls[2])).toBe("Bearer nuevo");
-    expect(getAccessToken()).toBe("nuevo");
-    expect(handler).not.toHaveBeenCalled();
+    expect((fetchMock.mock.calls[1] as Call)[1].method).toBe("POST");
+    expect(lastRefreshAt()).toBeGreaterThan(0);
   });
 
-  it("peticiones concurrentes con 401 comparten UN solo refresh (single-flight)", async () => {
-    setAccessToken("viejo");
-    let resolveRefresh: (r: Response) => void = () => undefined;
-    const fetchMock = vi.fn((url: string, init: RequestInit) => {
-      if (url.endsWith("/auth/refresh")) return new Promise<Response>((r) => (resolveRefresh = r));
-      const bearer = (init.headers as Record<string, string>).Authorization;
-      return Promise.resolve(bearer === "Bearer nuevo" ? json({ data: url }) : unauthorized());
+  it("varias peticiones con 401 a la vez comparten un único refresh y todas se repiten", async () => {
+    let refreshed = false;
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url.endsWith("/auth/refresh")) {
+        await Promise.resolve();
+        refreshed = true;
+        return session();
+      }
+      return refreshed ? json({ data: url }) : unauthorized();
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    const all = Promise.all([request("/invoices"), request("/stats/summary"), request("/invoices/1")]);
-    await vi.waitFor(() => expect(fetchMock.mock.calls.filter((c) => urlOf(c) === "/auth/refresh")).toHaveLength(1));
-    resolveRefresh(session("nuevo"));
+    const results = await Promise.all([request("/invoices"), request("/stats/summary"), request("/stats/monthly")]);
 
-    expect((await all).map((r) => r.data)).toHaveLength(3);
+    expect(results).toHaveLength(3);
     expect(fetchMock.mock.calls.filter((c) => urlOf(c) === "/auth/refresh")).toHaveLength(1);
   });
 
-  it("una petición que falló con un token ya sustituido se repite sin pedir otro refresh", async () => {
-    setAccessToken("viejo");
-    const fetchMock = vi.fn().mockImplementationOnce(async () => {
-      setAccessToken("nuevo"); // otra petición renovó mientras esta estaba en vuelo
-      return unauthorized();
-    });
-    fetchMock.mockResolvedValueOnce(json({ data: "ok" }));
-    vi.stubGlobal("fetch", fetchMock);
+  it("si otra pestaña renovó después de enviar la petición, se repite sin pedir otro refresh", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      vi.resetModules();
+      const tab = await import("./apiClient");
+      const flags = await import("./sessionFlags");
+      vi.setSystemTime(1_000);
+      const fetchMock = vi
+        .fn()
+        .mockImplementationOnce(async () => {
+          vi.setSystemTime(2_000);
+          flags.markRefreshedNow(); // otra pestaña renovó mientras esta petición estaba en vuelo
+          return unauthorized();
+        })
+        .mockResolvedValueOnce(json({ data: "ok" }));
+      vi.stubGlobal("fetch", fetchMock);
 
-    await expect(request("/invoices")).resolves.toEqual({ data: "ok" });
-    expect(fetchMock.mock.calls.map(urlOf)).toEqual(["/invoices", "/invoices"]);
-    expect(authHeader(fetchMock.mock.calls[1])).toBe("Bearer nuevo");
+      await expect(tab.request("/invoices")).resolves.toEqual({ data: "ok" });
+
+      expect(fetchMock.mock.calls.map(urlOf)).toEqual(["/invoices", "/invoices"]);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
-  it("si el reintento vuelve a dar 401 no hay bucle: borra el token y avisa al manejador", async () => {
-    setAccessToken("viejo");
-    const fetchMock = vi.fn((url: string) => Promise.resolve(url.endsWith("/auth/refresh") ? session("nuevo") : unauthorized()));
-    vi.stubGlobal("fetch", fetchMock);
-    const handler = vi.fn();
-    setUnauthorizedHandler(handler);
-
-    await expect(request("/invoices")).rejects.toMatchObject({ status: 401 });
-
-    expect(fetchMock.mock.calls.map(urlOf)).toEqual(["/invoices", "/auth/refresh", "/invoices"]);
-    expect(getAccessToken()).toBeNull();
-    expect(handler).toHaveBeenCalledOnce();
-  });
-
-  it("si el refresh responde 401: borra el token, avisa al manejador y lanza el 401 original", async () => {
-    setAccessToken("viejo");
-    const fetchMock = vi.fn(() => Promise.resolve(unauthorized()));
+  it("si el reintento vuelve a dar 401 no hay bucle: avisa al manejador", async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(unauthorized()).mockResolvedValueOnce(session()).mockResolvedValueOnce(unauthorized());
     vi.stubGlobal("fetch", fetchMock);
     const handler = vi.fn();
     setUnauthorizedHandler(handler);
 
     await expect(request("/invoices")).rejects.toMatchObject({ status: 401, code: "UNAUTHENTICATED" });
 
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(handler).toHaveBeenCalledOnce();
+  });
+
+  it("si el refresh responde 401: avisa al manejador y lanza el 401 original", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(unauthorized());
+    vi.stubGlobal("fetch", fetchMock);
+    const handler = vi.fn();
+    setUnauthorizedHandler(handler);
+
+    await expect(request("/invoices")).rejects.toMatchObject({ status: 401 });
+
     expect(fetchMock.mock.calls.map(urlOf)).toEqual(["/invoices", "/auth/refresh"]);
-    expect(getAccessToken()).toBeNull();
     expect(handler).toHaveBeenCalledOnce();
   });
 
   it("un fallo de red en el refresh no cierra la sesión: se propaga el error", async () => {
-    setAccessToken("viejo");
-    const fetchMock = vi.fn().mockResolvedValueOnce(unauthorized()).mockRejectedValueOnce(new TypeError("Failed to fetch"));
-    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(unauthorized()).mockRejectedValueOnce(new TypeError("Failed to fetch")));
     const handler = vi.fn();
     setUnauthorizedHandler(handler);
 
     await expect(request("/invoices")).rejects.toMatchObject({ code: "NETWORK_ERROR" });
 
-    expect(getAccessToken()).toBe("viejo");
     expect(handler).not.toHaveBeenCalled();
   });
 
@@ -258,17 +233,17 @@ describe("request: sesión con JWT", () => {
     await expect(request("/invoices")).rejects.toMatchObject({ status: 401 });
   });
 
-  it("refreshSession guarda el token nuevo y devuelve el usuario con su rol", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(session("t2")));
-    await expect(refreshSession()).resolves.toEqual({ token: "t2", user: { id: 1, email: "a@b.co", role: "USER" } });
-    expect(getAccessToken()).toBe("t2");
+  it("refreshSession devuelve el usuario con su rol y marca la renovación", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(session()));
+    await expect(refreshSession()).resolves.toEqual({ user: USER });
+    expect(lastRefreshAt()).toBeGreaterThan(0);
   });
 });
 
 describe("refresh entre pestañas (Web Locks)", () => {
   const unauthorized = () => json({ error: { code: "UNAUTHENTICATED", message: "Inicia sesión" } }, 401);
-  const session = (token: string) => json({ data: { token, user: { id: 1, email: "a@b.co", role: "USER" } } });
-  const urlOf = (call: unknown) => (call as [string])[0].replace("http://localhost:4000/api/v1", "");
+  const session = () => json({ data: { user: { id: 1, email: "a@b.co", role: "USER" } } });
+  const urlOf = (call: unknown) => (call as [string])[0].replace("/api/v1", "");
 
   /** Lock exclusivo FIFO, como `navigator.locks.request(name, cb)` con el mismo nombre. */
   function installFakeLocks() {
@@ -284,10 +259,12 @@ describe("refresh entre pestañas (Web Locks)", () => {
 
   afterEach(() => {
     setUnauthorizedHandler(undefined);
+    vi.useRealTimers();
     vi.resetModules();
   });
 
-  it("dos pestañas con 401 a la vez hacen UN solo refresh y la segunda reutiliza el token nuevo", async () => {
+  it("dos pestañas con 401 a la vez hacen UN solo refresh y la segunda reutiliza la renovación", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
     const lock = installFakeLocks();
     // Dos instancias del módulo = dos pestañas (cada una con su single-flight), con el localStorage compartido.
     vi.resetModules();
@@ -295,16 +272,17 @@ describe("refresh entre pestañas (Web Locks)", () => {
     vi.resetModules();
     const tabB = await import("./apiClient");
     expect(tabA.request).not.toBe(tabB.request);
-    window.localStorage.setItem("accessToken", "viejo");
+    vi.setSystemTime(1_000);
 
-    const fetchMock = vi.fn(async (url: string, init: RequestInit) => {
+    let refreshed = false;
+    const fetchMock = vi.fn(async (url: string) => {
       if (url.endsWith("/auth/refresh")) {
         await Promise.resolve();
-        window.localStorage.setItem("accessToken", "nuevo"); // el token lo guarda la pestaña que renueva
-        return session("nuevo");
+        vi.setSystemTime(2_000); // el instante lo guarda en localStorage la pestaña que renueva
+        refreshed = true;
+        return session();
       }
-      const bearer = (init.headers as Record<string, string>).Authorization;
-      return bearer === "Bearer nuevo" ? json({ data: url }) : unauthorized();
+      return refreshed ? json({ data: url }) : unauthorized();
     });
     vi.stubGlobal("fetch", fetchMock);
 
@@ -313,12 +291,11 @@ describe("refresh entre pestañas (Web Locks)", () => {
     expect(results).toHaveLength(2);
     expect(fetchMock.mock.calls.filter((c) => urlOf(c) === "/auth/refresh")).toHaveLength(1);
     expect(lock).toHaveBeenCalledWith("refresh", expect.any(Function));
-    expect(window.localStorage.getItem("accessToken")).toBe("nuevo");
+    expect(Number(window.localStorage.getItem("refreshedAt"))).toBe(2_000);
   });
 
   it("dentro del lock, si el refresh falla por red no cierra la sesión y libera el lock", async () => {
     installFakeLocks();
-    setAccessToken("viejo");
     const handler = vi.fn();
     setUnauthorizedHandler(handler);
     vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(unauthorized()).mockRejectedValueOnce(new TypeError("x")));
@@ -326,20 +303,14 @@ describe("refresh entre pestañas (Web Locks)", () => {
     await expect(request("/invoices")).rejects.toMatchObject({ code: "NETWORK_ERROR" });
 
     expect(handler).not.toHaveBeenCalled();
-    expect(getAccessToken()).toBe("viejo");
     // El lock quedó libre: un nuevo intento puede renovar.
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(session("t2")));
-    await expect(refreshSession()).resolves.toMatchObject({ token: "t2" });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(session()));
+    await expect(refreshSession()).resolves.toMatchObject({ user: { id: 1 } });
   });
 
   it("sin Locks API (navigator.locks ausente) el refresh sigue funcionando", async () => {
     vi.stubGlobal("navigator", { ...window.navigator, locks: undefined });
-    setAccessToken("viejo");
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(unauthorized())
-      .mockResolvedValueOnce(session("nuevo"))
-      .mockResolvedValueOnce(json({ data: "ok" }));
+    const fetchMock = vi.fn().mockResolvedValueOnce(unauthorized()).mockResolvedValueOnce(session()).mockResolvedValueOnce(json({ data: "ok" }));
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(request("/invoices")).resolves.toEqual({ data: "ok" });
@@ -347,45 +318,38 @@ describe("refresh entre pestañas (Web Locks)", () => {
   });
 });
 
-describe("tokenStorage", () => {
-  afterEach(() => vi.restoreAllMocks());
+describe("sessionFlags", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    clearLoggedOutLocally();
+  });
 
-  it("guarda y borra el token en localStorage", () => {
-    setAccessToken("abc");
-    expect(window.localStorage.getItem("accessToken")).toBe("abc");
-    clearAccessToken();
+  it("la marca loggedOut se guarda y se borra en localStorage", () => {
+    markLoggedOutLocally();
+    expect(window.localStorage.getItem("loggedOut")).toBe("1");
+    expect(isLoggedOutLocally()).toBe(true);
+    clearLoggedOutLocally();
+    expect(window.localStorage.getItem("loggedOut")).toBeNull();
+    expect(isLoggedOutLocally()).toBe(false);
+  });
+
+  it("purgeLegacyAccessToken borra el access token que guardaban versiones anteriores", () => {
+    window.localStorage.setItem("accessToken", "viejo");
+    purgeLegacyAccessToken();
     expect(window.localStorage.getItem("accessToken")).toBeNull();
-    expect(getAccessToken()).toBeNull();
   });
 
   it("si localStorage no está disponible usa la memoria sin lanzar", () => {
-    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
-      throw new DOMException("denied", "SecurityError");
-    });
-    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
-      throw new DOMException("denied", "SecurityError");
-    });
-    vi.spyOn(Storage.prototype, "removeItem").mockImplementation(() => {
-      throw new DOMException("denied", "SecurityError");
-    });
+    for (const method of ["getItem", "setItem", "removeItem"] as const) {
+      vi.spyOn(Storage.prototype, method).mockImplementation(() => {
+        throw new DOMException("denied", "SecurityError");
+      });
+    }
 
-    expect(() => setAccessToken("mem")).not.toThrow();
-    expect(getAccessToken()).toBe("mem");
-    expect(() => clearAccessToken()).not.toThrow();
-    expect(getAccessToken()).toBeNull();
-  });
-
-  it("request sigue enviando Bearer con el respaldo en memoria", async () => {
-    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
-      throw new Error("denied");
-    });
-    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
-      throw new Error("denied");
-    });
-    setAccessToken("mem");
-    const fetchMock = vi.fn().mockResolvedValue(json({ data: 1 }));
-    vi.stubGlobal("fetch", fetchMock);
-    await request("/invoices");
-    expect(((fetchMock.mock.calls[0] as [string, RequestInit])[1].headers as Record<string, string>).Authorization).toBe("Bearer mem");
+    expect(() => markLoggedOutLocally()).not.toThrow();
+    expect(isLoggedOutLocally()).toBe(true);
+    expect(() => clearLoggedOutLocally()).not.toThrow();
+    expect(isLoggedOutLocally()).toBe(false);
+    expect(() => purgeLegacyAccessToken()).not.toThrow();
   });
 });

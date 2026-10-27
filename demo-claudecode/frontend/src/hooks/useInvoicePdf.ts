@@ -6,7 +6,7 @@ import { errorMessage } from "@/utils/apiErrors";
 const REVOKE_AFTER_MS = 60_000;
 
 /**
- * Abre el PDF de una factura en una pestaña nueva. El PDF se descarga con `Authorization: Bearer` (un enlace directo
+ * Abre el PDF de una factura en una pestaña nueva. El PDF se descarga con las cookies de sesión (un enlace directo
  * no la enviaría) y se muestra desde un blob. La pestaña se abre en el propio clic, antes de esperar a la red, para
  * que el bloqueador de ventanas emergentes no la impida.
  */
