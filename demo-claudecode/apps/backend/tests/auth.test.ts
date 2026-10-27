@@ -136,13 +136,6 @@ describe("AuthService", () => {
     expect(h.repo.refreshTokens).toHaveLength(1);
   });
 
-  it("never uses the opaque session table", async () => {
-    const { token, refreshToken } = await h.service.login("ana@example.com", PASSWORD);
-    await h.service.authenticate(token);
-    await h.service.refresh(refreshToken);
-    expect(h.repo.sessions.size).toBe(0);
-  });
-
   describe("authenticate", () => {
     it("rejects missing, junk and expired tokens with 401 (expired has its own message)", async () => {
       const { token } = await h.service.login("ana@example.com", PASSWORD);

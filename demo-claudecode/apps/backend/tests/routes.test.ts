@@ -91,7 +91,6 @@ beforeEach(async () => {
   repo.rows.clear();
   repo.owners.clear();
   auth.users.length = 0;
-  auth.sessions.clear();
   auth.refreshTokens.length = 0;
   bearer = (await signUp("ana@example.com")).token;
 });

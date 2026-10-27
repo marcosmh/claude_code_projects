@@ -21,7 +21,6 @@ const invoice = {
 beforeEach(async () => {
   await db.invoice.deleteMany();
   await db.refreshToken.deleteMany();
-  await db.session.deleteMany();
   await db.user.deleteMany();
 });
 afterAll(() => db.$disconnect());
@@ -47,33 +46,12 @@ describe("PrismaAuthRepository", () => {
     expect(after?.tokenVersion).toBe(1);
   });
 
-  it("stores sessions by token hash and returns the user without the password hash", async () => {
-    const user = await repo.createUser({ email: "ana@example.com", passwordHash: "secret-hash" });
-    const expiresAt = new Date("2026-12-01T00:00:00Z");
-    await repo.createSession({ tokenHash: "abc", userId: user.id, expiresAt });
-    const found = await repo.findSession("abc");
-    expect(found).toEqual({ user: { id: user.id, email: "ana@example.com" }, expiresAt });
-    expect(JSON.stringify(found)).not.toContain("secret-hash");
-    expect(await repo.findSession("missing")).toBeNull();
-    await repo.deleteSession("abc");
-    expect(await repo.findSession("abc")).toBeNull();
-  });
-
-  it("deleteExpiredSessions removes only the expired ones", async () => {
+  it("deleting a user removes their refresh tokens but keeps their invoices, unowned", async () => {
     const user = await repo.createUser({ email: "ana@example.com", passwordHash: "h" });
-    await repo.createSession({ tokenHash: "old", userId: user.id, expiresAt: new Date("2026-01-01") });
-    await repo.createSession({ tokenHash: "new", userId: user.id, expiresAt: new Date("2027-01-01") });
-    expect(await repo.deleteExpiredSessions(new Date("2026-10-10"))).toBe(1);
-    expect(await repo.findSession("old")).toBeNull();
-    expect(await repo.findSession("new")).not.toBeNull();
-  });
-
-  it("deleting a user removes their sessions but keeps their invoices, unowned", async () => {
-    const user = await repo.createUser({ email: "ana@example.com", passwordHash: "h" });
-    await repo.createSession({ tokenHash: "s", userId: user.id, expiresAt: new Date("2027-01-01") });
+    await repo.createRefreshToken({ tokenHash: "s", family: "f", userId: user.id, expiresAt: new Date("2027-01-01") });
     const created = await invoices.createWithNumber(user.id, invoice, (id) => `FAC-${id}`);
     await db.user.delete({ where: { id: user.id } });
-    expect(await db.session.count()).toBe(0);
+    expect(await db.refreshToken.count()).toBe(0);
     expect((await db.invoice.findUnique({ where: { id: created.id } }))?.ownerId).toBeNull();
   });
 
@@ -162,19 +140,6 @@ describe("PrismaAuthRepository", () => {
     await repo.updatePassword(user.id, "new");
     expect(await repo.findUserById(user.id)).toMatchObject({ passwordHash: "new", lockedUntil: null });
     expect(await repo.findUserById(user.id + 999)).toBeNull();
-  });
-
-  it("deleteOtherSessions conserva solo la indicada y solo de ese usuario", async () => {
-    const ana = await repo.createUser({ email: "ana@example.com", passwordHash: "h" });
-    const bea = await repo.createUser({ email: "bea@example.com", passwordHash: "h" });
-    const expiresAt = new Date("2027-01-01");
-    for (const [tokenHash, userId] of [["a1", ana.id], ["a2", ana.id], ["a3", ana.id], ["b1", bea.id]] as const) {
-      await repo.createSession({ tokenHash, userId, expiresAt });
-    }
-    expect(await repo.deleteOtherSessions(ana.id, "a2")).toBe(2);
-    expect(await repo.findSession("a2")).not.toBeNull();
-    expect(await repo.findSession("a1")).toBeNull();
-    expect(await repo.findSession("b1")).not.toBeNull();
   });
 
   it("claimOrphanInvoices assigns only unowned invoices", async () => {

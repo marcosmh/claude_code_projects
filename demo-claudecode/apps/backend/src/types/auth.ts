@@ -12,17 +12,6 @@ export interface UserRecord extends AuthIdentity {
   passwordHash: string;
 }
 
-export interface SessionRecord {
-  user: { id: number; email: string };
-  expiresAt: Date;
-}
-
-export interface CreateSessionInput {
-  tokenHash: string;
-  userId: number;
-  expiresAt: Date;
-}
-
 export interface RefreshTokenRecord {
   id: number;
   /** SHA-256 of the refresh token's jti. */

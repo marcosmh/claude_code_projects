@@ -2,9 +2,7 @@ import { Prisma, type PrismaClient } from "../generated/prisma/client";
 import type {
   AuthIdentity,
   CreateRefreshTokenInput,
-  CreateSessionInput,
   RefreshTokenRecord,
-  SessionRecord,
   UserRecord,
   UserRole,
 } from "../types";
@@ -104,37 +102,11 @@ export class PrismaAuthRepository implements AuthRepository {
     return count > 0;
   }
 
-  async deleteOtherSessions(userId: number, keepTokenHash: string): Promise<number> {
-    const { count } = await this.db.session.deleteMany({ where: { userId, tokenHash: { not: keepTokenHash } } });
-    return count;
-  }
-
   async claimOrphanInvoices(userId: number): Promise<number> {
     const { count } = await this.db.invoice.updateMany({
       where: { ownerId: null },
       data: { ownerId: userId },
     });
-    return count;
-  }
-
-  async createSession(input: CreateSessionInput): Promise<void> {
-    await this.db.session.create({ data: input });
-  }
-
-  async findSession(tokenHash: string): Promise<SessionRecord | null> {
-    const row = await this.db.session.findUnique({
-      where: { tokenHash },
-      select: { expiresAt: true, user: { select: { id: true, email: true } } },
-    });
-    return row ? { user: row.user, expiresAt: row.expiresAt } : null;
-  }
-
-  async deleteSession(tokenHash: string): Promise<void> {
-    await this.db.session.deleteMany({ where: { tokenHash } });
-  }
-
-  async deleteExpiredSessions(now: Date): Promise<number> {
-    const { count } = await this.db.session.deleteMany({ where: { expiresAt: { lt: now } } });
     return count;
   }
 

@@ -1,19 +1,77 @@
 #!/usr/bin/env bash
-# Stops the processes started by scripts/start_apps (kills each whole process group).
+# Stops what scripts/start_apps started. Each app is the leader of its own process group, so signalling the group stops
+# npm, the dev server and its workers together. Exits 1 if a port is still taken afterwards, so a failure is never silent.
 set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 RUN="$ROOT/scripts/.run"
+declare -A PORT=([backend]=4000 [frontend]=5173)
 
+alive() { kill -0 "$1" 2>/dev/null; }
+group_alive() { kill -0 -- "-$1" 2>/dev/null; }
+listening() { ss -ltn | awk -v p=":$1" '$4 ~ p"$" { found = 1 } END { exit !found }'; }
+pgid_of() { ps -o pgid= -p "$1" 2>/dev/null | tr -d ' '; }
+sid_of() { ps -o sid= -p "$1" 2>/dev/null | tr -d ' '; }
+
+# PID listening on $1 whose working directory is inside this project: never touch someone else's process.
+project_listener() {
+  local pid
+  for pid in $(ss -ltnp "sport = :$1" 2>/dev/null | grep -o 'pid=[0-9]*' | cut -d= -f2 | sort -u); do
+    [[ "$(readlink "/proc/$pid/cwd" 2>/dev/null)" == "$ROOT"* ]] && { echo "$pid"; return; }
+  done
+}
+
+# TERM first, KILL if it is still there after ~5 s. $1 = target for kill (PID, or -PGID for a whole group).
+terminate() {
+  local target=$1 check=alive
+  [[ $target == -* ]] && { check=group_alive; }
+  kill -TERM -- "$target" 2>/dev/null
+  for _ in $(seq 1 20); do "$check" "${target#-}" || return 0; sleep 0.25; done
+  kill -KILL -- "$target" 2>/dev/null
+  for _ in $(seq 1 20); do "$check" "${target#-}" || return 0; sleep 0.25; done
+}
+
+# The kernel can take a moment to release the port after the process is gone: give it up to ~5 s before calling it busy.
+wait_port_free() {
+  for _ in $(seq 1 20); do listening "$1" || return 0; sleep 0.25; done
+  return 1
+}
+
+my_pgid=$(pgid_of $$)
+status=0
 for name in backend frontend; do
+  port=${PORT[$name]}
   pidfile="$RUN/$name.pid"
-  if [[ ! -f "$pidfile" ]]; then echo "$name: no iniciado con start_apps"; continue; fi
-  pid=$(cat "$pidfile")
-  if kill -0 "$pid" 2>/dev/null; then
-    kill -- "-$pid" 2>/dev/null || kill "$pid" 2>/dev/null
-    for _ in $(seq 1 20); do kill -0 "$pid" 2>/dev/null || break; sleep 0.25; done
-    kill -0 "$pid" 2>/dev/null && { kill -9 -- "-$pid" 2>/dev/null; echo "$name forzado (SIGKILL)"; } || echo "$name detenido"
-  else
-    echo "$name: el proceso $pid ya no existía"
+  target=""
+
+  if [[ -f "$pidfile" ]] && alive "$(cat "$pidfile")"; then
+    pgid=$(pgid_of "$(cat "$pidfile")")
+    [[ -n "$pgid" && "$pgid" != "$my_pgid" ]] && target="-$pgid"
   fi
+
+  # Stale or missing pidfile (e.g. apps started by an older script): fall back to the project process holding the port.
+  if [[ -z "$target" ]] && listening "$port"; then
+    pid=$(project_listener "$port")
+    if [[ -n "$pid" ]]; then
+      pgid=$(pgid_of "$pid")
+      # Only take the whole group when it is a session of its own; otherwise stop just that process.
+      if [[ "$pgid" == "$(sid_of "$pid")" && "$pgid" != "$my_pgid" ]]; then target="-$pgid"; else target="$pid"; fi
+    fi
+  fi
+
+  [[ -n "$target" ]] && terminate "$target"
   rm -f "$pidfile"
+
+  if ! wait_port_free "$port"; then
+    if [[ -z "$target" ]]; then
+      echo "ERROR: $name: el puerto $port lo ocupa un proceso ajeno a este proyecto; no se toca" >&2
+    else
+      echo "ERROR: $name: el puerto $port sigue ocupado" >&2
+    fi
+    status=1
+  elif [[ -n "$target" ]]; then
+    echo "$name detenido"
+  else
+    echo "$name: no estaba en ejecución"
+  fi
 done
+exit $status

@@ -2,9 +2,7 @@ import type { AuthRepository } from "../../src/repositories/AuthRepository";
 import type {
   AuthIdentity,
   CreateRefreshTokenInput,
-  CreateSessionInput,
   RefreshTokenRecord,
-  SessionRecord,
   UserRecord,
   UserRole,
 } from "../../src/types";
@@ -14,7 +12,6 @@ export class FakeAuthRepository implements AuthRepository {
   readonly users: UserRecord[] = [];
   /** user id -> consecutive failed logins */
   readonly failures = new Map<number, number>();
-  readonly sessions = new Map<string, { userId: number; expiresAt: Date }>();
   readonly refreshTokens: RefreshTokenRecord[] = [];
   private nextId = 1;
   private nextRefreshId = 1;
@@ -90,42 +87,11 @@ export class FakeAuthRepository implements AuthRepository {
     user.passwordHash = passwordHash;
     return true;
   }
-  async deleteOtherSessions(userId: number, keepTokenHash: string) {
-    let count = 0;
-    for (const [hash, s] of this.sessions) {
-      if (s.userId === userId && hash !== keepTokenHash) {
-        this.sessions.delete(hash);
-        count++;
-      }
-    }
-    return count;
-  }
   async claimOrphanInvoices(userId: number) {
     let count = 0;
     for (const id of this.invoices?.rows.keys() ?? []) {
       if (!this.invoices!.owners.has(id)) {
         this.invoices!.owners.set(id, userId);
-        count++;
-      }
-    }
-    return count;
-  }
-  async createSession({ tokenHash, userId, expiresAt }: CreateSessionInput) {
-    this.sessions.set(tokenHash, { userId, expiresAt });
-  }
-  async findSession(tokenHash: string): Promise<SessionRecord | null> {
-    const session = this.sessions.get(tokenHash);
-    const user = this.users.find((u) => u.id === session?.userId);
-    return session && user ? { user: { id: user.id, email: user.email }, expiresAt: session.expiresAt } : null;
-  }
-  async deleteSession(tokenHash: string) {
-    this.sessions.delete(tokenHash);
-  }
-  async deleteExpiredSessions(now: Date) {
-    let count = 0;
-    for (const [hash, s] of this.sessions) {
-      if (s.expiresAt < now) {
-        this.sessions.delete(hash);
         count++;
       }
     }

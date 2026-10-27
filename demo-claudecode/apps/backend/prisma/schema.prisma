@@ -21,22 +21,8 @@ model User {
   // Embedded in access tokens (`ver`); bumping it invalidates every live access token of the user
   tokenVersion  Int            @default(0)
   createdAt     DateTime       @default(now())
-  sessions      Session[]
   refreshTokens RefreshToken[]
   invoices      Invoice[]
-}
-
-model Session {
-  id        Int      @id @default(autoincrement())
-  // SHA-256 of the opaque token held in the httpOnly cookie; the raw token is never stored
-  tokenHash String   @unique
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-
-  @@index([userId])
-  @@index([expiresAt])
 }
 
 model RefreshToken {
@@ -54,8 +40,9 @@ model RefreshToken {
   replacedBy Int?
   createdAt  DateTime  @default(now())
 
-  @@index([userId])
-  @@index([family])
+  // Matches the queries: family liveness / revocation, per-user revocation, purge of expired rows
+  @@index([family, revokedAt, expiresAt])
+  @@index([userId, revokedAt])
   @@index([expiresAt])
 }
 
@@ -78,10 +65,10 @@ model Invoice {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
-  @@index([ownerId])
-  @@index([status])
-  @@index([dueDate])
-  @@index([issueDate])
+  // Every query filters by owner first: list order (issueDate desc, id desc), status filter and stats window.
+  // `dueDate` is never queried (overdue is computed in memory), so it has no index.
+  @@index([ownerId, issueDate(sort: Desc), id(sort: Desc)])
+  @@index([ownerId, status])
 }
 
 model InvoiceItem {

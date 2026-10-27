@@ -1,9 +1,7 @@
 import type {
   AuthIdentity,
   CreateRefreshTokenInput,
-  CreateSessionInput,
   RefreshTokenRecord,
-  SessionRecord,
   UserRecord,
   UserRole,
 } from "../types";
@@ -46,16 +44,8 @@ export interface AuthRepository {
    * hash is still `expectedHash`. Touches nothing else (tokenVersion, locks, tokens). Returns whether it wrote.
    */
   updatePasswordHash(userId: number, passwordHash: string, expectedHash: string): Promise<boolean>;
-  /** Revokes every session of the user except the one with `keepTokenHash`. Returns how many. */
-  deleteOtherSessions(userId: number, keepTokenHash: string): Promise<number>;
   /** Assigns every invoice without an owner (created before authentication) to `userId`. Returns how many. */
   claimOrphanInvoices(userId: number): Promise<number>;
-  createSession(input: CreateSessionInput): Promise<void>;
-  /** Looks the session up by the hash of its token. Expiry is the caller's decision. */
-  findSession(tokenHash: string): Promise<SessionRecord | null>;
-  deleteSession(tokenHash: string): Promise<void>;
-  /** Removes sessions that expired before `now`. Returns how many. */
-  deleteExpiredSessions(now: Date): Promise<number>;
 
   /** Stores a refresh token (by the hash of its jti). */
   createRefreshToken(input: CreateRefreshTokenInput): Promise<RefreshTokenRecord>;

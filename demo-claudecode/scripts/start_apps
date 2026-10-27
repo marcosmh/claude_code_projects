@@ -1,26 +1,40 @@
 #!/usr/bin/env bash
 # Starts backend (http://localhost:4000) and frontend (http://localhost:5173) in the background.
-# Logs and PIDs live in scripts/.run/. Stop with scripts/stop_apps.
+# Each app runs as the leader of its own session, so scripts/stop_apps can stop npm, the dev server and its workers
+# together by signalling that group. Logs and PIDs live in scripts/.run/. Stop with scripts/stop_apps.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 RUN="$ROOT/scripts/.run"
 mkdir -p "$RUN"
 
+alive() { kill -0 "$1" 2>/dev/null; }
+listening() { ss -ltn | awk -v p=":$1" '$4 ~ p"$" { found = 1 } END { exit !found }'; }
+
 start() { # name dir port command...
   local name=$1 dir=$2 port=$3; shift 3
-  if [[ -f "$RUN/$name.pid" ]] && kill -0 "$(cat "$RUN/$name.pid")" 2>/dev/null; then
-    echo "$name ya está en ejecución (PID $(cat "$RUN/$name.pid"))"; return
+  local pidfile="$RUN/$name.pid"
+  if [[ -f "$pidfile" ]] && alive "$(cat "$pidfile")"; then
+    echo "$name ya está en ejecución (PID $(cat "$pidfile"))"; return
   fi
-  if ss -ltn | grep -qE ":$port\b"; then
+  rm -f "$pidfile"
+  if listening "$port"; then
     echo "ERROR: el puerto $port ya está en uso; $name no se inició" >&2; return 1
   fi
-  (cd "$ROOT/$dir" && setsid nohup "$@" >"$RUN/$name.log" 2>&1 & echo $! >"$RUN/$name.pid")
+  # The PID is written by the process that BECOMES the session leader (`$$` survives the exec). `$!` would be wrong:
+  # setsid may fork, and `$!` is then the short-lived parent, not the process whose group stop_apps must signal.
+  # Only `setsid` goes to the background (`cd` first, with `;`): `cd … && setsid … &` would background the whole list
+  # as a subshell that lingers waiting for the server and keeps this script's stdout open, so `start_apps | tail` hangs.
+  (cd "$ROOT/$dir"; setsid bash -c 'echo $$ >"$1"; shift; exec "$@"' _ "$pidfile" nohup "$@" \
+    >"$RUN/$name.log" 2>&1 </dev/null &)
   for _ in $(seq 1 40); do
-    ss -ltn | grep -qE ":$port\b" && { echo "$name listo en http://localhost:$port (PID $(cat "$RUN/$name.pid"))"; return; }
+    listening "$port" && { echo "$name listo en http://localhost:$port (PID $(cat "$pidfile"))"; return; }
+    if [[ -f "$pidfile" ]] && ! alive "$(cat "$pidfile")"; then break; fi
     sleep 0.5
   done
   echo "ERROR: $name no abrió el puerto $port; revisa $RUN/$name.log" >&2; return 1
 }
 
-start backend apps/backend 4000 npx next dev -p 4000
-start frontend apps/frontend 5173 npx vite --port 5173 --strictPort
+status=0
+start backend apps/backend 4000 npx next dev -p 4000 || status=1
+start frontend apps/frontend 5173 npx vite --port 5173 --strictPort || status=1
+exit $status
