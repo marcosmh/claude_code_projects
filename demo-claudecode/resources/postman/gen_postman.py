@@ -353,9 +353,9 @@ collection = {
         "name": "API de Facturas v1",
         "_postman_id": "6f1d3c64-2b1e-4a53-9f4c-5a1b7e0c9d21",
         "description": (
-            "Colección de la API REST de facturas (`backend/`, contrato en `backend/docs/api.md`).\n\n"
+            "Colección de la API REST de facturas (`apps/backend/`, contrato en `apps/backend/docs/api.md`).\n\n"
             "**Uso rápido**\n"
-            "1. Arranca el backend (`npm run dev` en `backend/`, puerto 4000) y crea un usuario con `npm run user:create -- tu@correo.com`.\n"
+            "1. Arranca el backend (`npm run dev` en `apps/backend/`, puerto 4000) y crea un usuario con `npm run user:create -- tu@correo.com`.\n"
             "2. En la pestaña *Variables* de la colección pon `email` y `password` (la contraseña no se versiona).\n"
             "3. Ejecuta **Auth → Login**: guarda `{{token}}` y la cookie `refresh`. Después puedes lanzar la colección completa con el Runner (el orden importa: Crear factura guarda `{{id}}`).\n\n"
             "**Notas**\n"

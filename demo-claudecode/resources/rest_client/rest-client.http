@@ -1,10 +1,10 @@
 ###############################################################################
 # API de Facturas v1: colección para la extensión "REST Client" de VS Code
-# (humao.rest-client). Contrato: backend/docs/api.md
+# (humao.rest-client). Contrato: apps/backend/docs/api.md
 #
 # USO RÁPIDO
-#   1. Arranca el backend (npm run dev en backend/, puerto 4000) y crea un usuario:
-#        cd backend && npm run user:create -- tu@correo.com
+#   1. Arranca el backend (npm run dev en apps/backend/, puerto 4000) y crea un usuario:
+#        cd apps/backend && npm run user:create -- tu@correo.com
 #   2. Pon tu email y contraseña en @email y @password (más abajo). No subas
 #      credenciales reales al repositorio: usa un usuario de pruebas.
 #   3. Ejecuta "Login" (Send Request sobre la línea de la petición). Guarda el
