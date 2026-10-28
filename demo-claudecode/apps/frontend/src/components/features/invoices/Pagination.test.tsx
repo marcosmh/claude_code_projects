@@ -22,14 +22,26 @@ describe("Pagination", () => {
     expect(onPageChange).toHaveBeenLastCalledWith(1);
   });
 
+  it("salta a la primera y a la última página", async () => {
+    const onPageChange = vi.fn();
+    render(<Pagination meta={meta(2, 5)} onPageChange={onPageChange} />);
+
+    await userEvent.click(screen.getByRole("button", { name: "Última" }));
+    expect(onPageChange).toHaveBeenCalledWith(5);
+    await userEvent.click(screen.getByRole("button", { name: "Primera" }));
+    expect(onPageChange).toHaveBeenLastCalledWith(1);
+  });
+
   it("deshabilita Anterior en la primera página", () => {
     render(<Pagination meta={meta(1, 3)} onPageChange={vi.fn()} />);
+    expect(screen.getByRole("button", { name: "Primera" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Anterior" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Siguiente" })).toBeEnabled();
   });
 
   it("deshabilita Siguiente en la última página", () => {
     render(<Pagination meta={meta(3, 3)} onPageChange={vi.fn()} />);
+    expect(screen.getByRole("button", { name: "Última" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Siguiente" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Anterior" })).toBeEnabled();
   });

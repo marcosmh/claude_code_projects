@@ -9,6 +9,9 @@ export function Pagination({ meta, onPageChange }: { meta: PageMeta; onPageChang
         Página {meta.page} de {meta.totalPages} ({meta.total} facturas)
       </p>
       <div className="flex gap-2">
+        <button type="button" className={button("secondary", "sm")} disabled={meta.page <= 1} onClick={() => onPageChange(1)}>
+          Primera
+        </button>
         <button type="button" className={button("secondary", "sm")} disabled={meta.page <= 1} onClick={() => onPageChange(meta.page - 1)}>
           Anterior
         </button>
@@ -19,6 +22,14 @@ export function Pagination({ meta, onPageChange }: { meta: PageMeta; onPageChang
           onClick={() => onPageChange(meta.page + 1)}
         >
           Siguiente
+        </button>
+        <button
+          type="button"
+          className={button("secondary", "sm")}
+          disabled={meta.page >= meta.totalPages}
+          onClick={() => onPageChange(meta.totalPages)}
+        >
+          Última
         </button>
       </div>
     </nav>
