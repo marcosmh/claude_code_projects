@@ -5,7 +5,7 @@ import type {
   StatusBucket,
 } from "../dto/invoice.dto";
 import type { InvoiceRepository } from "../repositories/InvoiceRepository";
-import type { InvoiceStatus } from "../types";
+import type { Currency, InvoiceStatus } from "../types";
 
 const monthKey = (d: Date) =>
   `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
@@ -16,8 +16,8 @@ export class StatsService {
     private readonly now: () => Date = () => new Date(),
   ) {}
 
-  async summary(ownerId: number): Promise<StatsSummaryResponse> {
-    const invoices = await this.repository.findStatsRows(ownerId);
+  async summary(ownerId: number, currency?: Currency): Promise<StatsSummaryResponse> {
+    const invoices = await this.repository.findStatsRows(ownerId, { currency });
     const now = this.now();
     const byStatus = Object.fromEntries(
       STATUSES.map((s) => [s, { count: 0, totalCents: 0 }]),
@@ -42,8 +42,8 @@ export class StatsService {
     return { byStatus, overdue, totalCount };
   }
 
-  /** Totals per issue month and status for the last `months` months (current month included). */
-  async monthly(ownerId: number, months: number): Promise<MonthBucketResponse[]> {
+  /** Totals (in `currency` only) per issue month and status for the last `months` months (current month included). */
+  async monthly(ownerId: number, months: number, currency?: Currency): Promise<MonthBucketResponse[]> {
     const now = this.now();
     const short = new Intl.DateTimeFormat("es-ES", { month: "short", timeZone: "UTC" });
     const long = new Intl.DateTimeFormat("es-ES", {
@@ -65,7 +65,7 @@ export class StatsService {
 
     // Only load what can land in a bucket: invoices issued since the first month.
     const issuedFrom = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (months - 1), 1));
-    const invoices = await this.repository.findStatsRows(ownerId, { issuedFrom });
+    const invoices = await this.repository.findStatsRows(ownerId, { issuedFrom, currency });
 
     for (const invoice of invoices) {
       if (!isInvoiceStatus(invoice.status)) continue;

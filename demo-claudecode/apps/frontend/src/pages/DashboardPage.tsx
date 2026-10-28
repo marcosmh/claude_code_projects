@@ -1,9 +1,10 @@
+import { isCurrency } from "@invoices/shared-types";
 import type { ReactNode } from "react";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { ErrorState } from "@/components/common/ErrorState";
 import { PageHeader } from "@/components/common/PageHeader";
 import { Panel } from "@/components/common/Panel";
-import { PageSkeleton, Skeleton } from "@/components/common/Skeleton";
+import { Skeleton } from "@/components/common/Skeleton";
 import { StatCard } from "@/components/common/StatCard";
 import { button } from "@/components/common/ui";
 import { MonthlyColumns } from "@/components/features/dashboard/MonthlyColumns";
@@ -11,7 +12,9 @@ import { StatusBar } from "@/components/features/dashboard/StatusBar";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useMonthlyStats, useStatsSummary } from "@/hooks/useStats";
 import { errorMessage } from "@/utils/apiErrors";
-import { formatMoney, plural } from "@/utils/format";
+import { CURRENCIES, CURRENCY_LABELS, type Currency } from "@/types/invoice";
+import { CURRENCY, formatMoney, plural } from "@/utils/format";
+import { inputClass } from "@/components/features/invoices/form/Field";
 
 const ICONS: Record<"receivable" | "paid" | "draft" | "total", ReactNode> = {
   receivable: (
@@ -40,21 +43,60 @@ const ICONS: Record<"receivable" | "paid" | "draft" | "total", ReactNode> = {
   ),
 };
 
+const DEFAULT_CURRENCY: Currency = isCurrency(CURRENCY) ? CURRENCY : "USD";
+
 export function DashboardPage() {
   useDocumentTitle("Dashboard");
-  const summary = useStatsSummary();
-  const monthly = useMonthlyStats(6);
+  // Los importes nunca se suman entre monedas: el dashboard muestra una moneda a la vez (en la URL).
+  const [params, setParams] = useSearchParams();
+  const requested = params.get("currency");
+  const currency: Currency = requested && isCurrency(requested) ? requested : DEFAULT_CURRENCY;
+  const summary = useStatsSummary(currency);
+  const monthly = useMonthlyStats(6, currency);
 
   const header = (
     <PageHeader title="Dashboard">
-      <Link to="/invoices/new" className={button("primary")}>
-        Nueva factura
-      </Link>
+      <div className="flex items-center gap-3">
+        <label className="flex items-center gap-2 text-sm text-zinc-600">
+          Moneda
+          <select
+            className={`${inputClass} w-auto`}
+            value={currency}
+            onChange={(e) => setParams({ currency: e.target.value }, { replace: true })}
+          >
+            {CURRENCIES.map((c) => (
+              <option key={c} value={c}>
+                {CURRENCY_LABELS[c]}
+              </option>
+            ))}
+          </select>
+        </label>
+        <Link to="/invoices/new" className={button("primary")}>
+          Nueva factura
+        </Link>
+      </div>
     </PageHeader>
   );
 
-  if (summary.isPending) return <PageSkeleton rows={4} />;
-  if (summary.isError) return <ErrorState message={errorMessage(summary.error, "No pudimos leer las estadísticas.")} onRetry={() => void summary.refetch()} />;
+  // El encabezado (y el selector de moneda) se queda visible mientras carga o falla.
+  if (summary.isPending)
+    return (
+      <>
+        {header}
+        <div role="status" aria-label="Cargando" className="space-y-2">
+          {Array.from({ length: 4 }, (_, i) => (
+            <Skeleton key={i} className="h-10 w-full" />
+          ))}
+        </div>
+      </>
+    );
+  if (summary.isError)
+    return (
+      <>
+        {header}
+        <ErrorState message={errorMessage(summary.error, "No pudimos leer las estadísticas.")} onRetry={() => void summary.refetch()} />
+      </>
+    );
 
   const { byStatus, overdue, totalCount } = summary.data;
 
@@ -65,19 +107,19 @@ export function DashboardPage() {
       <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Por cobrar"
-          value={formatMoney(byStatus.SENT.totalCents)}
+          value={formatMoney(byStatus.SENT.totalCents, currency)}
           badge={overdue.count > 0 ? plural(overdue.count, "vencida", "vencidas") : plural(byStatus.SENT.count, "enviada", "enviadas")}
           tone={overdue.count > 0 ? "bad" : "neutral"}
           icon={ICONS.receivable}
         />
         <StatCard
           label="Cobrado"
-          value={formatMoney(byStatus.PAID.totalCents)}
+          value={formatMoney(byStatus.PAID.totalCents, currency)}
           badge={plural(byStatus.PAID.count, "pagada", "pagadas")}
           tone="good"
           icon={ICONS.paid}
         />
-        <StatCard label="Borradores" value={formatMoney(byStatus.DRAFT.totalCents)} badge={String(byStatus.DRAFT.count)} icon={ICONS.draft} />
+        <StatCard label="Borradores" value={formatMoney(byStatus.DRAFT.totalCents, currency)} badge={String(byStatus.DRAFT.count)} icon={ICONS.draft} />
         <StatCard label="Facturas" value={String(totalCount)} icon={ICONS.total} />
       </div>
 
@@ -92,10 +134,10 @@ export function DashboardPage() {
               </button>
             </p>
           )}
-          {monthly.data && <MonthlyColumns months={monthly.data} />}
+          {monthly.data && <MonthlyColumns months={monthly.data} currency={currency} />}
         </Panel>
         <Panel title="Facturas por estado" subtitle="Reparto del total de facturas">
-          <StatusBar summary={byStatus} />
+          <StatusBar summary={byStatus} currency={currency} />
         </Panel>
       </div>
     </>

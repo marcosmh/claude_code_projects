@@ -13,8 +13,10 @@ describe("queryKeys", () => {
   });
 
   it("las claves de estadísticas cuelgan de stats", () => {
-    expect(queryKeys.summary.slice(0, 1)).toEqual(queryKeys.stats);
-    expect(queryKeys.monthly(6)).toEqual(["stats", "monthly", 6]);
-    expect(queryKeys.monthly(3)).not.toEqual(queryKeys.monthly(6));
+    expect(queryKeys.summary("MXN").slice(0, 1)).toEqual(queryKeys.stats);
+    expect(queryKeys.monthly(6, "MXN")).toEqual(["stats", "monthly", 6, "MXN"]);
+    expect(queryKeys.monthly(3, "MXN")).not.toEqual(queryKeys.monthly(6, "MXN"));
+    expect(queryKeys.summary("MXN")).not.toEqual(queryKeys.summary("EUR"));
+    expect(queryKeys.summary()).toEqual(["stats", "summary", "all"]);
   });
 });

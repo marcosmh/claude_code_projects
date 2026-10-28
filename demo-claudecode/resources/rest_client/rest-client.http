@@ -243,6 +243,10 @@ Authorization: Bearer {{token}}
 # "overdue" es un subconjunto de SENT (enviadas con vencimiento pasado); los
 # importes incluyen impuestos.
 #
+# Query: currency = MXN | USD | EUR (opcional). Con ella solo cuentan facturas de esa
+# moneda y meta devuelve { "currency": "MXN" }; sin ella cuentan todas y los importes
+# mezclan monedas (no usarlos). Nunca se suman monedas distintas.
+#
 # ESPERADO  200 OK
 #   { "data": { "byStatus": { "DRAFT": { "count": 4, "totalCents": 8304800 },
 #                             "SENT":  { "count": 9, "totalCents": 20874200 },
@@ -252,20 +256,23 @@ Authorization: Bearer {{token}}
 #   Comprueba: totalCount == DRAFT.count + SENT.count + PAID.count y
 #   overdue.count <= SENT.count
 GET {{baseUrl}}/stats/summary
+    ?currency=MXN
 Authorization: Bearer {{token}}
 
 
 ### Totales mensuales
-# Query: months = entero 1 a 24 (por defecto 6). Orden cronológico; los meses
+# Query: months = entero 1 a 24 (por defecto 6); currency = MXN | USD | EUR (opcional,
+# solo suma facturas de esa moneda). Orden cronológico; los meses
 # sin datos van en 0.
 #
 # ESPERADO  200 OK
 #   { "data": [ { "key": "2026-09", "label": "sept", "title": "septiembre de 2026",
 #                 "totalsCents": { "DRAFT": 1392000, "SENT": 7070200, "PAID": 1879200 } } ],
-#     "meta": { "months": 6 } }
+#     "meta": { "months": 6, "currency": "MXN" } }
 #   Comprueba: data.length == months y meta.months == data.length
 GET {{baseUrl}}/stats/monthly
     ?months=6
+    &currency=MXN
 Authorization: Bearer {{token}}
 
 

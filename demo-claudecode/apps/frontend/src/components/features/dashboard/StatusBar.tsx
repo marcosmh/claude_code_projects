@@ -4,7 +4,7 @@ import { formatMoney } from "@/utils/format";
 import { STATUS_COLOR, STATUS_LABELS, STATUSES } from "@/utils/status";
 import { DataTable } from "./DataTable";
 
-export function StatusBar({ summary }: { summary: StatsSummary["byStatus"] }) {
+export function StatusBar({ summary, currency }: { summary: StatsSummary["byStatus"]; currency?: string }) {
   const [active, setActive] = useState<number | null>(null);
   const total = STATUSES.reduce((n, s) => n + summary[s].count, 0);
   const pct = (n: number) => (total ? Math.round((n / total) * 100) : 0);
@@ -41,7 +41,7 @@ export function StatusBar({ summary }: { summary: StatsSummary["byStatus"] }) {
           <div className="pointer-events-none absolute -top-14 left-0 z-10 rounded-md border border-zinc-300 bg-surface px-3 py-2 text-xs shadow-sm">
             <p className="text-base font-semibold leading-tight tabular-nums">{summary[hovered].count} facturas</p>
             <p className="text-zinc-500">
-              {STATUS_LABELS[hovered]} · {formatMoney(summary[hovered].totalCents)}
+              {STATUS_LABELS[hovered]} · {formatMoney(summary[hovered].totalCents, currency)}
             </p>
           </div>
         )}
@@ -60,7 +60,7 @@ export function StatusBar({ summary }: { summary: StatsSummary["byStatus"] }) {
 
       <DataTable
         columns={["Estado", "Facturas", "Importe"]}
-        rows={STATUSES.map((s) => [STATUS_LABELS[s], summary[s].count, formatMoney(summary[s].totalCents)])}
+        rows={STATUSES.map((s) => [STATUS_LABELS[s], summary[s].count, formatMoney(summary[s].totalCents, currency)])}
       />
     </div>
   );

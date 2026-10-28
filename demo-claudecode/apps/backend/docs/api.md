@@ -233,6 +233,8 @@ Cambio rápido de estado.
 
 ### GET /stats/summary
 
+Query: `currency` (`MXN|USD|EUR`, opcional). Con `currency`, `byStatus`, `overdue` y `totalCount` cuentan solo las facturas de esa moneda y `meta` devuelve `{ "currency": "MXN" }`; los importes de monedas distintas nunca se suman. Sin `currency` cuentan todas las facturas: los conteos son válidos, pero `totalCents` mezcla monedas y no debe mostrarse como importe.
+
 Solo cuenta facturas con un estado válido (DRAFT, SENT, PAID): filas con un valor desconocido en la base de datos se ignoran, por lo que `totalCount` siempre coincide con la suma de `byStatus`.
 
 ```json
@@ -257,7 +259,7 @@ Solo consulta las facturas emitidas desde el primer mes de la ventana (`months`)
 
 Totales por mes de emisión y estado, de los últimos `months` meses (mes actual incluido, orden cronológico, meses sin datos en 0).
 
-Query: `months` (int 1 a 24, por defecto 6).
+Query: `months` (int 1 a 24, por defecto 6) y `currency` (`MXN|USD|EUR`, opcional; con ella solo se suman facturas de esa moneda y `meta` la devuelve; sin ella se mezclan monedas, así que los clientes deben enviarla).
 
 ```json
 {
@@ -269,7 +271,7 @@ Query: `months` (int 1 a 24, por defecto 6).
       "totalsCents": { "DRAFT": 1392000, "SENT": 7070200, "PAID": 1879200 }
     }
   ],
-  "meta": { "months": 3 }
+  "meta": { "months": 3, "currency": "MXN" }
 }
 ```
 

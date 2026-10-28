@@ -1,3 +1,4 @@
+import { currencySchema } from "@invoices/shared-validation";
 import { z } from "zod";
 
 // Request schemas and limits are shared with the frontend; only server-side parsers live here.
@@ -16,7 +17,11 @@ export const idParamSchema = z
   .transform(Number)
   .pipe(z.number().int().safe());
 
+/** With `currency` every aggregate is for that currency; omitted, all invoices count (counts are valid, money totals are not). */
+export const summaryQuerySchema = z.object({ currency: currencySchema.optional() });
+
 export const monthlyQuerySchema = z.object({
+  currency: currencySchema.optional(),
   months: z.coerce
     .number()
     .int("months inválido")

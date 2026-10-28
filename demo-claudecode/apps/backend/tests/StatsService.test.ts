@@ -72,6 +72,27 @@ describe("StatsService: robustez y consultas acotadas", () => {
     expect(repo.statsCalls.at(-1)).toEqual({ issuedFrom: new Date("2026-10-01T00:00:00Z") });
   });
 
+  it("no mezcla monedas: cada agregado cuenta solo la moneda pedida", async () => {
+    const repo = new FakeInvoiceRepository();
+    const service = await setup(repo);
+    await repo.create(U, { ...sampleData({ status: "SENT", currency: "MXN" }), number: "6" });
+    await repo.create(U, { ...sampleData({ status: "PAID", currency: "EUR" }), number: "7" });
+
+    expect((await service.summary(U)).totalCount).toBe(7);
+
+    const usd = await service.summary(U, "USD");
+    expect(usd.totalCount).toBe(5);
+    expect(usd.byStatus.SENT.totalCents).toBe(44000);
+
+    const mxn = await service.summary(U, "MXN");
+    expect(mxn.totalCount).toBe(1);
+    expect(mxn.byStatus.SENT).toEqual({ count: 1, totalCents: 22000 });
+    expect(mxn.byStatus.PAID.count).toBe(0);
+
+    const eur = await service.monthly(U, 2, "EUR");
+    expect(eur[0].totalsCents).toEqual({ DRAFT: 0, SENT: 0, PAID: 22000 });
+  });
+
   it("summary no lleva datos de cliente: usa la proyección mínima", async () => {
     const repo = new FakeInvoiceRepository();
     await (await setup(repo)).summary(U);

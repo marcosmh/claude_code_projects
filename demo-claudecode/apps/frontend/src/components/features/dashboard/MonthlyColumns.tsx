@@ -32,7 +32,7 @@ function roundedTop(x: number, y: number, w: number, h: number) {
   return `M${x},${y + h}V${y + r}Q${x},${y} ${x + r},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h}Z`;
 }
 
-export function MonthlyColumns({ months }: { months: MonthBucket[] }) {
+export function MonthlyColumns({ months, currency }: { months: MonthBucket[]; currency?: string }) {
   const [active, setActive] = useState<number | null>(null);
 
   const monthTotal = (m: MonthBucket) => STACK.reduce((n, s) => n + m.totalsCents[s], 0);
@@ -91,7 +91,7 @@ export function MonthlyColumns({ months }: { months: MonthBucket[] }) {
                   fill="transparent"
                   role="img"
                   tabIndex={0}
-                  aria-label={`${m.title}: ${formatMoney(monthTotal(m))}`}
+                  aria-label={`${m.title}: ${formatMoney(monthTotal(m), currency)}`}
                   onPointerEnter={() => setActive(i)}
                   onPointerLeave={() => setActive(null)}
                   onFocus={() => setActive(i)}
@@ -110,12 +110,12 @@ export function MonthlyColumns({ months }: { months: MonthBucket[] }) {
             style={{ left: `${Math.min(80, Math.max(20, ((M.left + band * active + band / 2) / W) * 100))}%` }}
           >
             <p className="mb-1 capitalize text-zinc-500">{hovered.title}</p>
-            <p className="mb-1.5 text-base font-semibold leading-tight tabular-nums">{formatMoney(monthTotal(hovered))}</p>
+            <p className="mb-1.5 text-base font-semibold leading-tight tabular-nums">{formatMoney(monthTotal(hovered), currency)}</p>
             {STATUSES.map((s) => (
               <p key={s} className="flex items-center gap-2 py-0.5">
                 <span aria-hidden className="h-0.5 w-3 rounded" style={{ background: STATUS_COLOR[s] }} />
                 <span className="text-zinc-500">{STATUS_LABELS[s]}</span>
-                <span className="ml-auto font-medium tabular-nums">{formatMoney(hovered.totalsCents[s])}</span>
+                <span className="ml-auto font-medium tabular-nums">{formatMoney(hovered.totalsCents[s], currency)}</span>
               </p>
             ))}
           </div>
@@ -137,8 +137,8 @@ export function MonthlyColumns({ months }: { months: MonthBucket[] }) {
         columns={["Mes", ...STATUSES.map((s) => STATUS_LABELS[s]), "Total"]}
         rows={months.map((m) => [
           m.title,
-          ...STATUSES.map((s) => formatMoney(m.totalsCents[s])),
-          formatMoney(monthTotal(m)),
+          ...STATUSES.map((s) => formatMoney(m.totalsCents[s], currency)),
+          formatMoney(monthTotal(m), currency),
         ])}
       />
     </div>

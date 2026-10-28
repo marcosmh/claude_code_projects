@@ -81,6 +81,8 @@ export interface InvoiceStatsRow {
 export interface StatsRowsOptions {
   /** Only invoices issued on or after this instant. */
   issuedFrom?: Date;
+  /** Only invoices in this currency: amounts of different currencies are never added together. */
+  currency?: Currency;
 }
 
 export interface PaginatedInvoices {

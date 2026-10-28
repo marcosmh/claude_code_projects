@@ -25,10 +25,10 @@ const months: MonthBucket[] = [
   { key: "2026-10", label: "oct", title: "octubre de 2026", totalsCents: { DRAFT: 0, SENT: 100, PAID: 0 } },
 ];
 
-function renderPage() {
+function renderPage(url = "/") {
   render(
     <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={[url]}>
         <DashboardPage />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -51,7 +51,7 @@ describe("DashboardPage", () => {
     renderPage();
 
     expect(await screen.findByRole("heading", { name: "Dashboard" })).toBeInTheDocument();
-    expect(screen.getByText("Por cobrar").nextElementSibling).toHaveTextContent("3000,00");
+    expect((await screen.findByText("Por cobrar")).nextElementSibling).toHaveTextContent("3000,00");
     expect(screen.getByText("3 enviadas")).toBeInTheDocument();
     expect(screen.getByText("1 pagada")).toBeInTheDocument();
     expect(screen.getByText("Borradores").nextElementSibling).toHaveTextContent("200,00");
@@ -60,6 +60,38 @@ describe("DashboardPage", () => {
     expect(screen.getByRole("group", { name: "Facturas por estado" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Nueva factura" })).toHaveAttribute("href", "/invoices/new");
     expect(document.title).toBe("Dashboard · Facturas");
+  });
+
+  it("pide las estadísticas en la moneda de la URL y las formatea con ella", async () => {
+    stats.summary.mockResolvedValue(summary());
+    stats.monthly.mockResolvedValue(months);
+    renderPage("/?currency=EUR");
+
+    expect((await screen.findByText("Por cobrar")).nextElementSibling).toHaveTextContent("€");
+    expect(screen.getByLabelText("Moneda")).toHaveValue("EUR");
+    expect(stats.summary).toHaveBeenCalledWith("EUR", expect.anything());
+    expect(stats.monthly).toHaveBeenCalledWith(6, "EUR", expect.anything());
+  });
+
+  it("al cambiar la moneda vuelve a consultar solo esa moneda", async () => {
+    stats.summary.mockResolvedValue(summary());
+    stats.monthly.mockResolvedValue(months);
+    renderPage("/?currency=EUR");
+    await screen.findByText("Por cobrar");
+
+    await userEvent.selectOptions(screen.getByLabelText("Moneda"), "MXN");
+
+    await waitFor(() => expect(stats.summary).toHaveBeenLastCalledWith("MXN", expect.anything()));
+    expect(screen.getByLabelText("Moneda")).toHaveValue("MXN");
+  });
+
+  it("ignora una moneda inválida en la URL", async () => {
+    stats.summary.mockResolvedValue(summary());
+    stats.monthly.mockResolvedValue(months);
+    renderPage("/?currency=GBP");
+
+    await screen.findByText("Por cobrar");
+    expect(screen.getByLabelText("Moneda")).toHaveValue("USD");
   });
 
   it("destaca las facturas vencidas en la tarjeta Por cobrar", async () => {

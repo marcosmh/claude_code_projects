@@ -252,21 +252,24 @@ invoice_items = [
 
 stats_items = [
     req("Resumen por estado", "GET", "/stats/summary",
-        "Conteo e importe (con impuestos) por estado. `overdue` es un subconjunto de `SENT`.",
+        "Conteo e importe (con impuestos) por estado. `overdue` es un subconjunto de `SENT`. Con `currency` solo cuenta facturas de esa moneda (los importes de monedas distintas nunca se suman); sin ella cuenta todas.",
+        query=[("currency", "MXN", "MXN | USD | EUR (opcional)", False)],
         tests=["pm.test('Status 200', () => pm.response.to.have.status(200));",
                "const d = pm.response.json().data;",
                "pm.test('Estructura', () => { pm.expect(d.byStatus).to.have.all.keys('DRAFT','SENT','PAID'); pm.expect(d.overdue).to.include.all.keys('count','totalCents'); });",
                "pm.test('totalCount es la suma de byStatus', () => pm.expect(d.totalCount).to.eql(d.byStatus.DRAFT.count + d.byStatus.SENT.count + d.byStatus.PAID.count));",
-               "pm.test('overdue <= SENT', () => pm.expect(d.overdue.count).to.be.at.most(d.byStatus.SENT.count));"],
+               "pm.test('overdue <= SENT', () => pm.expect(d.overdue.count).to.be.at.most(d.byStatus.SENT.count));",
+               "pm.test('meta.currency', () => pm.expect(pm.response.json().meta.currency).to.eql('MXN'));"],
         examples=[example("200 OK", 200, "OK", {"data": {"byStatus": {"DRAFT": {"count": 4, "totalCents": 8304800}, "SENT": {"count": 9, "totalCents": 20874200}, "PAID": {"count": 8, "totalCents": 17738700}}, "overdue": {"count": 4, "totalCents": 8270800}, "totalCount": 21}})]),
     req("Totales mensuales", "GET", "/stats/monthly",
         "Totales por mes de emisión y estado, de los últimos `months` meses (1 a 24, por defecto 6), en orden cronológico.",
-        query=[("months", "6", "Entero 1 a 24 (por defecto 6)", False)],
+        query=[("months", "6", "Entero 1 a 24 (por defecto 6)", False), ("currency", "MXN", "MXN | USD | EUR (opcional); solo suma facturas de esa moneda", False)],
         tests=["pm.test('Status 200', () => pm.response.to.have.status(200));",
                "const json = pm.response.json();",
                "pm.test('Un elemento por mes pedido', () => pm.expect(json.data).to.have.length(Number(pm.request.url.query.get('months'))));",
                "pm.test('Estructura de cada mes', () => json.data.forEach((m) => { pm.expect(m).to.include.all.keys('key','label','title','totalsCents'); pm.expect(m.key).to.match(/^\\d{4}-\\d{2}$/); pm.expect(m.totalsCents).to.have.all.keys('DRAFT','SENT','PAID'); }));",
-               "pm.test('meta.months', () => pm.expect(json.meta.months).to.eql(json.data.length));"],
+               "pm.test('meta.months', () => pm.expect(json.meta.months).to.eql(json.data.length));",
+               "pm.test('meta.currency', () => pm.expect(json.meta.currency).to.eql('MXN'));"],
         examples=[example("200 OK", 200, "OK", {"data": [{"key": "2026-09", "label": "sept", "title": "septiembre de 2026", "totalsCents": {"DRAFT": 1392000, "SENT": 7070200, "PAID": 1879200}}], "meta": {"months": 1}})]),
 ]
 

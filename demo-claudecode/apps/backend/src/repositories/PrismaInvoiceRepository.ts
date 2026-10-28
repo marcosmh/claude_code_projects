@@ -66,9 +66,13 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
     return { data: rows.map(toDomain), total };
   }
 
-  async findStatsRows(ownerId: number, { issuedFrom }: StatsRowsOptions = {}): Promise<InvoiceStatsRow[]> {
+  async findStatsRows(ownerId: number, { issuedFrom, currency }: StatsRowsOptions = {}): Promise<InvoiceStatsRow[]> {
     return this.db.invoice.findMany({
-      where: { ownerId, ...(issuedFrom ? { issueDate: { gte: issuedFrom } } : {}) },
+      where: {
+        ownerId,
+        ...(issuedFrom ? { issueDate: { gte: issuedFrom } } : {}),
+        ...(currency ? { currency } : {}),
+      },
       select: {
         status: true,
         taxRate: true,

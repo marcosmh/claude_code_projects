@@ -1455,16 +1455,24 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/stats/summary",
+              "raw": "{{baseUrl}}/stats/summary?currency=MXN",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "stats",
                 "summary"
+              ],
+              "query": [
+                {
+                  "key": "currency",
+                  "value": "MXN",
+                  "description": "MXN | USD | EUR (opcional)",
+                  "disabled": false
+                }
               ]
             },
-            "description": "Conteo e importe (con impuestos) por estado. `overdue` es un subconjunto de `SENT`."
+            "description": "Conteo e importe (con impuestos) por estado. `overdue` es un subconjunto de `SENT`. Con `currency` solo cuenta facturas de esa moneda (los importes de monedas distintas nunca se suman); sin ella cuenta todas."
           },
           "event": [
             {
@@ -1476,7 +1484,8 @@
                   "const d = pm.response.json().data;",
                   "pm.test('Estructura', () => { pm.expect(d.byStatus).to.have.all.keys('DRAFT','SENT','PAID'); pm.expect(d.overdue).to.include.all.keys('count','totalCents'); });",
                   "pm.test('totalCount es la suma de byStatus', () => pm.expect(d.totalCount).to.eql(d.byStatus.DRAFT.count + d.byStatus.SENT.count + d.byStatus.PAID.count));",
-                  "pm.test('overdue <= SENT', () => pm.expect(d.overdue.count).to.be.at.most(d.byStatus.SENT.count));"
+                  "pm.test('overdue <= SENT', () => pm.expect(d.overdue.count).to.be.at.most(d.byStatus.SENT.count));",
+                  "pm.test('meta.currency', () => pm.expect(pm.response.json().meta.currency).to.eql('MXN'));"
                 ]
               }
             }
@@ -1488,13 +1497,21 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{baseUrl}}/stats/summary",
+                  "raw": "{{baseUrl}}/stats/summary?currency=MXN",
                   "host": [
                     "{{baseUrl}}"
                   ],
                   "path": [
                     "stats",
                     "summary"
+                  ],
+                  "query": [
+                    {
+                      "key": "currency",
+                      "value": "MXN",
+                      "description": "MXN | USD | EUR (opcional)",
+                      "disabled": false
+                    }
                   ]
                 }
               },
@@ -1517,7 +1534,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/stats/monthly?months=6",
+              "raw": "{{baseUrl}}/stats/monthly?months=6&currency=MXN",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -1530,6 +1547,12 @@
                   "key": "months",
                   "value": "6",
                   "description": "Entero 1 a 24 (por defecto 6)",
+                  "disabled": false
+                },
+                {
+                  "key": "currency",
+                  "value": "MXN",
+                  "description": "MXN | USD | EUR (opcional); solo suma facturas de esa moneda",
                   "disabled": false
                 }
               ]
@@ -1546,7 +1569,8 @@
                   "const json = pm.response.json();",
                   "pm.test('Un elemento por mes pedido', () => pm.expect(json.data).to.have.length(Number(pm.request.url.query.get('months'))));",
                   "pm.test('Estructura de cada mes', () => json.data.forEach((m) => { pm.expect(m).to.include.all.keys('key','label','title','totalsCents'); pm.expect(m.key).to.match(/^\\d{4}-\\d{2}$/); pm.expect(m.totalsCents).to.have.all.keys('DRAFT','SENT','PAID'); }));",
-                  "pm.test('meta.months', () => pm.expect(json.meta.months).to.eql(json.data.length));"
+                  "pm.test('meta.months', () => pm.expect(json.meta.months).to.eql(json.data.length));",
+                  "pm.test('meta.currency', () => pm.expect(json.meta.currency).to.eql('MXN'));"
                 ]
               }
             }
@@ -1558,7 +1582,7 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{baseUrl}}/stats/monthly?months=6",
+                  "raw": "{{baseUrl}}/stats/monthly?months=6&currency=MXN",
                   "host": [
                     "{{baseUrl}}"
                   ],
@@ -1571,6 +1595,12 @@
                       "key": "months",
                       "value": "6",
                       "description": "Entero 1 a 24 (por defecto 6)",
+                      "disabled": false
+                    },
+                    {
+                      "key": "currency",
+                      "value": "MXN",
+                      "description": "MXN | USD | EUR (opcional); solo suma facturas de esa moneda",
                       "disabled": false
                     }
                   ]

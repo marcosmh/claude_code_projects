@@ -129,6 +129,14 @@ describe("PrismaInvoiceRepository", () => {
     expect(recent[0].issueDate).toEqual(new Date("2026-09-10"));
   });
 
+  it("findStatsRows filters by currency", async () => {
+    await make({ currency: "USD" });
+    await make({ currency: "MXN" });
+    expect(await repo.findStatsRows(U)).toHaveLength(2);
+    expect(await repo.findStatsRows(U, { currency: "MXN" })).toHaveLength(1);
+    expect(await repo.findStatsRows(U, { currency: "EUR" })).toHaveLength(0);
+  });
+
   it("updateStatus changes only the status: item ids are stable and updatedAt moves", async () => {
     const created = await make({ items: [
       { description: "A", quantity: 1, unitPriceCents: 100 },

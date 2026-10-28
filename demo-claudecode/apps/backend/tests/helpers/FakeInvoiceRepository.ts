@@ -60,6 +60,7 @@ export class FakeInvoiceRepository implements InvoiceRepository {
     this.statsCalls.push(options);
     return this.owned(ownerId)
       .filter((i) => !options.issuedFrom || i.issueDate >= options.issuedFrom)
+      .filter((i) => !options.currency || i.currency === options.currency)
       .map(({ status, taxRate, issueDate, dueDate, items }) => ({
         status,
         taxRate,

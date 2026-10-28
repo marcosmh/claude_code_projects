@@ -13,6 +13,17 @@ describe("statsService", () => {
     expect(new URL(fetchMock.mock.calls[0]?.[0] as string, "http://localhost").pathname.endsWith("/stats/summary")).toBe(true);
   });
 
+  it("envía currency en la query de summary y monthly", async () => {
+    const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(new Response(JSON.stringify({ data: [] }))));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await statsService.summary("MXN");
+    await statsService.monthly(6, "EUR");
+    await statsService.summary();
+    const params = fetchMock.mock.calls.map((c) => new URL(c[0] as string, "http://localhost").searchParams.get("currency"));
+    expect(params).toEqual(["MXN", "EUR", null]);
+  });
+
   it("monthly envía months en la query", async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: [{ key: "2026-10" }] })));
     vi.stubGlobal("fetch", fetchMock);

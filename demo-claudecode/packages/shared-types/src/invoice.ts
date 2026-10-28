@@ -14,6 +14,10 @@ export const STATUS_LABELS: Record<InvoiceStatus, string> = {
 export const CURRENCIES = ["MXN", "USD", "EUR"] as const;
 export type Currency = (typeof CURRENCIES)[number];
 
+export function isCurrency(value: string): value is Currency {
+  return (CURRENCIES as readonly string[]).includes(value);
+}
+
 export const CURRENCY_LABELS: Record<Currency, string> = {
   MXN: "Pesos mexicanos (MXN)",
   USD: "Dólares (USD)",

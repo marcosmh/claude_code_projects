@@ -92,6 +92,8 @@ describe("otros validators", () => {
 
   it("monthlyQuerySchema", () => {
     expect(monthlyQuerySchema.parse({})).toEqual({ months: 6 });
+    expect(monthlyQuerySchema.parse({ currency: "EUR" }).currency).toBe("EUR");
+    expect(monthlyQuerySchema.safeParse({ currency: "GBP" }).success).toBe(false);
     expect(monthlyQuerySchema.safeParse({ months: "25" }).success).toBe(false);
   });
 });

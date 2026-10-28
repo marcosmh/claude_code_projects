@@ -209,6 +209,9 @@ describe("stats routes", () => {
     const monthly = await (await monthlyRoute.GET(json("GET", "/stats/monthly?months=3"))).json();
     expect(monthly.data).toHaveLength(3);
     expect(monthly.meta).toEqual({ months: 3 });
+    const mxn = (await (await summaryRoute.GET(json("GET", "/stats/summary?currency=MXN"))).json()).data;
+    expect(mxn.totalCount).toBe(0);
+    expect((await summaryRoute.GET(json("GET", "/stats/summary?currency=GBP"))).status).toBe(400);
     expect((await monthlyRoute.GET(json("GET", "/stats/monthly?months=0"))).status).toBe(400);
   });
 });
