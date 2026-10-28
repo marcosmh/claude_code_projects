@@ -76,6 +76,7 @@ export class InvoiceService {
       dueDate,
       status: request.status,
       taxRate: request.taxRate,
+      currency: request.currency,
       notes: request.notes,
       items: request.items.map(({ description, quantity, unitPriceCents }) => ({
         description,

@@ -16,6 +16,7 @@ const build = (over: Partial<InvoiceData> = {}): InvoiceData => ({
   dueDate: new Date("2026-10-01"),
   status: "DRAFT",
   taxRate: 16,
+  currency: "USD",
   items: [{ description: "Servicio", quantity: 2, unitPriceCents: 10000 }],
   ...over,
 });

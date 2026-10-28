@@ -102,6 +102,7 @@ Reglas de negocio (422): `dueDate >= issueDate`; al menos una línea; `quantity 
   "status": "SENT",
   "isOverdue": false,
   "taxRate": 16,
+  "currency": "MXN",
   "notes": null,
   "items": [
     { "id": 37, "description": "Servicio", "quantity": 2, "unitPriceCents": 5000, "amountCents": 10000 }
@@ -129,6 +130,7 @@ PUT reemplaza la factura completa (campos y líneas); mismo cuerpo que POST.
 | `dueDate` | string ISO 8601 | sí | `>= issueDate` (422) |
 | `status` | `DRAFT\|SENT\|PAID` | no | por defecto `DRAFT` |
 | `taxRate` | number | no | 0 a 100, por defecto 0 |
+| `currency` | string | no | `MXN`, `USD` o `EUR`; por defecto `USD`. Los importes en centavos están en esa moneda |
 | `notes` | string \| null | no | `""` se guarda como `null` |
 | `items` | array | sí | mínimo 1 (422) |
 | `items[].description` | string | sí | no vacía |
@@ -143,6 +145,7 @@ PUT reemplaza la factura completa (campos y líneas); mismo cuerpo que POST.
   "dueDate": "2026-10-20",
   "status": "SENT",
   "taxRate": 16,
+  "currency": "MXN",
   "items": [{ "description": "Servicio", "quantity": 2, "unitPriceCents": 5000 }]
 }
 ```

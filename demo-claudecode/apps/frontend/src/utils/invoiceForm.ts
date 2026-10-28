@@ -1,7 +1,7 @@
 import { toCents } from "@invoices/shared-utils";
 import { z } from "zod";
 import type { ApiErrorDetail } from "@/types/api";
-import { STATUSES, type Invoice, type InvoiceRequest } from "@/types/invoice";
+import { CURRENCIES, STATUSES, type Invoice, type InvoiceRequest } from "@/types/invoice";
 import { todayInput, toDateInput } from "./format";
 import { LIMITS } from "./limits";
 
@@ -39,6 +39,7 @@ export const invoiceFormSchema = z
     issueDate: dateText("Fecha de emisión inválida"),
     dueDate: dateText("Fecha de vencimiento inválida"),
     status: z.enum(STATUSES),
+    currency: z.enum(CURRENCIES),
     taxRate: z
       .string()
       .trim()
@@ -61,6 +62,7 @@ export const invoiceFormSchema = z
       issueDate: v.issueDate,
       dueDate: v.dueDate,
       status: v.status,
+      currency: v.currency,
       taxRate: Number(v.taxRate || 0),
       notes: v.notes.trim() || null,
       items: v.items.map((l) => ({
@@ -80,6 +82,7 @@ export const emptyInvoiceForm = (): InvoiceFormValues => ({
   issueDate: todayInput(),
   dueDate: todayInput(30),
   status: "DRAFT",
+  currency: "MXN",
   taxRate: "0",
   notes: "",
   items: [{ description: "", quantity: "1", price: "" }],
@@ -92,6 +95,7 @@ export const invoiceToFormValues = (inv: Invoice): InvoiceFormValues => ({
   issueDate: toDateInput(inv.issueDate),
   dueDate: toDateInput(inv.dueDate),
   status: inv.status,
+  currency: inv.currency,
   taxRate: String(inv.taxRate),
   notes: inv.notes ?? "",
   items: inv.items.map((i) => ({
@@ -113,6 +117,7 @@ const TOP_FIELDS = new Set([
   "issueDate",
   "dueDate",
   "status",
+  "currency",
   "taxRate",
   "notes",
 ]);

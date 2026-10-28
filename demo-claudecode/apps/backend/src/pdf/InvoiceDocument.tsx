@@ -24,7 +24,7 @@ const s = StyleSheet.create({
 });
 
 // Helvetica (built-in PDF font) lacks the NBSP / narrow space that Intl emits.
-const money = (cents: number) => formatMoney(cents).replace(/\s/g, " ");
+const money = (cents: number, currency: string) => formatMoney(cents, currency).replace(/\s/g, " ");
 
 /** Must be called as a plain function (not via createElement): renderToBuffer rejects a wrapped element. */
 export function InvoiceDocument({ invoice }: { invoice: InvoiceResponse }) {
@@ -62,23 +62,23 @@ export function InvoiceDocument({ invoice }: { invoice: InvoiceResponse }) {
           <View key={i.id} style={s.row} wrap={false}>
             <Text style={s.cDesc}>{i.description}</Text>
             <Text style={s.cQty}>{i.quantity}</Text>
-            <Text style={s.cPrice}>{money(i.unitPriceCents)}</Text>
-            <Text style={s.cAmount}>{money(i.amountCents)}</Text>
+            <Text style={s.cPrice}>{money(i.unitPriceCents, invoice.currency)}</Text>
+            <Text style={s.cAmount}>{money(i.amountCents, invoice.currency)}</Text>
           </View>
         ))}
 
         <View style={s.totals} wrap={false}>
           <View style={s.totalRow}>
             <Text>Subtotal</Text>
-            <Text>{money(invoice.subtotalCents)}</Text>
+            <Text>{money(invoice.subtotalCents, invoice.currency)}</Text>
           </View>
           <View style={s.totalRow}>
             <Text>Impuesto ({invoice.taxRate}%)</Text>
-            <Text>{money(invoice.taxCents)}</Text>
+            <Text>{money(invoice.taxCents, invoice.currency)}</Text>
           </View>
           <View style={[s.totalRow, s.grand]}>
             <Text>Total</Text>
-            <Text>{money(invoice.totalCents)}</Text>
+            <Text>{money(invoice.totalCents, invoice.currency)}</Text>
           </View>
         </View>
 

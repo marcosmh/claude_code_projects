@@ -1,5 +1,5 @@
-export function formatMoney(cents: number): string {
-  return new Intl.NumberFormat("es-ES", { style: "currency", currency: "USD" }).format(cents / 100);
+export function formatMoney(cents: number, currency = "USD"): string {
+  return new Intl.NumberFormat("es-ES", { style: "currency", currency }).format(cents / 100);
 }
 
 export function formatDate(date: Date): string {

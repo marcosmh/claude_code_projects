@@ -67,10 +67,23 @@ describe("InvoiceForm", () => {
       issueDate: "2026-10-01",
       dueDate: "2026-10-20",
       status: "DRAFT",
+      currency: "MXN",
       taxRate: 16,
       notes: null,
       items: [{ description: "Servicio", quantity: 2, unitPriceCents: 5000 }],
     });
+  });
+
+  it("permite elegir la moneda de la factura", async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    const user = setup(filled(), onSubmit);
+
+    await user.selectOptions(screen.getByLabelText("Moneda"), "EUR");
+    expect(screen.getByLabelText("Vista previa de totales")).toHaveTextContent("€");
+    await user.click(screen.getByRole("button", { name: "Guardar" }));
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+    expect(onSubmit.mock.calls[0]?.[0]).toMatchObject({ currency: "EUR" });
   });
 
   it("calcula la vista previa de totales", () => {

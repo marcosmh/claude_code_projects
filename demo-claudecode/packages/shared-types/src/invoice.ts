@@ -11,6 +11,15 @@ export const STATUS_LABELS: Record<InvoiceStatus, string> = {
   PAID: "Pagada",
 };
 
+export const CURRENCIES = ["MXN", "USD", "EUR"] as const;
+export type Currency = (typeof CURRENCIES)[number];
+
+export const CURRENCY_LABELS: Record<Currency, string> = {
+  MXN: "Pesos mexicanos (MXN)",
+  USD: "Dólares (USD)",
+  EUR: "Euros (EUR)",
+};
+
 /** REST wire shape (dates as ISO strings, money in cents). Contract: apps/backend/docs/api.md. */
 export interface InvoiceItemResponse {
   id: number;
@@ -31,6 +40,7 @@ export interface InvoiceResponse {
   status: InvoiceStatus;
   isOverdue: boolean;
   taxRate: number;
+  currency: Currency;
   notes: string | null;
   items: InvoiceItemResponse[];
   subtotalCents: number;

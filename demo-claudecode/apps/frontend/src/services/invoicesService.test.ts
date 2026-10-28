@@ -21,6 +21,7 @@ const input: InvoiceRequest = {
   dueDate: "2026-10-20",
   status: "DRAFT",
   taxRate: 16,
+  currency: "USD",
   notes: null,
   items: [{ description: "Servicio", quantity: 1, unitPriceCents: 1000 }],
 };

@@ -2,6 +2,7 @@ import type { PrismaClient, Prisma } from "../generated/prisma/client";
 import type {
   CreateInvoiceInput,
   FindAllInvoicesOptions,
+  Currency,
   Invoice,
   InvoiceData,
   InvoiceStatsRow,
@@ -16,7 +17,7 @@ const include = { items: { orderBy: { id: "asc" } } } satisfies Prisma.InvoiceIn
 type InvoiceRow = Prisma.InvoiceGetPayload<{ include: typeof include }>;
 
 function toDomain(row: InvoiceRow): Invoice {
-  return { ...row, status: row.status as InvoiceStatus };
+  return { ...row, status: row.status as InvoiceStatus, currency: row.currency as Currency };
 }
 
 function scalarData(input: InvoiceData) {
@@ -28,6 +29,7 @@ function scalarData(input: InvoiceData) {
     dueDate: input.dueDate,
     status: input.status,
     taxRate: input.taxRate,
+    currency: input.currency,
     notes: input.notes ?? null,
   };
 }

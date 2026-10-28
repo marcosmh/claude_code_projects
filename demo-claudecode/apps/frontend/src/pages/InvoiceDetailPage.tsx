@@ -98,8 +98,8 @@ export function InvoiceDetailPage() {
                 <tr key={i.id} className="border-b border-zinc-100">
                   <td className="px-6 py-3">{i.description}</td>
                   <td className="px-3 text-right">{i.quantity}</td>
-                  <td className="px-3 text-right">{formatMoney(i.unitPriceCents)}</td>
-                  <td className="px-6 text-right">{formatMoney(i.amountCents)}</td>
+                  <td className="px-3 text-right">{formatMoney(i.unitPriceCents, invoice.currency)}</td>
+                  <td className="px-6 text-right">{formatMoney(i.amountCents, invoice.currency)}</td>
                 </tr>
               ))}
             </tbody>
@@ -111,15 +111,15 @@ export function InvoiceDetailPage() {
           <dl className="w-full space-y-1.5 text-sm tabular-nums sm:w-64 sm:shrink-0">
             <div className="flex justify-between">
               <dt className="text-zinc-600">Subtotal</dt>
-              <dd>{formatMoney(invoice.subtotalCents)}</dd>
+              <dd>{formatMoney(invoice.subtotalCents, invoice.currency)}</dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-zinc-600">Impuesto ({invoice.taxRate}%)</dt>
-              <dd>{formatMoney(invoice.taxCents)}</dd>
+              <dd>{formatMoney(invoice.taxCents, invoice.currency)}</dd>
             </div>
             <div className="flex items-baseline justify-between border-t border-zinc-200 pt-2">
               <dt className="font-semibold">Total</dt>
-              <dd className={`${money} text-3xl font-semibold text-brand`}>{formatMoney(invoice.totalCents)}</dd>
+              <dd className={`${money} text-3xl font-semibold text-brand`}>{formatMoney(invoice.totalCents, invoice.currency)}</dd>
             </div>
           </dl>
         </div>

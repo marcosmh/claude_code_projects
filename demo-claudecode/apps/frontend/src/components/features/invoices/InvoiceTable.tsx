@@ -32,7 +32,7 @@ export function InvoiceTable({ invoices }: { invoices: Invoice[] }) {
               <td className="px-3">
                 <StatusBadge status={inv.status} overdue={inv.isOverdue} />
               </td>
-              <td className={`px-4 text-right font-semibold ${money}`}>{formatMoney(inv.totalCents)}</td>
+              <td className={`px-4 text-right font-semibold ${money}`}>{formatMoney(inv.totalCents, inv.currency)}</td>
             </tr>
           ))}
         </tbody>

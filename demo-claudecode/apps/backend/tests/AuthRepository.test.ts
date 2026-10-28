@@ -15,6 +15,7 @@ const invoice = {
   dueDate: new Date("2026-10-01"),
   status: "DRAFT" as const,
   taxRate: 0,
+  currency: "USD" as const,
   items: [{ description: "A", quantity: 1, unitPriceCents: 100 }],
 };
 

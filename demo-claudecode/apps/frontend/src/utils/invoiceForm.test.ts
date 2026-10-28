@@ -35,6 +35,7 @@ const validForm: InvoiceFormValues = {
   dueDate: "2026-11-01",
   status: "DRAFT",
   taxRate: "16",
+  currency: "MXN",
   notes: "",
   items: [{ description: "Servicio", quantity: "2", price: "100.50" }],
 };

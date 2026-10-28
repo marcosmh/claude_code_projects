@@ -1,6 +1,6 @@
-import type { InvoiceStatus } from "@invoices/shared-types";
+import type { Currency, InvoiceStatus } from "@invoices/shared-types";
 
-export type { InvoiceStatus };
+export type { Currency, InvoiceStatus };
 
 export interface InvoiceItem {
   id: number;
@@ -19,6 +19,7 @@ export interface Invoice {
   dueDate: Date;
   status: InvoiceStatus;
   taxRate: number;
+  currency: Currency;
   notes: string | null;
   items: InvoiceItem[];
   createdAt: Date;
@@ -39,6 +40,7 @@ export interface InvoiceData {
   dueDate: Date;
   status: InvoiceStatus;
   taxRate: number;
+  currency: Currency;
   notes?: string | null;
   items: InvoiceItemInput[];
 }

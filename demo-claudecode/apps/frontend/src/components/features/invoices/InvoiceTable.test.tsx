@@ -15,6 +15,7 @@ const invoice = (over: Partial<Invoice>): Invoice => ({
   status: "SENT",
   isOverdue: false,
   taxRate: 16,
+  currency: "USD",
   notes: null,
   items: [],
   subtotalCents: 10000,

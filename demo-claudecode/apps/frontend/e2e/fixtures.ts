@@ -18,6 +18,7 @@ export function invoiceBody(over: Record<string, unknown> = {}) {
     dueDate: new Date(Date.now() + 15 * 864e5).toISOString().slice(0, 10),
     status: "SENT",
     taxRate: 16,
+    currency: "USD",
     notes: "Gracias por su compra",
     items: [{ description: "Servicio de consultoría", quantity: 2, unitPriceCents: 5000 }],
     ...over,

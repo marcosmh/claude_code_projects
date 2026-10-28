@@ -14,6 +14,7 @@ export function toInvoiceResponse(invoice: Invoice, now: Date): InvoiceResponse 
     status: invoice.status,
     isOverdue: isOverdue(invoice, now),
     taxRate: invoice.taxRate,
+    currency: invoice.currency,
     notes: invoice.notes,
     items: invoice.items.map((item) => ({
       id: item.id,

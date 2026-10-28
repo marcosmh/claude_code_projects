@@ -12,7 +12,12 @@ const valid = {
 describe("invoiceBodySchema", () => {
   it("normalises text, empty optionals and defaults", () => {
     const out = invoiceBodySchema.parse({ ...valid, clientEmail: "", notes: "  " });
-    expect(out).toMatchObject({ clientName: "Acme", clientEmail: null, clientAddress: null, notes: null, status: "DRAFT", taxRate: 0 });
+    expect(out).toMatchObject({ clientName: "Acme", clientEmail: null, clientAddress: null, notes: null, status: "DRAFT", taxRate: 0, currency: "USD" });
+  });
+
+  it("accepts MXN, USD and EUR and rejects any other currency", () => {
+    for (const currency of ["MXN", "USD", "EUR"]) expect(invoiceBodySchema.parse({ ...valid, currency }).currency).toBe(currency);
+    expect(invoiceBodySchema.safeParse({ ...valid, currency: "GBP" }).success).toBe(false);
   });
 
   it("rejects non-integer cents and out-of-range values", () => {

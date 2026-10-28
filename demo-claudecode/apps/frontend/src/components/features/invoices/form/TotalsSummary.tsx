@@ -8,20 +8,20 @@ interface Totals {
 }
 
 /** Totales informativos: el backend recalcula y es la autoridad. */
-export function TotalsSummary({ totals }: { totals: Totals }) {
+export function TotalsSummary({ totals, currency }: { totals: Totals; currency: string }) {
   return (
     <dl className="ml-auto w-full max-w-xs space-y-1.5 text-sm tabular-nums" aria-label="Vista previa de totales">
       <div className="flex justify-between">
         <dt>Subtotal</dt>
-        <dd>{formatMoney(totals.subtotalCents)}</dd>
+        <dd>{formatMoney(totals.subtotalCents, currency)}</dd>
       </div>
       <div className="flex justify-between">
         <dt>Impuesto</dt>
-        <dd>{formatMoney(totals.taxCents)}</dd>
+        <dd>{formatMoney(totals.taxCents, currency)}</dd>
       </div>
       <div className="flex items-baseline justify-between border-t border-zinc-200 pt-2">
         <dt className="font-semibold">Total</dt>
-        <dd className={`${money} text-2xl font-semibold text-brand`}>{formatMoney(totals.totalCents)}</dd>
+        <dd className={`${money} text-2xl font-semibold text-brand`}>{formatMoney(totals.totalCents, currency)}</dd>
       </div>
     </dl>
   );

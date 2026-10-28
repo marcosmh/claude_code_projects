@@ -16,6 +16,7 @@ const request = (over: Partial<InvoiceRequest> = {}): InvoiceRequest => ({
   dueDate: "2026-10-01",
   status: "DRAFT",
   taxRate: 10,
+  currency: "USD",
   notes: null,
   items: [
     { description: "A", quantity: 2, unitPriceCents: 10000 },

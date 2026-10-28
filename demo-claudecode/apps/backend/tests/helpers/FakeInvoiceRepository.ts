@@ -27,6 +27,7 @@ export class FakeInvoiceRepository implements InvoiceRepository {
       dueDate: input.dueDate,
       status: input.status,
       taxRate: input.taxRate,
+      currency: input.currency,
       notes: input.notes ?? null,
       items: input.items.map((i) => ({ id: this.nextItemId++, ...i })),
       createdAt,
@@ -120,6 +121,7 @@ export const sampleData = (over: Partial<InvoiceData> = {}): InvoiceData => ({
   dueDate: new Date("2026-10-01T00:00:00Z"),
   status: "DRAFT",
   taxRate: 10,
+  currency: "USD",
   items: [{ description: "Servicio", quantity: 2, unitPriceCents: 10000 }],
   ...over,
 });

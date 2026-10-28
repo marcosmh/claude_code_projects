@@ -5,7 +5,7 @@ import { useFieldArray, useForm, useWatch, type FieldPath } from "react-hook-for
 import { zodResolver } from "@hookform/resolvers/zod";
 import { button, sheet } from "@/components/common/ui";
 import { ApiError } from "@/services/apiClient";
-import type { InvoiceRequest } from "@/types/invoice";
+import { CURRENCIES, CURRENCY_LABELS, type InvoiceRequest } from "@/types/invoice";
 import { invoiceFormSchema, mapServerErrors, type InvoiceFormValues } from "@/utils/invoiceForm";
 import { STATUS_LABELS, STATUSES } from "@/utils/status";
 import { previewTotals } from "@/utils/totalsPreview";
@@ -36,6 +36,7 @@ export function InvoiceForm({ initial, onSubmit, cancelTo }: InvoiceFormProps) {
 
   const items = useWatch({ control, name: "items" });
   const taxRate = useWatch({ control, name: "taxRate" });
+  const currency = useWatch({ control, name: "currency" });
   const totals = useMemo(
     () =>
       previewTotals(
@@ -98,6 +99,17 @@ export function InvoiceForm({ initial, onSubmit, cancelTo }: InvoiceFormProps) {
               </select>
             )}
           </Field>
+          <Field label="Moneda" error={errors.currency?.message}>
+            {(a) => (
+              <select {...a} className={inputClass} {...register("currency")}>
+                {CURRENCIES.map((c) => (
+                  <option key={c} value={c}>
+                    {CURRENCY_LABELS[c]}
+                  </option>
+                ))}
+              </select>
+            )}
+          </Field>
           <Field label="Impuesto (%)" error={errors.taxRate?.message}>
             {(a) => <input {...a} className={inputClass} type="number" min="0" max="100" step="0.01" {...register("taxRate")} />}
           </Field>
@@ -118,7 +130,7 @@ export function InvoiceForm({ initial, onSubmit, cancelTo }: InvoiceFormProps) {
         </div>
 
         <div className="p-6">
-          <TotalsSummary totals={totals} />
+          <TotalsSummary totals={totals} currency={currency} />
         </div>
       </div>
 

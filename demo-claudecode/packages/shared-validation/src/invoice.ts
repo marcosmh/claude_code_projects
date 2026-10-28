@@ -1,4 +1,4 @@
-import { STATUSES } from "@invoices/shared-types";
+import { CURRENCIES, STATUSES } from "@invoices/shared-types";
 import { z } from "zod";
 import { LIMITS } from "./limits";
 
@@ -22,6 +22,8 @@ const optionalEmail = z
   .transform((v) => v || null);
 
 export const statusSchema = z.enum(STATUSES, { error: "Estado inválido (DRAFT, SENT o PAID)" });
+
+export const currencySchema = z.enum(CURRENCIES, { error: "Moneda inválida (MXN, USD o EUR)" });
 
 export const invoiceItemSchema = z.object({
   description: z
@@ -55,6 +57,7 @@ export const invoiceBodySchema = z.object({
   dueDate: isoDate("Fecha de vencimiento"),
   status: statusSchema.default("DRAFT"),
   taxRate: z.number().min(0, "Impuesto inválido").max(LIMITS.taxRate, "Impuesto inválido").default(0),
+  currency: currencySchema.default("USD"),
   notes: optionalText(LIMITS.notes),
   items: z
     .array(invoiceItemSchema, "Las líneas deben ser una lista")

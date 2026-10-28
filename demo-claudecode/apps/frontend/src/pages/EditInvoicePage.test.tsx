@@ -23,6 +23,7 @@ const invoice = (): Invoice => ({
   status: "SENT",
   isOverdue: false,
   taxRate: 16,
+  currency: "USD",
   notes: null,
   items: [{ id: 1, description: "Servicio", quantity: 2, unitPriceCents: 5000, amountCents: 10000 }],
   subtotalCents: 10000,

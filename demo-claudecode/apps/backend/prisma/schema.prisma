@@ -60,6 +60,8 @@ model Invoice {
   // DRAFT | SENT | PAID (validated in the service layer, not a Prisma enum)
   status        String        @default("DRAFT")
   taxRate       Float         @default(0)
+  // MXN | USD | EUR (validated in the service layer, not a Prisma enum); invoices that predate the column are USD
+  currency      String        @default("USD")
   notes         String?
   items         InvoiceItem[]
   createdAt     DateTime      @default(now())
