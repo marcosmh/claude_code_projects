@@ -60,14 +60,14 @@ def req(name, method, path, desc, query=None, body=None, auth=True, tests=None, 
 INVOICE = {
     "id": 21, "number": "FAC-0021", "clientName": "Acme SA", "clientEmail": "compras@acme.com", "clientAddress": None,
     "issueDate": "2026-10-01T00:00:00.000Z", "dueDate": "2026-10-20T00:00:00.000Z", "status": "SENT", "isOverdue": False,
-    "taxRate": 16, "notes": None,
+    "taxRate": 16, "currency": "MXN", "notes": None,
     "items": [{"id": 37, "description": "Servicio", "quantity": 2, "unitPriceCents": 5000, "amountCents": 10000}],
     "subtotalCents": 10000, "taxCents": 1600, "totalCents": 11600,
     "createdAt": "2026-10-25T04:13:25.106Z", "updatedAt": "2026-10-25T04:13:25.112Z",
 }
 INVOICE_BODY = {
     "clientName": "Acme SA", "clientEmail": "compras@acme.com", "clientAddress": "Av. Reforma 100, CDMX",
-    "issueDate": "2026-10-01", "dueDate": "2026-10-20", "status": "DRAFT", "taxRate": 16, "notes": "Gracias por su compra",
+    "issueDate": "2026-10-01", "dueDate": "2026-10-20", "status": "DRAFT", "taxRate": 16, "currency": "MXN", "notes": "Gracias por su compra",
     "items": [
         {"description": "Servicio de consultoría", "quantity": 2, "unitPriceCents": 5000},
         {"description": "Soporte mensual", "quantity": 1.5, "unitPriceCents": 12000},
@@ -96,9 +96,10 @@ SAVE_TOKEN = [
 
 def shape_invoice(prefix):
     return [
-        f"pm.expect({prefix}).to.include.all.keys('id','number','clientName','issueDate','dueDate','status','isOverdue','taxRate','items','subtotalCents','taxCents','totalCents');",
+        f"pm.expect({prefix}).to.include.all.keys('id','number','clientName','issueDate','dueDate','status','isOverdue','taxRate','currency','items','subtotalCents','taxCents','totalCents');",
         f"pm.expect({prefix}.number).to.match(/^FAC-\\d{{4,}}$/);",
         f"pm.expect({prefix}.status).to.be.oneOf(['DRAFT','SENT','PAID']);",
+        f"pm.expect({prefix}.currency).to.be.oneOf(['MXN','USD','EUR']);",
         f"pm.expect({prefix}.items).to.be.an('array').that.is.not.empty;",
         f"pm.expect({prefix}.totalCents).to.equal({prefix}.subtotalCents + {prefix}.taxCents);",
     ]
@@ -199,6 +200,7 @@ invoice_items = [
                "pm.test('Estructura de la factura', () => {"] + ["  " + l for l in shape_invoice("inv")] + [
                "});",
                "pm.test('Totales correctos (2*5000 + 1.5*12000 = 28000, IVA 16%)', () => { pm.expect(inv.subtotalCents).to.eql(28000); pm.expect(inv.taxCents).to.eql(4480); pm.expect(inv.totalCents).to.eql(32480); });",
+               "pm.test('Conserva la moneda enviada (MXN)', () => pm.expect(inv.currency).to.eql('MXN'));",
                "pm.collectionVariables.set('id', inv.id);",
                "pm.collectionVariables.set('invoiceNumber', inv.number);"],
         examples=[example("201 Created", 201, "Created", {"data": INVOICE}, [{"key": "Content-Type", "value": "application/json"}, {"key": "Location", "value": "/api/v1/invoices/21"}]),
@@ -214,11 +216,11 @@ invoice_items = [
                   example("400 Id no numérico", 400, "Bad Request", {"error": {"code": "VALIDATION_ERROR", "message": "Identificador inválido"}})]),
     req("Actualizar factura (reemplazo completo)", "PUT", "/invoices/{{id}}",
         "Reemplaza campos y líneas (mismo cuerpo que POST). Los ids de las líneas cambian.",
-        body={**INVOICE_BODY, "status": "SENT", "notes": "Actualizada desde Postman",
+        body={**INVOICE_BODY, "status": "SENT", "currency": "EUR", "notes": "Actualizada desde Postman",
               "items": [{"description": "Servicio de consultoría", "quantity": 3, "unitPriceCents": 5000}]},
         tests=["pm.test('Status 200', () => pm.response.to.have.status(200));",
                "const inv = pm.response.json().data;",
-               "pm.test('Se aplicaron los cambios', () => { pm.expect(inv.status).to.eql('SENT'); pm.expect(inv.notes).to.eql('Actualizada desde Postman'); pm.expect(inv.items).to.have.length(1); });",
+               "pm.test('Se aplicaron los cambios', () => { pm.expect(inv.status).to.eql('SENT'); pm.expect(inv.notes).to.eql('Actualizada desde Postman'); pm.expect(inv.currency).to.eql('EUR'); pm.expect(inv.items).to.have.length(1); });",
                "pm.test('Conserva el número', () => pm.expect(inv.number).to.eql(pm.collectionVariables.get('invoiceNumber')));",
                "pm.test('Subtotal 3*5000 = 15000', () => pm.expect(inv.subtotalCents).to.eql(15000));"],
         examples=[example("200 OK", 200, "OK", {"data": INVOICE}), example("404 No existe", 404, "Not Found", ERR404), example("422 Reglas de negocio", 422, "Unprocessable Entity", ERR422)]),
@@ -286,6 +288,12 @@ errors_items = [
         tests=["pm.test('Status 422', () => pm.response.to.have.status(422));",
                "pm.test('UNPROCESSABLE_ENTITY', () => pm.expect(pm.response.json().error.code).to.eql('UNPROCESSABLE_ENTITY'));"],
         examples=[example("422 Unprocessable Entity", 422, "Unprocessable Entity", ERR422)]),
+    req("Moneda inválida → 400", "POST", "/invoices", "Solo se aceptan `MXN`, `USD` y `EUR` (por defecto `USD` si se omite).",
+        body={**INVOICE_BODY, "currency": "GBP"},
+        tests=["pm.test('Status 400', () => pm.response.to.have.status(400));",
+               "const e = pm.response.json().error;",
+               "pm.test('VALIDATION_ERROR sobre currency', () => { pm.expect(e.code).to.eql('VALIDATION_ERROR'); pm.expect(e.details.map(d => d.field)).to.include('currency'); });"],
+        examples=[example("400 Moneda inválida", 400, "Bad Request", {"error": {"code": "VALIDATION_ERROR", "message": "Datos de entrada inválidos", "details": [{"field": "currency", "message": "Moneda inválida (MXN, USD o EUR)"}]}})]),
     req("Id inexistente → 404", "GET", "/invoices/999999", "Una factura inexistente (o ajena) es 404, nunca 403.",
         tests=["pm.test('Status 404', () => pm.response.to.have.status(404));",
                "pm.test('NOT_FOUND', () => pm.expect(pm.response.json().error.code).to.eql('NOT_FOUND'));"],

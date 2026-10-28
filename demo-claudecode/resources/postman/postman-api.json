@@ -549,7 +549,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"data\": [\n    {\n      \"id\": 21,\n      \"number\": \"FAC-0021\",\n      \"clientName\": \"Acme SA\",\n      \"clientEmail\": \"compras@acme.com\",\n      \"clientAddress\": null,\n      \"issueDate\": \"2026-10-01T00:00:00.000Z\",\n      \"dueDate\": \"2026-10-20T00:00:00.000Z\",\n      \"status\": \"SENT\",\n      \"isOverdue\": false,\n      \"taxRate\": 16,\n      \"notes\": null,\n      \"items\": [\n        {\n          \"id\": 37,\n          \"description\": \"Servicio\",\n          \"quantity\": 2,\n          \"unitPriceCents\": 5000,\n          \"amountCents\": 10000\n        }\n      ],\n      \"subtotalCents\": 10000,\n      \"taxCents\": 1600,\n      \"totalCents\": 11600,\n      \"createdAt\": \"2026-10-25T04:13:25.106Z\",\n      \"updatedAt\": \"2026-10-25T04:13:25.112Z\"\n    }\n  ],\n  \"meta\": {\n    \"page\": 1,\n    \"pageSize\": 10,\n    \"total\": 1,\n    \"totalPages\": 1\n  }\n}"
+              "body": "{\n  \"data\": [\n    {\n      \"id\": 21,\n      \"number\": \"FAC-0021\",\n      \"clientName\": \"Acme SA\",\n      \"clientEmail\": \"compras@acme.com\",\n      \"clientAddress\": null,\n      \"issueDate\": \"2026-10-01T00:00:00.000Z\",\n      \"dueDate\": \"2026-10-20T00:00:00.000Z\",\n      \"status\": \"SENT\",\n      \"isOverdue\": false,\n      \"taxRate\": 16,\n      \"currency\": \"MXN\",\n      \"notes\": null,\n      \"items\": [\n        {\n          \"id\": 37,\n          \"description\": \"Servicio\",\n          \"quantity\": 2,\n          \"unitPriceCents\": 5000,\n          \"amountCents\": 10000\n        }\n      ],\n      \"subtotalCents\": 10000,\n      \"taxCents\": 1600,\n      \"totalCents\": 11600,\n      \"createdAt\": \"2026-10-25T04:13:25.106Z\",\n      \"updatedAt\": \"2026-10-25T04:13:25.112Z\"\n    }\n  ],\n  \"meta\": {\n    \"page\": 1,\n    \"pageSize\": 10,\n    \"total\": 1,\n    \"totalPages\": 1\n  }\n}"
             }
           ]
         },
@@ -637,7 +637,7 @@
             "description": "Crea una factura. 201 con cabecera `Location`. El test guarda su id en `{{id}}` para las siguientes peticiones. El número (`FAC-0001`...) lo asigna el servidor.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-01\",\n  \"dueDate\": \"2026-10-20\",\n  \"status\": \"DRAFT\",\n  \"taxRate\": 16,\n  \"notes\": \"Gracias por su compra\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 2,\n      \"unitPriceCents\": 5000\n    },\n    {\n      \"description\": \"Soporte mensual\",\n      \"quantity\": 1.5,\n      \"unitPriceCents\": 12000\n    }\n  ]\n}",
+              "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-01\",\n  \"dueDate\": \"2026-10-20\",\n  \"status\": \"DRAFT\",\n  \"taxRate\": 16,\n  \"currency\": \"MXN\",\n  \"notes\": \"Gracias por su compra\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 2,\n      \"unitPriceCents\": 5000\n    },\n    {\n      \"description\": \"Soporte mensual\",\n      \"quantity\": 1.5,\n      \"unitPriceCents\": 12000\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -655,13 +655,15 @@
                   "pm.test('Location apunta a la factura', () => pm.expect(pm.response.headers.get('Location')).to.match(/\\/api\\/v1\\/invoices\\/\\d+$/));",
                   "const inv = pm.response.json().data;",
                   "pm.test('Estructura de la factura', () => {",
-                  "  pm.expect(inv).to.include.all.keys('id','number','clientName','issueDate','dueDate','status','isOverdue','taxRate','items','subtotalCents','taxCents','totalCents');",
+                  "  pm.expect(inv).to.include.all.keys('id','number','clientName','issueDate','dueDate','status','isOverdue','taxRate','currency','items','subtotalCents','taxCents','totalCents');",
                   "  pm.expect(inv.number).to.match(/^FAC-\\d{4,}$/);",
                   "  pm.expect(inv.status).to.be.oneOf(['DRAFT','SENT','PAID']);",
+                  "  pm.expect(inv.currency).to.be.oneOf(['MXN','USD','EUR']);",
                   "  pm.expect(inv.items).to.be.an('array').that.is.not.empty;",
                   "  pm.expect(inv.totalCents).to.equal(inv.subtotalCents + inv.taxCents);",
                   "});",
                   "pm.test('Totales correctos (2*5000 + 1.5*12000 = 28000, IVA 16%)', () => { pm.expect(inv.subtotalCents).to.eql(28000); pm.expect(inv.taxCents).to.eql(4480); pm.expect(inv.totalCents).to.eql(32480); });",
+                  "pm.test('Conserva la moneda enviada (MXN)', () => pm.expect(inv.currency).to.eql('MXN'));",
                   "pm.collectionVariables.set('id', inv.id);",
                   "pm.collectionVariables.set('invoiceNumber', inv.number);"
                 ]
@@ -691,7 +693,7 @@
                 },
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-01\",\n  \"dueDate\": \"2026-10-20\",\n  \"status\": \"DRAFT\",\n  \"taxRate\": 16,\n  \"notes\": \"Gracias por su compra\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 2,\n      \"unitPriceCents\": 5000\n    },\n    {\n      \"description\": \"Soporte mensual\",\n      \"quantity\": 1.5,\n      \"unitPriceCents\": 12000\n    }\n  ]\n}",
+                  "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-01\",\n  \"dueDate\": \"2026-10-20\",\n  \"status\": \"DRAFT\",\n  \"taxRate\": 16,\n  \"currency\": \"MXN\",\n  \"notes\": \"Gracias por su compra\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 2,\n      \"unitPriceCents\": 5000\n    },\n    {\n      \"description\": \"Soporte mensual\",\n      \"quantity\": 1.5,\n      \"unitPriceCents\": 12000\n    }\n  ]\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -712,7 +714,7 @@
                   "value": "/api/v1/invoices/21"
                 }
               ],
-              "body": "{\n  \"data\": {\n    \"id\": 21,\n    \"number\": \"FAC-0021\",\n    \"clientName\": \"Acme SA\",\n    \"clientEmail\": \"compras@acme.com\",\n    \"clientAddress\": null,\n    \"issueDate\": \"2026-10-01T00:00:00.000Z\",\n    \"dueDate\": \"2026-10-20T00:00:00.000Z\",\n    \"status\": \"SENT\",\n    \"isOverdue\": false,\n    \"taxRate\": 16,\n    \"notes\": null,\n    \"items\": [\n      {\n        \"id\": 37,\n        \"description\": \"Servicio\",\n        \"quantity\": 2,\n        \"unitPriceCents\": 5000,\n        \"amountCents\": 10000\n      }\n    ],\n    \"subtotalCents\": 10000,\n    \"taxCents\": 1600,\n    \"totalCents\": 11600,\n    \"createdAt\": \"2026-10-25T04:13:25.106Z\",\n    \"updatedAt\": \"2026-10-25T04:13:25.112Z\"\n  }\n}"
+              "body": "{\n  \"data\": {\n    \"id\": 21,\n    \"number\": \"FAC-0021\",\n    \"clientName\": \"Acme SA\",\n    \"clientEmail\": \"compras@acme.com\",\n    \"clientAddress\": null,\n    \"issueDate\": \"2026-10-01T00:00:00.000Z\",\n    \"dueDate\": \"2026-10-20T00:00:00.000Z\",\n    \"status\": \"SENT\",\n    \"isOverdue\": false,\n    \"taxRate\": 16,\n    \"currency\": \"MXN\",\n    \"notes\": null,\n    \"items\": [\n      {\n        \"id\": 37,\n        \"description\": \"Servicio\",\n        \"quantity\": 2,\n        \"unitPriceCents\": 5000,\n        \"amountCents\": 10000\n      }\n    ],\n    \"subtotalCents\": 10000,\n    \"taxCents\": 1600,\n    \"totalCents\": 11600,\n    \"createdAt\": \"2026-10-25T04:13:25.106Z\",\n    \"updatedAt\": \"2026-10-25T04:13:25.112Z\"\n  }\n}"
             },
             {
               "name": "400 Datos inválidos",
@@ -736,7 +738,7 @@
                 },
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-01\",\n  \"dueDate\": \"2026-10-20\",\n  \"status\": \"DRAFT\",\n  \"taxRate\": 16,\n  \"notes\": \"Gracias por su compra\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 2,\n      \"unitPriceCents\": 5000\n    },\n    {\n      \"description\": \"Soporte mensual\",\n      \"quantity\": 1.5,\n      \"unitPriceCents\": 12000\n    }\n  ]\n}",
+                  "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-01\",\n  \"dueDate\": \"2026-10-20\",\n  \"status\": \"DRAFT\",\n  \"taxRate\": 16,\n  \"currency\": \"MXN\",\n  \"notes\": \"Gracias por su compra\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 2,\n      \"unitPriceCents\": 5000\n    },\n    {\n      \"description\": \"Soporte mensual\",\n      \"quantity\": 1.5,\n      \"unitPriceCents\": 12000\n    }\n  ]\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -777,7 +779,7 @@
                 },
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-01\",\n  \"dueDate\": \"2026-10-20\",\n  \"status\": \"DRAFT\",\n  \"taxRate\": 16,\n  \"notes\": \"Gracias por su compra\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 2,\n      \"unitPriceCents\": 5000\n    },\n    {\n      \"description\": \"Soporte mensual\",\n      \"quantity\": 1.5,\n      \"unitPriceCents\": 12000\n    }\n  ]\n}",
+                  "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-01\",\n  \"dueDate\": \"2026-10-20\",\n  \"status\": \"DRAFT\",\n  \"taxRate\": 16,\n  \"currency\": \"MXN\",\n  \"notes\": \"Gracias por su compra\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 2,\n      \"unitPriceCents\": 5000\n    },\n    {\n      \"description\": \"Soporte mensual\",\n      \"quantity\": 1.5,\n      \"unitPriceCents\": 12000\n    }\n  ]\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -825,9 +827,10 @@
                   "const inv = pm.response.json().data;",
                   "pm.test('Es la factura pedida', () => pm.expect(String(inv.id)).to.eql(pm.collectionVariables.get('id')));",
                   "pm.test('Estructura de la factura', () => {",
-                  "  pm.expect(inv).to.include.all.keys('id','number','clientName','issueDate','dueDate','status','isOverdue','taxRate','items','subtotalCents','taxCents','totalCents');",
+                  "  pm.expect(inv).to.include.all.keys('id','number','clientName','issueDate','dueDate','status','isOverdue','taxRate','currency','items','subtotalCents','taxCents','totalCents');",
                   "  pm.expect(inv.number).to.match(/^FAC-\\d{4,}$/);",
                   "  pm.expect(inv.status).to.be.oneOf(['DRAFT','SENT','PAID']);",
+                  "  pm.expect(inv.currency).to.be.oneOf(['MXN','USD','EUR']);",
                   "  pm.expect(inv.items).to.be.an('array').that.is.not.empty;",
                   "  pm.expect(inv.totalCents).to.equal(inv.subtotalCents + inv.taxCents);",
                   "});"
@@ -861,7 +864,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"data\": {\n    \"id\": 21,\n    \"number\": \"FAC-0021\",\n    \"clientName\": \"Acme SA\",\n    \"clientEmail\": \"compras@acme.com\",\n    \"clientAddress\": null,\n    \"issueDate\": \"2026-10-01T00:00:00.000Z\",\n    \"dueDate\": \"2026-10-20T00:00:00.000Z\",\n    \"status\": \"SENT\",\n    \"isOverdue\": false,\n    \"taxRate\": 16,\n    \"notes\": null,\n    \"items\": [\n      {\n        \"id\": 37,\n        \"description\": \"Servicio\",\n        \"quantity\": 2,\n        \"unitPriceCents\": 5000,\n        \"amountCents\": 10000\n      }\n    ],\n    \"subtotalCents\": 10000,\n    \"taxCents\": 1600,\n    \"totalCents\": 11600,\n    \"createdAt\": \"2026-10-25T04:13:25.106Z\",\n    \"updatedAt\": \"2026-10-25T04:13:25.112Z\"\n  }\n}"
+              "body": "{\n  \"data\": {\n    \"id\": 21,\n    \"number\": \"FAC-0021\",\n    \"clientName\": \"Acme SA\",\n    \"clientEmail\": \"compras@acme.com\",\n    \"clientAddress\": null,\n    \"issueDate\": \"2026-10-01T00:00:00.000Z\",\n    \"dueDate\": \"2026-10-20T00:00:00.000Z\",\n    \"status\": \"SENT\",\n    \"isOverdue\": false,\n    \"taxRate\": 16,\n    \"currency\": \"MXN\",\n    \"notes\": null,\n    \"items\": [\n      {\n        \"id\": 37,\n        \"description\": \"Servicio\",\n        \"quantity\": 2,\n        \"unitPriceCents\": 5000,\n        \"amountCents\": 10000\n      }\n    ],\n    \"subtotalCents\": 10000,\n    \"taxCents\": 1600,\n    \"totalCents\": 11600,\n    \"createdAt\": \"2026-10-25T04:13:25.106Z\",\n    \"updatedAt\": \"2026-10-25T04:13:25.112Z\"\n  }\n}"
             },
             {
               "name": "404 No existe",
@@ -943,7 +946,7 @@
             "description": "Reemplaza campos y líneas (mismo cuerpo que POST). Los ids de las líneas cambian.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-01\",\n  \"dueDate\": \"2026-10-20\",\n  \"status\": \"SENT\",\n  \"taxRate\": 16,\n  \"notes\": \"Actualizada desde Postman\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 3,\n      \"unitPriceCents\": 5000\n    }\n  ]\n}",
+              "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-01\",\n  \"dueDate\": \"2026-10-20\",\n  \"status\": \"SENT\",\n  \"taxRate\": 16,\n  \"currency\": \"EUR\",\n  \"notes\": \"Actualizada desde Postman\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 3,\n      \"unitPriceCents\": 5000\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -959,7 +962,7 @@
                 "exec": [
                   "pm.test('Status 200', () => pm.response.to.have.status(200));",
                   "const inv = pm.response.json().data;",
-                  "pm.test('Se aplicaron los cambios', () => { pm.expect(inv.status).to.eql('SENT'); pm.expect(inv.notes).to.eql('Actualizada desde Postman'); pm.expect(inv.items).to.have.length(1); });",
+                  "pm.test('Se aplicaron los cambios', () => { pm.expect(inv.status).to.eql('SENT'); pm.expect(inv.notes).to.eql('Actualizada desde Postman'); pm.expect(inv.currency).to.eql('EUR'); pm.expect(inv.items).to.have.length(1); });",
                   "pm.test('Conserva el número', () => pm.expect(inv.number).to.eql(pm.collectionVariables.get('invoiceNumber')));",
                   "pm.test('Subtotal 3*5000 = 15000', () => pm.expect(inv.subtotalCents).to.eql(15000));"
                 ]
@@ -990,7 +993,7 @@
                 },
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-01\",\n  \"dueDate\": \"2026-10-20\",\n  \"status\": \"SENT\",\n  \"taxRate\": 16,\n  \"notes\": \"Actualizada desde Postman\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 3,\n      \"unitPriceCents\": 5000\n    }\n  ]\n}",
+                  "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-01\",\n  \"dueDate\": \"2026-10-20\",\n  \"status\": \"SENT\",\n  \"taxRate\": 16,\n  \"currency\": \"EUR\",\n  \"notes\": \"Actualizada desde Postman\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 3,\n      \"unitPriceCents\": 5000\n    }\n  ]\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -1007,7 +1010,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"data\": {\n    \"id\": 21,\n    \"number\": \"FAC-0021\",\n    \"clientName\": \"Acme SA\",\n    \"clientEmail\": \"compras@acme.com\",\n    \"clientAddress\": null,\n    \"issueDate\": \"2026-10-01T00:00:00.000Z\",\n    \"dueDate\": \"2026-10-20T00:00:00.000Z\",\n    \"status\": \"SENT\",\n    \"isOverdue\": false,\n    \"taxRate\": 16,\n    \"notes\": null,\n    \"items\": [\n      {\n        \"id\": 37,\n        \"description\": \"Servicio\",\n        \"quantity\": 2,\n        \"unitPriceCents\": 5000,\n        \"amountCents\": 10000\n      }\n    ],\n    \"subtotalCents\": 10000,\n    \"taxCents\": 1600,\n    \"totalCents\": 11600,\n    \"createdAt\": \"2026-10-25T04:13:25.106Z\",\n    \"updatedAt\": \"2026-10-25T04:13:25.112Z\"\n  }\n}"
+              "body": "{\n  \"data\": {\n    \"id\": 21,\n    \"number\": \"FAC-0021\",\n    \"clientName\": \"Acme SA\",\n    \"clientEmail\": \"compras@acme.com\",\n    \"clientAddress\": null,\n    \"issueDate\": \"2026-10-01T00:00:00.000Z\",\n    \"dueDate\": \"2026-10-20T00:00:00.000Z\",\n    \"status\": \"SENT\",\n    \"isOverdue\": false,\n    \"taxRate\": 16,\n    \"currency\": \"MXN\",\n    \"notes\": null,\n    \"items\": [\n      {\n        \"id\": 37,\n        \"description\": \"Servicio\",\n        \"quantity\": 2,\n        \"unitPriceCents\": 5000,\n        \"amountCents\": 10000\n      }\n    ],\n    \"subtotalCents\": 10000,\n    \"taxCents\": 1600,\n    \"totalCents\": 11600,\n    \"createdAt\": \"2026-10-25T04:13:25.106Z\",\n    \"updatedAt\": \"2026-10-25T04:13:25.112Z\"\n  }\n}"
             },
             {
               "name": "404 No existe",
@@ -1032,7 +1035,7 @@
                 },
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-01\",\n  \"dueDate\": \"2026-10-20\",\n  \"status\": \"SENT\",\n  \"taxRate\": 16,\n  \"notes\": \"Actualizada desde Postman\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 3,\n      \"unitPriceCents\": 5000\n    }\n  ]\n}",
+                  "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-01\",\n  \"dueDate\": \"2026-10-20\",\n  \"status\": \"SENT\",\n  \"taxRate\": 16,\n  \"currency\": \"EUR\",\n  \"notes\": \"Actualizada desde Postman\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 3,\n      \"unitPriceCents\": 5000\n    }\n  ]\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -1074,7 +1077,7 @@
                 },
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-01\",\n  \"dueDate\": \"2026-10-20\",\n  \"status\": \"SENT\",\n  \"taxRate\": 16,\n  \"notes\": \"Actualizada desde Postman\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 3,\n      \"unitPriceCents\": 5000\n    }\n  ]\n}",
+                  "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-01\",\n  \"dueDate\": \"2026-10-20\",\n  \"status\": \"SENT\",\n  \"taxRate\": 16,\n  \"currency\": \"EUR\",\n  \"notes\": \"Actualizada desde Postman\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 3,\n      \"unitPriceCents\": 5000\n    }\n  ]\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -1183,7 +1186,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"data\": {\n    \"id\": 21,\n    \"number\": \"FAC-0021\",\n    \"clientName\": \"Acme SA\",\n    \"clientEmail\": \"compras@acme.com\",\n    \"clientAddress\": null,\n    \"issueDate\": \"2026-10-01T00:00:00.000Z\",\n    \"dueDate\": \"2026-10-20T00:00:00.000Z\",\n    \"status\": \"PAID\",\n    \"isOverdue\": false,\n    \"taxRate\": 16,\n    \"notes\": null,\n    \"items\": [\n      {\n        \"id\": 37,\n        \"description\": \"Servicio\",\n        \"quantity\": 2,\n        \"unitPriceCents\": 5000,\n        \"amountCents\": 10000\n      }\n    ],\n    \"subtotalCents\": 10000,\n    \"taxCents\": 1600,\n    \"totalCents\": 11600,\n    \"createdAt\": \"2026-10-25T04:13:25.106Z\",\n    \"updatedAt\": \"2026-10-25T04:13:25.112Z\"\n  }\n}"
+              "body": "{\n  \"data\": {\n    \"id\": 21,\n    \"number\": \"FAC-0021\",\n    \"clientName\": \"Acme SA\",\n    \"clientEmail\": \"compras@acme.com\",\n    \"clientAddress\": null,\n    \"issueDate\": \"2026-10-01T00:00:00.000Z\",\n    \"dueDate\": \"2026-10-20T00:00:00.000Z\",\n    \"status\": \"PAID\",\n    \"isOverdue\": false,\n    \"taxRate\": 16,\n    \"currency\": \"MXN\",\n    \"notes\": null,\n    \"items\": [\n      {\n        \"id\": 37,\n        \"description\": \"Servicio\",\n        \"quantity\": 2,\n        \"unitPriceCents\": 5000,\n        \"amountCents\": 10000\n      }\n    ],\n    \"subtotalCents\": 10000,\n    \"taxCents\": 1600,\n    \"totalCents\": 11600,\n    \"createdAt\": \"2026-10-25T04:13:25.106Z\",\n    \"updatedAt\": \"2026-10-25T04:13:25.112Z\"\n  }\n}"
             },
             {
               "name": "400 Estado inválido",
@@ -1785,7 +1788,7 @@
             "description": "Regla de negocio: `dueDate >= issueDate`.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-20\",\n  \"dueDate\": \"2026-10-01\",\n  \"status\": \"DRAFT\",\n  \"taxRate\": 16,\n  \"notes\": \"Gracias por su compra\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 2,\n      \"unitPriceCents\": 5000\n    },\n    {\n      \"description\": \"Soporte mensual\",\n      \"quantity\": 1.5,\n      \"unitPriceCents\": 12000\n    }\n  ]\n}",
+              "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-20\",\n  \"dueDate\": \"2026-10-01\",\n  \"status\": \"DRAFT\",\n  \"taxRate\": 16,\n  \"currency\": \"MXN\",\n  \"notes\": \"Gracias por su compra\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 2,\n      \"unitPriceCents\": 5000\n    },\n    {\n      \"description\": \"Soporte mensual\",\n      \"quantity\": 1.5,\n      \"unitPriceCents\": 12000\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1828,7 +1831,7 @@
                 },
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-20\",\n  \"dueDate\": \"2026-10-01\",\n  \"status\": \"DRAFT\",\n  \"taxRate\": 16,\n  \"notes\": \"Gracias por su compra\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 2,\n      \"unitPriceCents\": 5000\n    },\n    {\n      \"description\": \"Soporte mensual\",\n      \"quantity\": 1.5,\n      \"unitPriceCents\": 12000\n    }\n  ]\n}",
+                  "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-20\",\n  \"dueDate\": \"2026-10-01\",\n  \"status\": \"DRAFT\",\n  \"taxRate\": 16,\n  \"currency\": \"MXN\",\n  \"notes\": \"Gracias por su compra\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 2,\n      \"unitPriceCents\": 5000\n    },\n    {\n      \"description\": \"Soporte mensual\",\n      \"quantity\": 1.5,\n      \"unitPriceCents\": 12000\n    }\n  ]\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -1846,6 +1849,94 @@
                 }
               ],
               "body": "{\n  \"error\": {\n    \"code\": \"UNPROCESSABLE_ENTITY\",\n    \"message\": \"La factura incumple reglas de negocio\",\n    \"details\": [\n      {\n        \"field\": \"dueDate\",\n        \"message\": \"El vencimiento no puede ser anterior a la emisión\"\n      }\n    ]\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Moneda inválida → 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/invoices",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "invoices"
+              ]
+            },
+            "description": "Solo se aceptan `MXN`, `USD` y `EUR` (por defecto `USD` si se omite).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-01\",\n  \"dueDate\": \"2026-10-20\",\n  \"status\": \"DRAFT\",\n  \"taxRate\": 16,\n  \"currency\": \"GBP\",\n  \"notes\": \"Gracias por su compra\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 2,\n      \"unitPriceCents\": 5000\n    },\n    {\n      \"description\": \"Soporte mensual\",\n      \"quantity\": 1.5,\n      \"unitPriceCents\": 12000\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                  "const e = pm.response.json().error;",
+                  "pm.test('VALIDATION_ERROR sobre currency', () => { pm.expect(e.code).to.eql('VALIDATION_ERROR'); pm.expect(e.details.map(d => d.field)).to.include('currency'); });"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "400 Moneda inválida",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/invoices",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "invoices"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-01\",\n  \"dueDate\": \"2026-10-20\",\n  \"status\": \"DRAFT\",\n  \"taxRate\": 16,\n  \"currency\": \"GBP\",\n  \"notes\": \"Gracias por su compra\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 2,\n      \"unitPriceCents\": 5000\n    },\n    {\n      \"description\": \"Soporte mensual\",\n      \"quantity\": 1.5,\n      \"unitPriceCents\": 12000\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"Datos de entrada inválidos\",\n    \"details\": [\n      {\n        \"field\": \"currency\",\n        \"message\": \"Moneda inválida (MXN, USD o EUR)\"\n      }\n    ]\n  }\n}"
             }
           ]
         },
@@ -2085,7 +2176,7 @@
             "description": "Una escritura autenticada solo por cookie debe llevar un `Origin` permitido (o `Sec-Fetch-Site` same-origin/same-site/none). Postman no envía ninguno: 403 `FORBIDDEN` (guardia CSRF de `withAuth`).",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-01\",\n  \"dueDate\": \"2026-10-20\",\n  \"status\": \"DRAFT\",\n  \"taxRate\": 16,\n  \"notes\": \"Gracias por su compra\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 2,\n      \"unitPriceCents\": 5000\n    },\n    {\n      \"description\": \"Soporte mensual\",\n      \"quantity\": 1.5,\n      \"unitPriceCents\": 12000\n    }\n  ]\n}",
+              "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-01\",\n  \"dueDate\": \"2026-10-20\",\n  \"status\": \"DRAFT\",\n  \"taxRate\": 16,\n  \"currency\": \"MXN\",\n  \"notes\": \"Gracias por su compra\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 2,\n      \"unitPriceCents\": 5000\n    },\n    {\n      \"description\": \"Soporte mensual\",\n      \"quantity\": 1.5,\n      \"unitPriceCents\": 12000\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2131,7 +2222,7 @@
                 },
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-01\",\n  \"dueDate\": \"2026-10-20\",\n  \"status\": \"DRAFT\",\n  \"taxRate\": 16,\n  \"notes\": \"Gracias por su compra\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 2,\n      \"unitPriceCents\": 5000\n    },\n    {\n      \"description\": \"Soporte mensual\",\n      \"quantity\": 1.5,\n      \"unitPriceCents\": 12000\n    }\n  ]\n}",
+                  "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-01\",\n  \"dueDate\": \"2026-10-20\",\n  \"status\": \"DRAFT\",\n  \"taxRate\": 16,\n  \"currency\": \"MXN\",\n  \"notes\": \"Gracias por su compra\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 2,\n      \"unitPriceCents\": 5000\n    },\n    {\n      \"description\": \"Soporte mensual\",\n      \"quantity\": 1.5,\n      \"unitPriceCents\": 12000\n    }\n  ]\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -2219,7 +2310,7 @@
             "description": "Un `Origin` fuera de `FRONTEND_ORIGIN` se rechaza en `proxy.ts` aunque el Bearer sea válido.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-01\",\n  \"dueDate\": \"2026-10-20\",\n  \"status\": \"DRAFT\",\n  \"taxRate\": 16,\n  \"notes\": \"Gracias por su compra\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 2,\n      \"unitPriceCents\": 5000\n    },\n    {\n      \"description\": \"Soporte mensual\",\n      \"quantity\": 1.5,\n      \"unitPriceCents\": 12000\n    }\n  ]\n}",
+              "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-01\",\n  \"dueDate\": \"2026-10-20\",\n  \"status\": \"DRAFT\",\n  \"taxRate\": 16,\n  \"currency\": \"MXN\",\n  \"notes\": \"Gracias por su compra\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 2,\n      \"unitPriceCents\": 5000\n    },\n    {\n      \"description\": \"Soporte mensual\",\n      \"quantity\": 1.5,\n      \"unitPriceCents\": 12000\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2267,7 +2358,7 @@
                 },
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-01\",\n  \"dueDate\": \"2026-10-20\",\n  \"status\": \"DRAFT\",\n  \"taxRate\": 16,\n  \"notes\": \"Gracias por su compra\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 2,\n      \"unitPriceCents\": 5000\n    },\n    {\n      \"description\": \"Soporte mensual\",\n      \"quantity\": 1.5,\n      \"unitPriceCents\": 12000\n    }\n  ]\n}",
+                  "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-01\",\n  \"dueDate\": \"2026-10-20\",\n  \"status\": \"DRAFT\",\n  \"taxRate\": 16,\n  \"currency\": \"MXN\",\n  \"notes\": \"Gracias por su compra\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 2,\n      \"unitPriceCents\": 5000\n    },\n    {\n      \"description\": \"Soporte mensual\",\n      \"quantity\": 1.5,\n      \"unitPriceCents\": 12000\n    }\n  ]\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -2321,7 +2412,7 @@
             "description": "El navegador marca las peticiones entre sitios con `Sec-Fetch-Site: cross-site`; se rechazan aunque el `Origin` parezca válido.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-01\",\n  \"dueDate\": \"2026-10-20\",\n  \"status\": \"DRAFT\",\n  \"taxRate\": 16,\n  \"notes\": \"Gracias por su compra\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 2,\n      \"unitPriceCents\": 5000\n    },\n    {\n      \"description\": \"Soporte mensual\",\n      \"quantity\": 1.5,\n      \"unitPriceCents\": 12000\n    }\n  ]\n}",
+              "raw": "{\n  \"clientName\": \"Acme SA\",\n  \"clientEmail\": \"compras@acme.com\",\n  \"clientAddress\": \"Av. Reforma 100, CDMX\",\n  \"issueDate\": \"2026-10-01\",\n  \"dueDate\": \"2026-10-20\",\n  \"status\": \"DRAFT\",\n  \"taxRate\": 16,\n  \"currency\": \"MXN\",\n  \"notes\": \"Gracias por su compra\",\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 2,\n      \"unitPriceCents\": 5000\n    },\n    {\n      \"description\": \"Soporte mensual\",\n      \"quantity\": 1.5,\n      \"unitPriceCents\": 12000\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"

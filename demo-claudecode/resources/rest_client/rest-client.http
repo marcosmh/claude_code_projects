@@ -125,13 +125,15 @@ Authorization: Bearer {{token}}
 # ESPERADO  201 Created, cabecera Location: /api/v1/invoices/<id>
 #   { "data": { "id": 21, "number": "FAC-0021", "clientName": "Acme SA",
 #               "status": "DRAFT", "isOverdue": false, "taxRate": 16,
+#               "currency": "MXN",
 #               "items": [ { "id": 37, "description": "...", "quantity": 2,
 #                            "unitPriceCents": 5000, "amountCents": 10000 }, ... ],
 #               "subtotalCents": 28000, "taxCents": 4480, "totalCents": 32480,
 #               "createdAt": "...", "updatedAt": "..." } }
 #   Comprueba: totalCents == subtotalCents + taxCents (2*5000 + 1.5*12000 = 28000;
 #   IVA 16 % = 4480).
-# ERRORES   400 VALIDATION_ERROR (campos inválidos, con details[].field),
+# ERRORES   400 VALIDATION_ERROR (campos inválidos, con details[].field; currency
+#           solo acepta MXN | USD | EUR, por defecto USD si se omite),
 #           422 UNPROCESSABLE_ENTITY (dueDate < issueDate, sin líneas, quantity <= 0)
 # @name createInvoice
 POST {{baseUrl}}/invoices
@@ -146,6 +148,7 @@ Content-Type: {{contentType}}
   "dueDate": "2026-10-20",
   "status": "DRAFT",
   "taxRate": 16,
+  "currency": "MXN",
   "notes": "Gracias por su compra",
   "items": [
     { "description": "Servicio de consultoría", "quantity": 2, "unitPriceCents": 5000 },
@@ -169,7 +172,7 @@ Authorization: Bearer {{token}}
 # cambian. El número no cambia.
 #
 # ESPERADO  200 OK  status "SENT", notes "Actualizada desde REST Client",
-#           una sola línea, subtotalCents 15000 (3 * 5000), mismo number
+#           currency "EUR", una sola línea, subtotalCents 15000 (3 * 5000), mismo number
 # ERRORES   400, 404, 422
 PUT {{baseUrl}}/invoices/{{id}}
 Authorization: Bearer {{token}}
@@ -182,6 +185,7 @@ Content-Type: {{contentType}}
   "dueDate": "2026-10-20",
   "status": "SENT",
   "taxRate": 16,
+  "currency": "EUR",
   "notes": "Actualizada desde REST Client",
   "items": [
     { "description": "Servicio de consultoría", "quantity": 3, "unitPriceCents": 5000 }
