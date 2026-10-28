@@ -112,9 +112,29 @@ describe("InvoiceService lectura/modificación", () => {
     const page = await service.list(U, { page: 2, pageSize: 2 });
     expect(page.data).toHaveLength(2);
     expect(page.meta).toEqual({ page: 2, pageSize: 2, total: 5, totalPages: 3 });
-    expect((await service.list(U, { page: 1, pageSize: 10, status: "SENT" })).meta.total).toBe(1);
+    expect((await service.list(U, { page: 1, pageSize: 10, status: ["SENT"] })).meta.total).toBe(1);
     expect((await service.list(U, { page: 1, pageSize: 10, search: "beta" })).meta.total).toBe(2);
     expect((await service.list(U, { page: 1, pageSize: 10, search: "FAC-0003" })).meta.total).toBe(1);
+  });
+
+  it("list filtra por rango de importe (con impuestos) y pagina sobre el resultado", async () => {
+    // total = quantity * unitPriceCents + 10 %
+    const priced = (cents: number, currency: "USD" | "MXN" = "USD") =>
+      request({ currency, taxRate: 10, items: [{ description: "x", quantity: 1, unitPriceCents: cents }] });
+    for (const cents of [1000, 2000, 3000, 4000]) await service.create(U, priced(cents)); // 1100 2200 3300 4400
+    await service.create(U, priced(2000, "MXN"));
+    await service.create(OTHER, priced(2000));
+
+    const base = { page: 1, pageSize: 10, currency: "USD" as const };
+    const mid = await service.list(U, { ...base, minTotalCents: 2200, maxTotalCents: 3300 });
+    expect(mid.data.map((i) => i.totalCents)).toEqual([3300, 2200]);
+    expect(mid.meta.total).toBe(2);
+    expect((await service.list(U, { ...base, minTotalCents: 3301 })).data.map((i) => i.totalCents)).toEqual([4400]);
+    expect((await service.list(U, { ...base, maxTotalCents: 1099 })).meta.total).toBe(0);
+
+    const paged = await service.list(U, { ...base, pageSize: 1, page: 2, minTotalCents: 2200 });
+    expect(paged.meta).toEqual({ page: 2, pageSize: 1, total: 3, totalPages: 3 });
+    expect(paged.data.map((i) => i.totalCents)).toEqual([3300]);
   });
 });
 

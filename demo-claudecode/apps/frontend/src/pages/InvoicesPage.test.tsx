@@ -79,7 +79,7 @@ describe("InvoicesPage", () => {
     renderPage("/invoices?status=PAID&q=acme&page=2");
 
     await screen.findByRole("link", { name: "FAC-0001" });
-    expect(invoices.list).toHaveBeenCalledWith({ status: "PAID", search: "acme", page: 2, pageSize: 10 }, expect.anything());
+    expect(invoices.list).toHaveBeenCalledWith({ status: ["PAID"], search: "acme", page: 2, pageSize: 10 }, expect.anything());
   });
 
   it("con una búsqueda activa oculta los contadores globales", async () => {

@@ -1,4 +1,4 @@
-import { buildInvoiceNumber } from "../domain/invoice";
+import { buildInvoiceNumber, calcTotals } from "../domain/invoice";
 import type {
   InvoiceRequest,
   InvoiceResponse,
@@ -17,16 +17,41 @@ export class InvoiceService {
   ) {}
 
   async list(ownerId: number, query: ListInvoicesQuery): Promise<ListInvoicesResult> {
-    const { status, search, page, pageSize } = query;
-    const { data, total } = await this.repository.findAll(ownerId, {
-      filters: { status, search },
-      pagination: { page, pageSize },
-    });
+    const { status, search, currency, issuedFrom, issuedTo, minTotalCents, maxTotalCents, page, pageSize } = query;
+    const filters = {
+      status,
+      search,
+      currency,
+      issuedFrom: issuedFrom ? new Date(issuedFrom) : undefined,
+      issuedTo: issuedTo ? new Date(issuedTo) : undefined,
+    };
+    const { data, total } =
+      minTotalCents === undefined && maxTotalCents === undefined
+        ? await this.repository.findAll(ownerId, { filters, pagination: { page, pageSize } })
+        : await this.listByTotal(ownerId, filters, { minTotalCents, maxTotalCents }, { page, pageSize });
     const now = this.now();
     return {
       data: data.map((invoice) => toInvoiceResponse(invoice, now)),
       meta: { page, pageSize, total, totalPages: Math.ceil(total / pageSize) },
     };
+  }
+
+  /**
+   * Totals are derived (never stored), so a range on the total cannot be a SQL condition:
+   * load the owner's matches for the other filters, keep those in range and paginate here.
+   */
+  private async listByTotal(
+    ownerId: number,
+    filters: NonNullable<Parameters<InvoiceRepository["findAll"]>[1]>["filters"],
+    { minTotalCents, maxTotalCents }: { minTotalCents?: number; maxTotalCents?: number },
+    { page, pageSize }: { page: number; pageSize: number },
+  ) {
+    const { data: candidates } = await this.repository.findAll(ownerId, { filters });
+    const inRange = candidates.filter(({ items, taxRate }) => {
+      const { totalCents } = calcTotals(items, taxRate);
+      return (minTotalCents === undefined || totalCents >= minTotalCents) && (maxTotalCents === undefined || totalCents <= maxTotalCents);
+    });
+    return { data: inRange.slice((page - 1) * pageSize, page * pageSize), total: inRange.length };
   }
 
   async getById(ownerId: number, id: number): Promise<InvoiceResponse> {

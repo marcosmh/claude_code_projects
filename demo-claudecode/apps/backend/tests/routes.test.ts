@@ -161,6 +161,19 @@ describe("invoices routes", () => {
     expect((await listRoute.GET(json("GET", "/invoices?status=BAD"))).status).toBe(400);
   });
 
+  it("GET lista con varios estados, rango de fechas e importe", async () => {
+    await createOne({ status: "DRAFT" });
+    await createOne({ status: "SENT" });
+    await createOne({ status: "PAID" });
+    const count = async (qs: string) => (await (await listRoute.GET(json("GET", `/invoices?${qs}`))).json()).meta.total;
+    expect(await count("status=DRAFT,SENT")).toBe(2);
+    expect(await count("issuedFrom=2999-01-01")).toBe(0);
+    expect(await count("currency=EUR")).toBe(0);
+    expect(await count("currency=USD&minTotalCents=0&maxTotalCents=99999999")).toBe(3);
+    expect((await listRoute.GET(json("GET", "/invoices?minTotalCents=100"))).status).toBe(400);
+    expect((await listRoute.GET(json("GET", "/invoices?issuedFrom=2026-02-01&issuedTo=2026-01-01"))).status).toBe(400);
+  });
+
   it("GET id inexistente 404 e id inválido 400", async () => {
     const nf = await itemRoute.GET(json("GET", "/invoices/99"), ctx("99"));
     expect(nf.status).toBe(404);

@@ -53,7 +53,12 @@ export interface CreateInvoiceInput extends InvoiceData {
 export type UpdateInvoiceInput = InvoiceData;
 
 export interface InvoiceFilters {
-  status?: InvoiceStatus;
+  /** Any of these statuses. */
+  status?: InvoiceStatus[];
+  /** Issue date range, both bounds inclusive (calendar days, UTC). */
+  issuedFrom?: Date;
+  issuedTo?: Date;
+  currency?: Currency;
   /** Case-insensitive match on client name or invoice number. */
   search?: string;
 }

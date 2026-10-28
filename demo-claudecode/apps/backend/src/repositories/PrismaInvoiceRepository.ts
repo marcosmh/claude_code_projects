@@ -35,11 +35,18 @@ function scalarData(input: InvoiceData) {
 }
 
 function buildWhere(ownerId: number, options: FindAllInvoicesOptions): Prisma.InvoiceWhereInput {
-  const { status, search } = options.filters ?? {};
+  const { status, search, issuedFrom, issuedTo, currency } = options.filters ?? {};
   const term = search?.trim();
+  const issueDate = {
+    ...(issuedFrom ? { gte: issuedFrom } : {}),
+    // The upper bound is a whole day: strictly before the next midnight.
+    ...(issuedTo ? { lt: new Date(issuedTo.getTime() + 86_400_000) } : {}),
+  };
   return {
     ownerId,
-    ...(status ? { status } : {}),
+    ...(status?.length ? { status: { in: status } } : {}),
+    ...(issuedFrom || issuedTo ? { issueDate } : {}),
+    ...(currency ? { currency } : {}),
     ...(term
       ? { OR: [{ clientName: { contains: term } }, { number: { contains: term } }] }
       : {}),

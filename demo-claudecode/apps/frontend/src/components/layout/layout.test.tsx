@@ -101,6 +101,21 @@ describe("Sidebar", () => {
   });
 });
 
+describe("Sidebar: filtros de facturas", () => {
+  const sidebarAt = (url: string) =>
+    renderRouter(createMemoryRouter([{ path: "*", element: <Sidebar /> }], { initialEntries: [url] }));
+
+  it("solo aparecen en el listado de facturas", () => {
+    sidebarAt("/invoices");
+    expect(screen.getByRole("region", { name: "Filtros de facturas" })).toBeInTheDocument();
+  });
+
+  it.each(["/dashboard", "/invoices/5", "/invoices/new"])("no aparecen en %s", (url) => {
+    sidebarAt(url);
+    expect(screen.queryByRole("region", { name: "Filtros de facturas" })).not.toBeInTheDocument();
+  });
+});
+
 describe("AppShell", () => {
   it("renderiza el enlace de salto, la navegación y la ruta hija dentro de main", () => {
     renderRoutes("/dashboard");

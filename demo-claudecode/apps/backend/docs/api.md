@@ -160,8 +160,12 @@ Query params (todos opcionales):
 
 | Param | Tipo | Defecto | Notas |
 | --- | --- | --- | --- |
-| `status` | `DRAFT\|SENT\|PAID` | | filtra por estado (no existe `OVERDUE`; use `isOverdue` en cliente o stats) |
+| `status` | `DRAFT\|SENT\|PAID`, o varios separados por coma (`DRAFT,SENT`) | | filtra por uno o más estados (no existe `OVERDUE`; use `isOverdue` en cliente o stats) |
 | `search` | string | | texto contenido en cliente o número (`FAC-0007`), máx. 100 |
+| `issuedFrom` | `YYYY-MM-DD` | | fecha de emisión desde (inclusive) |
+| `issuedTo` | `YYYY-MM-DD` | | fecha de emisión hasta (inclusive); no puede ser anterior a `issuedFrom` |
+| `currency` | `MXN\|USD\|EUR` | | solo facturas de esa moneda |
+| `minTotalCents` / `maxTotalCents` | int >= 0 | | rango del total (con impuestos) en centavos; **requieren `currency`** (nunca se comparan importes de monedas distintas) y `min <= max`. El total no se almacena: se calcula y se filtra en memoria antes de paginar |
 | `page` | int >= 1 | 1 | |
 | `pageSize` | int 1 a 100 | 10 | |
 

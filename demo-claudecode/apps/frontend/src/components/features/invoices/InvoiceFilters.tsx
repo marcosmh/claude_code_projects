@@ -6,13 +6,15 @@ import { STATUS_LABELS, STATUSES } from "@/utils/status";
 interface InvoiceFiltersProps {
   q: string;
   status: Status | undefined;
+  /** Hay varios estados filtrados desde la barra lateral: ninguna pestaña (ni "Todas") es la actual. */
+  multiple?: boolean;
   /** Totales por estado; una pestaña sin valor no muestra contador (cargando, o no aplicable). */
   counts: Partial<Record<Status | "", number>>;
   onChange: (next: { q?: string; status?: Status | "" }) => void;
 }
 
 /** Búsqueda y filtro por estado; el padre los refleja en la URL. */
-export function InvoiceFilters({ q, status, counts, onChange }: InvoiceFiltersProps) {
+export function InvoiceFilters({ q, status, multiple = false, counts, onChange }: InvoiceFiltersProps) {
   const [draft, setDraft] = useState(q);
   const [syncedQ, setSyncedQ] = useState(q);
   // Si la URL cambia desde fuera (p. ej. "Quitar filtros"), el borrador se alinea durante el render.
@@ -30,7 +32,7 @@ export function InvoiceFilters({ q, status, counts, onChange }: InvoiceFiltersPr
     <div className="mb-4 flex flex-col gap-3 border-b border-zinc-200 sm:flex-row sm:items-end sm:justify-between">
       <nav aria-label="Filtrar por estado" className="flex flex-wrap gap-x-5">
         {tabs.map((t) => {
-          const current = (status ?? "") === t.value;
+          const current = !multiple && (status ?? "") === t.value;
           return (
             <button
               key={t.value || "all"}

@@ -14,12 +14,13 @@ import { useStatsSummary } from "@/hooks/useStats";
 
 export function InvoicesPage() {
   useDocumentTitle("Facturas");
-  const { q, status, apiParams, update } = useInvoiceFilters();
+  const { q, status, statuses, sidebarActive, hasFilters, apiParams, update } = useInvoiceFilters();
   const list = useInvoices(apiParams);
   const summary = useStatsSummary();
 
-  // Los contadores son totales globales: con una búsqueda activa no coincidirían con la tabla, así que se ocultan.
-  const counts = summary.data && !q
+  // Los contadores son totales globales: con búsqueda o con filtros de fecha, importe o varios estados no coincidirían con la tabla, así que se ocultan.
+  const countsMatchTable = !q && (statuses.length <= 1 ? sidebarActive === (statuses.length === 1 ? 1 : 0) : false);
+  const counts = summary.data && countsMatchTable
     ? {
         "": summary.data.totalCount,
         DRAFT: summary.data.byStatus.DRAFT.count,
@@ -27,7 +28,7 @@ export function InvoicesPage() {
         PAID: summary.data.byStatus.PAID.count,
       }
     : {};
-  const filtering = Boolean(q || status);
+  const filtering = hasFilters;
 
   return (
     <>
@@ -50,9 +51,9 @@ export function InvoicesPage() {
 
       {list.data && (list.data.meta.total > 0 || filtering) && (
         <>
-          <InvoiceFilters q={q} status={status} counts={counts} onChange={update} />
+          <InvoiceFilters q={q} status={status} multiple={statuses.length > 1} counts={counts} onChange={update} />
           {list.data.items.length === 0 ? (
-            <EmptyState title="Ninguna factura coincide" description="Prueba con otro texto o quita el filtro de estado.">
+            <EmptyState title="Ninguna factura coincide" description="Prueba con otro texto o quita algún filtro.">
               <Link to="/invoices" className="mt-4 inline-block text-sm text-brand hover:underline">
                 Quitar filtros
               </Link>
@@ -60,7 +61,7 @@ export function InvoicesPage() {
           ) : (
             <div aria-busy={list.isPlaceholderData} className={list.isPlaceholderData ? "opacity-60 transition-opacity" : undefined}>
               <InvoiceTable invoices={list.data.items} />
-              <Pagination meta={list.data.meta} onPageChange={(page) => update({ q, status: status ?? "", page })} />
+              <Pagination meta={list.data.meta} onPageChange={(page) => update({ page })} />
             </div>
           )}
         </>

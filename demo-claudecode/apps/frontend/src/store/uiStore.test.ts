@@ -6,7 +6,7 @@ const html = document.documentElement;
 beforeEach(() => {
   html.classList.remove("dark", "menu-collapsed");
   localStorage.clear();
-  useUiStore.setState({ theme: "light", menuCollapsed: false });
+  useUiStore.setState({ theme: "light", menuCollapsed: false, filtersCollapsed: false });
 });
 afterEach(() => vi.restoreAllMocks());
 
@@ -21,6 +21,15 @@ describe("uiStore", () => {
     expect(useUiStore.getState().theme).toBe("light");
     expect(html).not.toHaveClass("dark");
     expect(localStorage.getItem("theme")).toBe("light");
+  });
+
+  it("toggleFilters alterna el estado y persiste la preferencia", () => {
+    useUiStore.getState().toggleFilters();
+    expect(useUiStore.getState().filtersCollapsed).toBe(true);
+    expect(localStorage.getItem("filters")).toBe("collapsed");
+    useUiStore.getState().toggleFilters();
+    expect(useUiStore.getState().filtersCollapsed).toBe(false);
+    expect(localStorage.getItem("filters")).toBe("open");
   });
 
   it("toggleMenu alterna la clase menu-collapsed y persiste la preferencia", () => {

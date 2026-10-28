@@ -42,7 +42,10 @@ export class FakeInvoiceRepository implements InvoiceRepository {
   async findAll(ownerId: number, { filters, pagination }: FindAllInvoicesOptions = {}): Promise<PaginatedInvoices> {
     const term = filters?.search?.trim().toLowerCase();
     const all = this.owned(ownerId)
-      .filter((i) => !filters?.status || i.status === filters.status)
+      .filter((i) => !filters?.status?.length || filters.status.includes(i.status))
+      .filter((i) => !filters?.issuedFrom || i.issueDate >= filters.issuedFrom)
+      .filter((i) => !filters?.issuedTo || i.issueDate.getTime() < filters.issuedTo.getTime() + 86_400_000)
+      .filter((i) => !filters?.currency || i.currency === filters.currency)
       .filter(
         (i) => !term || i.clientName.toLowerCase().includes(term) || i.number.toLowerCase().includes(term),
       )

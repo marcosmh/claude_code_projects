@@ -66,9 +66,33 @@ export const invoiceBodySchema = z.object({
 
 export const statusBodySchema = z.object({ status: statusSchema });
 
-export const listQuerySchema = z.object({
-  status: statusSchema.optional(),
+/** `status=DRAFT,SENT` (query strings carry one value per key): a de-duplicated, non-empty list. */
+const statusListSchema = z.preprocess(
+  (v) => (typeof v === "string" ? v.split(",").map((s) => s.trim()).filter(Boolean) : v),
+  z
+    .array(statusSchema)
+    .min(1, "Indique al menos un estado")
+    .transform((list) => [...new Set(list)]),
+);
+
+const totalCentsFilter = (name: string) =>
+  z.coerce
+    .number(`${name} inválido`)
+    .int(`${name} debe estar en centavos enteros`)
+    .min(0, `${name} debe ser >= 0`)
+    .max(Number.MAX_SAFE_INTEGER, `${name} demasiado alto`);
+
+export const listQuerySchema = z
+  .object({
+  status: statusListSchema.optional(),
   search: z.string().trim().max(100).optional(),
+  /** Inclusive range on the issue date (`YYYY-MM-DD`). */
+  issuedFrom: z.iso.date("issuedFrom inválida (use YYYY-MM-DD)").optional(),
+  issuedTo: z.iso.date("issuedTo inválida (use YYYY-MM-DD)").optional(),
+  currency: currencySchema.optional(),
+  /** Range on the invoice total (tax included), in cents. Needs `currency`: amounts of different currencies are never compared. */
+  minTotalCents: totalCentsFilter("minTotalCents").optional(),
+  maxTotalCents: totalCentsFilter("maxTotalCents").optional(),
   page: z.coerce.number().int("page inválido").min(1, "page debe ser >= 1").max(LIMITS.page, "page demasiado alto").default(1),
   pageSize: z.coerce
     .number()
@@ -76,7 +100,19 @@ export const listQuerySchema = z.object({
     .min(1, "pageSize debe ser >= 1")
     .max(100, "pageSize debe ser <= 100")
     .default(10),
-});
+  })
+  .superRefine((q, ctx) => {
+    if (q.issuedFrom && q.issuedTo && q.issuedFrom > q.issuedTo) {
+      ctx.addIssue({ code: "custom", path: ["issuedTo"], message: "issuedTo no puede ser anterior a issuedFrom" });
+    }
+    const hasAmount = q.minTotalCents !== undefined || q.maxTotalCents !== undefined;
+    if (hasAmount && !q.currency) {
+      ctx.addIssue({ code: "custom", path: ["currency"], message: "currency es obligatoria para filtrar por importe" });
+    }
+    if (q.minTotalCents !== undefined && q.maxTotalCents !== undefined && q.minTotalCents > q.maxTotalCents) {
+      ctx.addIssue({ code: "custom", path: ["maxTotalCents"], message: "maxTotalCents no puede ser menor que minTotalCents" });
+    }
+  });
 
 /** Normalised request body: what the client sends and the service receives. */
 export type InvoiceRequest = z.output<typeof invoiceBodySchema>;

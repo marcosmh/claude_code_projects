@@ -1,4 +1,5 @@
-import { NavLink } from "react-router";
+import { NavLink, useMatch } from "react-router";
+import { InvoiceFilterPanel } from "@/components/features/invoices/InvoiceFilterPanel";
 
 const LINKS = [
   { to: "/dashboard", label: "Dashboard", icon: <path d="M3 3h6v6H3zM11 3h6v3.5h-6zM11 9h6v8h-6zM3 11h6v6H3z" /> },
@@ -15,12 +16,14 @@ const LINKS = [
 ];
 
 export function Sidebar() {
+  // Los filtros de facturas solo tienen sentido en el listado.
+  const onInvoiceList = useMatch("/invoices") !== null;
   return (
     <aside
       id="main-menu"
-      className="flex items-center gap-4 border-b border-zinc-200 px-4 py-3 [.menu-collapsed_&]:hidden md:sticky md:top-12 md:h-[calc(100vh-3rem)] md:w-56 md:flex-col md:items-stretch md:justify-start md:border-r md:border-b-0 md:py-5"
+      className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-zinc-200 px-4 py-3 [.menu-collapsed_&]:hidden md:sticky md:top-12 md:h-[calc(100vh-3rem)] md:w-56 md:flex-col md:flex-nowrap md:items-stretch md:justify-start md:overflow-y-auto md:border-r md:border-b-0 md:py-5"
     >
-      <nav className="flex gap-1 md:flex-1 md:flex-col" aria-label="Principal">
+      <nav className="flex gap-1 md:flex-col" aria-label="Principal">
         {LINKS.map((l) => (
           <NavLink
             key={l.to}
@@ -38,6 +41,7 @@ export function Sidebar() {
           </NavLink>
         ))}
       </nav>
+      {onInvoiceList && <InvoiceFilterPanel />}
     </aside>
   );
 }

@@ -4,7 +4,7 @@ import { request, requestBlob } from "./apiClient";
 export const invoicesService = {
   async list(params: InvoiceListParams, signal?: AbortSignal): Promise<Paginated<Invoice>> {
     const { data, meta } = await request<Invoice[], PageMeta>("/invoices", {
-      query: { ...params },
+      query: { ...params, status: params.status?.join(",") },
       signal,
     });
     return {

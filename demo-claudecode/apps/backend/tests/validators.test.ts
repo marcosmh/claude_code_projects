@@ -83,7 +83,7 @@ describe("otros validators", () => {
     expect(listQuerySchema.parse({ page: "2", pageSize: "50", status: "SENT" })).toMatchObject({
       page: 2,
       pageSize: 50,
-      status: "SENT",
+      status: ["SENT"],
     });
     expect(listQuerySchema.safeParse({ pageSize: "101" }).success).toBe(false);
     expect(listQuerySchema.safeParse({ page: "0" }).success).toBe(false);

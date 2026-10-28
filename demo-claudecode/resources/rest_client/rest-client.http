@@ -93,7 +93,8 @@ POST {{baseUrl}}/auth/refresh
 
 ### Listar facturas (paginado)
 # Query params, todos opcionales:
-#   status    DRAFT | SENT | PAID   (no existe OVERDUE; usa isOverdue)
+#   status    DRAFT | SENT | PAID, o varios separados por coma (DRAFT,SENT);
+#             no existe OVERDUE (usa isOverdue)
 #   search    texto en cliente o número (FAC-0007), máx. 100
 #   page      entero >= 1 (por defecto 1)
 #   pageSize  1 a 100 (por defecto 10)
@@ -155,6 +156,24 @@ Content-Type: {{contentType}}
     { "description": "Soporte mensual", "quantity": 1.5, "unitPriceCents": 12000 }
   ]
 }
+
+
+### Listar facturas por fecha, importe y varios estados
+# issuedFrom / issuedTo: rango inclusivo de fecha de emisión (YYYY-MM-DD).
+# minTotalCents / maxTotalCents: total con impuestos en centavos; REQUIEREN currency
+# (nunca se comparan importes de monedas distintas). Va después de "Crear factura":
+# la respuesta incluye esa factura (MXN, 32480 centavos, emitida el 2026-10-01).
+#
+# ESPERADO  200 OK; todas en DRAFT o SENT, currency "MXN", totalCents 32480
+# ERRORES   400 VALIDATION_ERROR (minTotalCents sin currency, rango de fechas invertido)
+GET {{baseUrl}}/invoices
+    ?status=DRAFT,SENT
+    &issuedFrom=2026-10-01
+    &issuedTo=2026-10-31
+    &currency=MXN
+    &minTotalCents=32480
+    &maxTotalCents=32480
+Authorization: Bearer {{token}}
 
 
 ### Obtener factura por id

@@ -11,8 +11,15 @@ export type Invoice = InvoiceResponse;
 export type PageMeta = PaginationMeta;
 
 export interface InvoiceListParams {
-  status?: Status;
+  status?: Status[];
   search?: string;
+  /** Rango inclusivo de fecha de emisión (`YYYY-MM-DD`). */
+  issuedFrom?: string;
+  issuedTo?: string;
+  currency?: Currency;
+  /** Rango del total con impuestos, en centavos; requiere `currency`. */
+  minTotalCents?: number;
+  maxTotalCents?: number;
   page?: number;
   pageSize?: number;
 }

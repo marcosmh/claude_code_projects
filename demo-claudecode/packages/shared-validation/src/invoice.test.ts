@@ -33,6 +33,28 @@ describe("statusSchema / listQuerySchema", () => {
     expect(statusSchema.safeParse("OVERDUE").success).toBe(false);
   });
 
+  it("accepts one or several comma-separated statuses and de-duplicates them", () => {
+    expect(listQuerySchema.parse({ status: "SENT" }).status).toEqual(["SENT"]);
+    expect(listQuerySchema.parse({ status: "DRAFT, SENT,DRAFT" }).status).toEqual(["DRAFT", "SENT"]);
+    expect(listQuerySchema.parse({}).status).toBeUndefined();
+    expect(listQuerySchema.safeParse({ status: "SENT,OVERDUE" }).success).toBe(false);
+    expect(listQuerySchema.safeParse({ status: "" }).success).toBe(false);
+  });
+
+  it("validates the issue date range", () => {
+    expect(listQuerySchema.parse({ issuedFrom: "2026-01-01", issuedTo: "2026-01-31" })).toMatchObject({ issuedFrom: "2026-01-01" });
+    expect(listQuerySchema.safeParse({ issuedFrom: "01/01/2026" }).success).toBe(false);
+    expect(listQuerySchema.safeParse({ issuedFrom: "2026-02-01", issuedTo: "2026-01-01" }).success).toBe(false);
+  });
+
+  it("amount range needs a currency and must be ordered", () => {
+    expect(listQuerySchema.parse({ currency: "MXN", minTotalCents: "1000", maxTotalCents: "5000" })).toMatchObject({ minTotalCents: 1000, maxTotalCents: 5000 });
+    expect(listQuerySchema.safeParse({ minTotalCents: "1000" }).success).toBe(false);
+    expect(listQuerySchema.safeParse({ currency: "MXN", minTotalCents: "5000", maxTotalCents: "1000" }).success).toBe(false);
+    expect(listQuerySchema.safeParse({ currency: "MXN", minTotalCents: "-1" }).success).toBe(false);
+    expect(listQuerySchema.safeParse({ currency: "MXN", minTotalCents: "10.5" }).success).toBe(false);
+  });
+
   it("coerces and defaults pagination", () => {
     expect(listQuerySchema.parse({ page: "2" })).toMatchObject({ page: 2, pageSize: 10 });
     expect(listQuerySchema.safeParse({ pageSize: "101" }).success).toBe(false);

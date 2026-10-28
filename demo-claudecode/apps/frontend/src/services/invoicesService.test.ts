@@ -31,7 +31,7 @@ describe("invoicesService", () => {
     const meta = { page: 1, pageSize: 10, total: 1, totalPages: 1 };
     const fetchMock = stubFetch(json({ data: [{ id: 1 }], meta }));
 
-    const result = await invoicesService.list({ status: "PAID", search: "", page: 1, pageSize: 10 });
+    const result = await invoicesService.list({ status: ["PAID"], search: "", page: 1, pageSize: 10 });
 
     expect(result).toEqual({ items: [{ id: 1 }], meta });
     const url = new URL(fetchMock.mock.calls[0]?.[0] as string, "http://localhost");

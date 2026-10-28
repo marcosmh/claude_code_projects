@@ -18,7 +18,7 @@ describe("useInvoices", () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: [{ id: 1 }], meta })));
     vi.stubGlobal("fetch", fetchMock);
 
-    const { result } = renderHook(() => useInvoices({ status: "SENT", search: "acme", page: 2, pageSize: 10 }), { wrapper });
+    const { result } = renderHook(() => useInvoices({ status: ["SENT"], search: "acme", page: 2, pageSize: 10 }), { wrapper });
 
     expect(result.current.isPending).toBe(true);
     await waitFor(() => expect(result.current.isSuccess).toBe(true));

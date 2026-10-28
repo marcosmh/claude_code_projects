@@ -72,9 +72,34 @@ describe("PrismaInvoiceRepository", () => {
     await make({ status: "PAID" });
     await make({ status: "SENT" });
     await make({ status: "SENT" });
-    const res = await repo.findAll(U, { filters: { status: "SENT" } });
+    const res = await repo.findAll(U, { filters: { status: ["SENT"] } });
     expect(res.total).toBe(2);
     expect(res.data.every((i) => i.status === "SENT")).toBe(true);
+  });
+
+  it("filters by several statuses at once", async () => {
+    await make({ status: "PAID" });
+    await make({ status: "SENT" });
+    await make({ status: "DRAFT" });
+    const res = await repo.findAll(U, { filters: { status: ["SENT", "DRAFT"] } });
+    expect(res.data.map((i) => i.status).sort()).toEqual(["DRAFT", "SENT"]);
+  });
+
+  it("filters by issue date range with both bounds inclusive", async () => {
+    await make({ issueDate: new Date("2026-09-01") });
+    await make({ issueDate: new Date("2026-09-15T00:00:00Z") });
+    await make({ issueDate: new Date("2026-09-30") });
+    await make({ issueDate: new Date("2026-10-01") });
+    const inSept = await repo.findAll(U, { filters: { issuedFrom: new Date("2026-09-01"), issuedTo: new Date("2026-09-30") } });
+    expect(inSept.total).toBe(3);
+    expect((await repo.findAll(U, { filters: { issuedFrom: new Date("2026-09-16") } })).total).toBe(2);
+    expect((await repo.findAll(U, { filters: { issuedTo: new Date("2026-09-14") } })).total).toBe(1);
+  });
+
+  it("filters by currency", async () => {
+    await make({ currency: "USD" });
+    await make({ currency: "MXN" });
+    expect((await repo.findAll(U, { filters: { currency: "MXN" } })).total).toBe(1);
   });
 
   it("searches by client name or number", async () => {

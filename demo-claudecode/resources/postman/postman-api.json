@@ -456,7 +456,7 @@
                 {
                   "key": "status",
                   "value": "SENT",
-                  "description": "DRAFT | SENT | PAID (no existe OVERDUE)",
+                  "description": "DRAFT | SENT | PAID, o varios separados por coma (no existe OVERDUE)",
                   "disabled": true
                 },
                 {
@@ -516,7 +516,7 @@
                     {
                       "key": "status",
                       "value": "SENT",
-                      "description": "DRAFT | SENT | PAID (no existe OVERDUE)",
+                      "description": "DRAFT | SENT | PAID, o varios separados por coma (no existe OVERDUE)",
                       "disabled": true
                     },
                     {
@@ -797,6 +797,141 @@
                 }
               ],
               "body": "{\n  \"error\": {\n    \"code\": \"UNPROCESSABLE_ENTITY\",\n    \"message\": \"La factura incumple reglas de negocio\",\n    \"details\": [\n      {\n        \"field\": \"dueDate\",\n        \"message\": \"El vencimiento no puede ser anterior a la emisión\"\n      }\n    ]\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Listar facturas por fecha, importe y varios estados",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/invoices?status=DRAFT,SENT&issuedFrom=2026-10-01&issuedTo=2026-10-31&currency=MXN&minTotalCents=32480&maxTotalCents=32480",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "invoices"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "DRAFT,SENT",
+                  "description": "Uno o varios estados separados por coma",
+                  "disabled": false
+                },
+                {
+                  "key": "issuedFrom",
+                  "value": "2026-10-01",
+                  "description": "YYYY-MM-DD, inclusive",
+                  "disabled": false
+                },
+                {
+                  "key": "issuedTo",
+                  "value": "2026-10-31",
+                  "description": "YYYY-MM-DD, inclusive",
+                  "disabled": false
+                },
+                {
+                  "key": "currency",
+                  "value": "MXN",
+                  "description": "MXN | USD | EUR (obligatoria con minTotalCents/maxTotalCents)",
+                  "disabled": false
+                },
+                {
+                  "key": "minTotalCents",
+                  "value": "32480",
+                  "description": "Total mínimo en centavos",
+                  "disabled": false
+                },
+                {
+                  "key": "maxTotalCents",
+                  "value": "32480",
+                  "description": "Total máximo en centavos",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "Filtros combinados: `status` admite varios estados separados por coma; `issuedFrom`/`issuedTo` son un rango inclusivo de fecha de emisión; `minTotalCents`/`maxTotalCents` filtran el total con impuestos (en centavos) y **requieren `currency`**. Debe devolver la factura creada arriba (MXN, 32480 centavos, emitida el 2026-10-01)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Incluye la factura creada', () => pm.expect(json.data.map((i) => String(i.id))).to.include(pm.collectionVariables.get('id')));",
+                  "pm.test('Todas cumplen los filtros', () => json.data.forEach((i) => { pm.expect(i.status).to.be.oneOf(['DRAFT','SENT']); pm.expect(i.currency).to.eql('MXN'); pm.expect(i.totalCents).to.eql(32480); }));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/invoices?status=DRAFT,SENT&issuedFrom=2026-10-01&issuedTo=2026-10-31&currency=MXN&minTotalCents=32480&maxTotalCents=32480",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "invoices"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "DRAFT,SENT",
+                      "description": "Uno o varios estados separados por coma",
+                      "disabled": false
+                    },
+                    {
+                      "key": "issuedFrom",
+                      "value": "2026-10-01",
+                      "description": "YYYY-MM-DD, inclusive",
+                      "disabled": false
+                    },
+                    {
+                      "key": "issuedTo",
+                      "value": "2026-10-31",
+                      "description": "YYYY-MM-DD, inclusive",
+                      "disabled": false
+                    },
+                    {
+                      "key": "currency",
+                      "value": "MXN",
+                      "description": "MXN | USD | EUR (obligatoria con minTotalCents/maxTotalCents)",
+                      "disabled": false
+                    },
+                    {
+                      "key": "minTotalCents",
+                      "value": "32480",
+                      "description": "Total mínimo en centavos",
+                      "disabled": false
+                    },
+                    {
+                      "key": "maxTotalCents",
+                      "value": "32480",
+                      "description": "Total máximo en centavos",
+                      "disabled": false
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"data\": [\n    {\n      \"id\": 21,\n      \"number\": \"FAC-0021\",\n      \"clientName\": \"Acme SA\",\n      \"clientEmail\": \"compras@acme.com\",\n      \"clientAddress\": null,\n      \"issueDate\": \"2026-10-01T00:00:00.000Z\",\n      \"dueDate\": \"2026-10-20T00:00:00.000Z\",\n      \"status\": \"SENT\",\n      \"isOverdue\": false,\n      \"taxRate\": 16,\n      \"currency\": \"MXN\",\n      \"notes\": null,\n      \"items\": [\n        {\n          \"id\": 37,\n          \"description\": \"Servicio\",\n          \"quantity\": 2,\n          \"unitPriceCents\": 5000,\n          \"amountCents\": 10000\n        }\n      ],\n      \"subtotalCents\": 10000,\n      \"taxCents\": 1600,\n      \"totalCents\": 11600,\n      \"createdAt\": \"2026-10-25T04:13:25.106Z\",\n      \"updatedAt\": \"2026-10-25T04:13:25.112Z\"\n    }\n  ],\n  \"meta\": {\n    \"page\": 1,\n    \"pageSize\": 10,\n    \"total\": 1,\n    \"totalPages\": 1\n  }\n}"
             }
           ]
         },
@@ -1967,6 +2102,80 @@
                 }
               ],
               "body": "{\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"Datos de entrada inválidos\",\n    \"details\": [\n      {\n        \"field\": \"currency\",\n        \"message\": \"Moneda inválida (MXN, USD o EUR)\"\n      }\n    ]\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Importe sin moneda → 400",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/invoices?minTotalCents=1000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "invoices"
+              ],
+              "query": [
+                {
+                  "key": "minTotalCents",
+                  "value": "1000",
+                  "description": "Sin currency es un error",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "`minTotalCents`/`maxTotalCents` requieren `currency`: nunca se comparan importes de monedas distintas."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                  "const e = pm.response.json().error;",
+                  "pm.test('VALIDATION_ERROR sobre currency', () => { pm.expect(e.code).to.eql('VALIDATION_ERROR'); pm.expect(e.details.map(d => d.field)).to.include('currency'); });"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "400 Importe sin moneda",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/invoices?minTotalCents=1000",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "invoices"
+                  ],
+                  "query": [
+                    {
+                      "key": "minTotalCents",
+                      "value": "1000",
+                      "description": "Sin currency es un error",
+                      "disabled": false
+                    }
+                  ]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"Datos de entrada inválidos\",\n    \"details\": [\n      {\n        \"field\": \"currency\",\n        \"message\": \"currency es obligatoria para filtrar por importe\"\n      }\n    ]\n  }\n}"
             }
           ]
         },
