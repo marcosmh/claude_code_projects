@@ -43,7 +43,7 @@ Decisiones:
 - **React Hook Form + Zod**: Zod valida forma y formato con mensajes en español y transforma los textos al cuerpo de la API (centavos). Los errores 400/422 del servidor se asignan al campo cuando `details[].field` existe (`items.N.unitPriceCents` se mapea a `items.N.price`); el resto va en un aviso general.
 - **Reglas de negocio en el backend**: totales, `isOverdue`, número de factura, agregados del dashboard y estados válidos vienen de la API. Única excepción: `utils/totalsPreview.ts`, vista previa informativa dentro del formulario.
 - **Avisos flash**: `toastStore` + `ToastViewport` montado en `AppShell`, así sobreviven a la navegación. Se cierran a los 5 s, se pausan con hover/foco y tienen botón de cierre (`role="status"` / `role="alert"`).
-- **URL como estado de filtros**: `/invoices?status=SENT&q=acme&page=2`.
+- **URL como estado de filtros**: `/invoices?status=DRAFT,SENT&q=acme&from=2026-01-01&to=2026-01-31&currency=MXN&min=100&max=2500&page=2`. El panel de filtros (`InvoiceFilterPanel`) vive en la barra lateral y solo aparece en `/invoices`; su estado plegado se guarda en `uiStore` y `localStorage` (`filters`).
 - **Tema**: clase `dark` en `<html>` aplicada por un script inline de `index.html` antes del primer pintado (oscuro por defecto salvo `localStorage.theme === "light"`). `src/globals.css` remapea la paleta zinc en `:root.dark`.
 - Las páginas se cargan con `lazy` de React Router (un chunk por ruta).
 
@@ -91,5 +91,5 @@ Los tokens no son legibles por scripts, pero un XSS activo seguiría pudiendo ac
 ## Tema, moneda y avisos
 
 - **Tema**: una elección guardada (interruptor) manda; sin ella, `index.html` aplica antes del primer pintado la preferencia del sistema (`prefers-color-scheme`) y, si no se puede saber, oscuro. Solo se lee al cargar: cambiar el tema del sistema con la app abierta no la actualiza.
-- **Moneda**: USD por defecto; `VITE_CURRENCY` (código ISO 4217, p. ej. `MXN`) la cambia. Solo afecta a la presentación: el backend trabaja en centavos sin moneda.
+- **Moneda**: cada factura lleva su `currency` (MXN, USD o EUR, elegida en el formulario) y se muestra con ella. `VITE_CURRENCY` (código ISO 4217) solo fija la moneda por defecto del dashboard (USD si no se define). El dashboard muestra una moneda a la vez (`?currency=`) porque nunca se suman importes de monedas distintas.
 - **Avisos (toasts)**: máximo 3 a la vez (al llegar otro se descarta el más antiguo). Viven en dos regiones en vivo siempre presentes (`status` para éxito, `alert` para error) para que los lectores de pantalla los anuncien.

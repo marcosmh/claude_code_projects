@@ -1,124 +1,126 @@
-# Facturas
+# Invoices
 
-Aplicación web para crear, consultar, editar y eliminar facturas, con panel de estadísticas, exportación a PDF y acceso con usuario y contraseña. La interfaz está en español.
+Web application to create, view, edit and delete invoices, with a statistics dashboard, PDF export and username/password sign-in. The UI is in Spanish.
 
-Es un **monorepo** (npm workspaces + Turborepo) con dos aplicaciones independientes, backend y frontend, y tres paquetes compartidos. Cada una tiene su propio `package.json`, scripts, variables de entorno, tests y despliegue.
+It is a **monorepo** (npm workspaces + Turborepo) with two independent applications, backend and frontend, and three shared packages. Each app has its own `package.json`, scripts, environment variables, tests and deployment.
 
-## Tecnologías
+## Tech stack
 
-| Parte | Stack |
+| Part | Stack |
 | --- | --- |
-| **Backend** (`apps/backend`) | Next.js 16 solo con route handlers (API REST), TypeScript, Prisma 7 + SQLite, Zod 4, JWT con `jose`, `@react-pdf/renderer` |
+| **Backend** (`apps/backend`) | Next.js 16 with route handlers only (REST API), TypeScript, Prisma 7 + SQLite, Zod 4, JWT with `jose`, `@react-pdf/renderer` |
 | **Frontend** (`apps/frontend`) | React 19, Vite 8, React Router, TanStack Query, Zustand, React Hook Form + Zod, Tailwind v4 |
-| **Compartido** (`packages/`) | `shared-types`, `shared-utils`, `shared-validation` (TypeScript, sin paso de build) |
-| **Herramientas** | Turborepo 2, Changesets, Vitest 5, Playwright + axe, ESLint, Docker, GitHub Actions. Node 22 |
+| **Shared** (`packages/`) | `shared-types`, `shared-utils`, `shared-validation` (TypeScript, no build step) |
+| **Tooling** | Turborepo 2, Changesets, Vitest 5, Playwright + axe, ESLint, Docker, GitHub Actions. Node 22 |
 
-## Funcionalidades
+## Features
 
-- **Acceso**: inicio y cierre de sesión, cambio de contraseña (cierra las demás sesiones) y bloqueo de la cuenta tras 5 intentos fallidos. Cada usuario ve solo sus facturas.
-- **Facturas**
-  - Líneas de detalle dinámicas (descripción, cantidad, precio unitario) con totales en vivo.
-  - Impuesto configurable por factura y datos del cliente embebidos.
-  - Estados: Borrador, Enviada y Pagada. "Vencida" no es un estado: se calcula como `Enviada` con fecha de vencimiento pasada.
-  - Numeración `FAC-0001`, `FAC-0002`… que no se repite tras borrar.
-  - Búsqueda, filtro por estado y paginación (los filtros viven en la URL).
-- **Dashboard**: tarjetas de totales, gráfico por estado y gráfico de los últimos meses, con tooltips, teclado y vista en tabla.
-- **PDF**: el detalle de cada factura genera el PDF.
-- **Interfaz**: tema claro/oscuro, menú plegable y comprobación de accesibilidad automática (axe).
+- **Access**: sign in and out, password change (signs out the other sessions) and account lockout after 5 failed attempts. Each user only sees their own invoices.
+- **Invoices**
+  - Dynamic line items (description, quantity, unit price) with live totals.
+  - Configurable tax per invoice and client data embedded in the invoice.
+  - **Currency per invoice**: Mexican pesos (MXN), US dollars (USD) or euros (EUR), chosen when creating or editing. Amounts in different currencies are never added or compared, and there is no conversion (no exchange rates are used).
+  - Statuses: Draft, Sent and Paid. "Overdue" is not a status: it is computed as `Sent` with a past due date.
+  - Numbering `FAC-0001`, `FAC-0002`… that is never reused after a delete.
+  - Search by number or client, and pagination with first and last page buttons.
+  - **Filters** in a collapsible left-sidebar panel (only on the list): one or several statuses, an issue date range and an amount range (tax included, within one currency). Everything lives in the URL, so it can be shared.
+- **Dashboard**: total cards, a chart by status and a chart of the last months, with tooltips, keyboard support and a table view. It shows **one currency at a time** (a "Moneda" selector, also in the URL) so amounts are never mixed.
+- **PDF**: each invoice's detail page generates the PDF, with amounts in the invoice's currency.
+- **Interface**: light/dark theme, collapsible menu and automatic accessibility checks (axe).
 
-## Estructura
+## Structure
 
 ```
-demo-claudecode/                 raíz del monorepo
+demo-claudecode/                 monorepo root
 ├── apps/
-│   ├── backend/                 API REST (src/, prisma/, tests/, docs/, Dockerfile)
+│   ├── backend/                 REST API (src/, prisma/, tests/, docs/, Dockerfile)
 │   └── frontend/                SPA (src/, e2e/, build/, deploy/, Dockerfile)
 ├── packages/
-│   ├── shared-types/            tipos del contrato REST, estados y etiquetas
-│   ├── shared-utils/            cálculo de totales y céntimos
-│   └── shared-validation/       esquemas Zod y límites de entrada
-├── docs/                        despliegue
-├── resources/                   colecciones de la API (Postman y REST Client)
-├── scripts/                     start_apps y stop_apps
-├── .changeset/                  versionado independiente
-├── docker-compose.yml           pila completa, mismo origen
+│   ├── shared-types/            REST contract types, statuses and labels
+│   ├── shared-utils/            totals and cents calculation
+│   └── shared-validation/       Zod schemas and input limits
+├── docs/                        deployment
+├── resources/                   API collections (Postman and REST Client)
+├── scripts/                     start_apps and stop_apps
+├── .changeset/                  independent versioning
+├── docker-compose.yml           full stack, same origin
 ├── turbo.json  package.json  tsconfig.base.json
-└── legacy/                      app Next.js anterior, archivada (no se mantiene)
+└── legacy/                      previous Next.js app, archived (not maintained)
 ```
 
-## Arranque en desarrollo
+## Getting started in development
 
-Requisitos: Node 22 o superior.
+Requirements: Node 22 or later.
 
 ```bash
-npm install                                  # una sola vez, en la raíz
+npm install                                  # once, at the root
 
 cd apps/backend
-cp .env.example .env                         # define JWT_SECRET (mínimo 32 bytes: openssl rand -base64 48)
-npx prisma migrate deploy                    # aplica las migraciones
-npm run user:create -- tu@correo.com         # no hay registro público; pide la contraseña (mínimo 12 caracteres)
-npm run db:seed -- --force                   # opcional: facturas de ejemplo (BORRA todas las facturas)
+cp .env.example .env                         # set JWT_SECRET (at least 32 bytes: openssl rand -base64 48)
+npx prisma migrate deploy                    # apply the migrations
+npm run user:create -- you@example.com       # no public sign-up; prompts for the password (at least 12 characters)
+npm run db:seed -- --force                   # optional: sample invoices (DELETES all invoices)
 cd ../..
 
-bash scripts/start_apps                      # backend :4000 y frontend :5173, en segundo plano
-bash scripts/stop_apps                       # las detiene
+bash scripts/start_apps                      # backend :4000 and frontend :5173, in the background
+bash scripts/stop_apps                       # stops them
 ```
 
-Abre http://localhost:5173. También puedes usar `npx turbo run dev` (primer plano) o `npm run dev` dentro de cada app. El frontend reenvía `/api` al backend (puerto 4000), así que el navegador habla con un solo origen.
+Open http://localhost:5173. You can also use `npx turbo run dev` (foreground) or `npm run dev` inside each app. The frontend proxies `/api` to the backend (port 4000), so the browser talks to a single origin.
 
 ## Scripts
 
-Desde la raíz, con Turborepo (`--filter=@invoices/backend` o `@invoices/frontend` para una sola app):
+From the root, with Turborepo (`--filter=@invoices/backend` or `@invoices/frontend` for a single app):
 
-| Comando | Descripción |
+| Command | Description |
 | --- | --- |
-| `npm run dev` | Servidores de desarrollo |
-| `npm run build` | Build de todo |
+| `npm run dev` | Development servers |
+| `npm run build` | Build everything |
 | `npm run lint` | ESLint |
-| `npm run typecheck` | Comprobación de tipos |
-| `npm test` | Pruebas unitarias y de integración |
-| `npm run test:e2e` | Playwright + axe (levanta su propio backend en 4100 con una base de datos desechable) |
-| `npm run changeset` | Registra un cambio para el versionado |
-| `npm run version-packages` | Aplica los changesets pendientes |
+| `npm run typecheck` | Type checking |
+| `npm test` | Unit and integration tests |
+| `npm run test:e2e` | Playwright + axe (starts its own backend on 4100 with a throwaway database) |
+| `npm run changeset` | Register a change for versioning |
+| `npm run version-packages` | Apply the pending changesets |
 
-Cada app tiene además sus propios scripts (`test:coverage`, `db:migrate`, `db:seed`, `user:create`…); ver su `README.md`.
+Each app also has its own scripts (`test:coverage`, `db:migrate`, `db:seed`, `user:create`…); see its `README.md`.
 
-## Arquitectura
+## Architecture
 
-**Backend**: `route.ts` (solo enrutado) → `controllers` (petición y respuesta HTTP) → `services` (toda la lógica de negocio) → `repositories` (único acceso a Prisma). Todos los métodos del repositorio de facturas reciben `ownerId` primero y filtran por él: la factura de otro usuario es un 404. Contrato en `apps/backend/docs/api.md`.
+**Backend**: `route.ts` (routing only) → `controllers` (HTTP request and response) → `services` (all business logic) → `repositories` (the only Prisma access). Every method of the invoice repository takes `ownerId` first and filters by it: another user's invoice is a 404. Contract in `apps/backend/docs/api.md`.
 
-**Frontend**: componentes → hooks → servicios → API REST. TanStack Query guarda los datos del servidor; Zustand, solo el estado global de interfaz. Las reglas de negocio (totales, vencimiento, numeración, agregados) las calcula el backend.
+**Frontend**: components → hooks → services → REST API. TanStack Query holds server data; Zustand holds only global UI state. Business rules (totals, overdue, numbering, aggregates) are computed by the backend. The list filters are read from the URL (`useInvoiceFilters`) and translated into the `GET /invoices` parameters; the statistics accept `?currency=`.
 
-**Paquetes compartidos**: contrato REST, validación de entrada y regla del dinero (céntimos enteros, redondeo medio hacia arriba). La validación compartida solo es para la experiencia de usuario: el backend siempre revalida y nunca acepta del cliente `role`, `ownerId` ni totales. Un cambio en `shared-types` o `shared-validation` es un cambio de contrato.
+**Shared packages**: REST contract, input validation and the money rule (integer cents, round half up). Shared validation is for UX only: the backend always revalidates and never accepts `role`, `ownerId` or totals from the client. A change to `shared-types` or `shared-validation` is a contract change.
 
-## Autenticación y seguridad
+## Authentication and security
 
-- JWT en cookies `HttpOnly; SameSite=Strict`: token de acceso de 15 minutos y token de refresco rotatorio, firmados con **claves distintas**. Ninguno es legible desde JavaScript.
-- Cerrar sesión, reutilizar un refresh o cambiar la contraseña en otro dispositivo revocan el token de acceso al instante.
-- Protección CSRF: se exige un `Origin` permitido (o una petición del mismo origen) en toda escritura autenticada por cookie.
-- Límite de peticiones, cabeceras de seguridad en la API y CSP completa en el frontend de producción.
-- En producción el servidor **no arranca** sin `JWT_SECRET` y `JWT_REFRESH_SECRET` distintos y con entropía, ni sin `FRONTEND_ORIGIN` (origen https). La cookie de refresco se llama `__Secure-refresh`.
+- JWT in `HttpOnly; SameSite=Strict` cookies: a 15-minute access token and a rotating refresh token, signed with **different keys**. Neither is readable from JavaScript.
+- Logging out, reusing a refresh token or changing the password on another device revokes the access token immediately.
+- CSRF protection: an allowed `Origin` (or a same-origin request) is required on every write authenticated by cookie.
+- Rate limiting, security headers on the API and a full CSP on the production frontend.
+- In production the server **does not start** without distinct, high-entropy `JWT_SECRET` and `JWT_REFRESH_SECRET`, or without `FRONTEND_ORIGIN` (an https origin). The refresh cookie is named `__Secure-refresh`.
 
-Detalle y decisiones en `apps/backend/docs/jwt-migration.md`.
+Details and decisions in `apps/backend/docs/jwt-migration.md`.
 
-## Base de datos
+## Database
 
-SQLite (`apps/backend/prisma/dev.db`). Modelos: `User`, `RefreshToken`, `Invoice` e `InvoiceItem` (en cascada). Los importes son enteros en céntimos y los totales nunca se almacenan. Los índices responden a las consultas reales (por propietario primero). PostgreSQL está aplazado a propósito.
+SQLite (`apps/backend/prisma/dev.db`). Models: `User`, `RefreshToken`, `Invoice` and `InvoiceItem` (cascade). Amounts are integer cents, each invoice stores its `currency` (invoices that predate that column were left as USD) and totals are never stored; that is why the list's amount filter is computed in memory before paginating (fine with SQLite and small volumes). Indexes match the real queries (owner first). PostgreSQL is postponed on purpose.
 
-## Pruebas
+## Testing
 
-- Unitarias e integración con Vitest en el backend, el frontend y cada paquete, con umbrales de cobertura que no deben bajar.
-- E2E con Playwright y accesibilidad con axe.
-- Las colecciones de `resources/` (`postman/` se genera con `gen_postman.py`; `rest_client/` se escribe a mano) se validan con Newman y httpyac contra una base de datos temporal cuando cambia la API.
+- Unit and integration tests with Vitest in the backend, the frontend and each package, with coverage thresholds that must not drop.
+- E2E with Playwright and accessibility with axe.
+- The collections in `resources/` (`postman/` is generated with `gen_postman.py`; `rest_client/` is written by hand) are validated with Newman and httpyac against a temporary database whenever the API changes (recipe in `CLAUDE.md`: export `DATABASE_URL`, `NEXT_DIST_DIR` and `JWT_SECRET` before creating the user, or it writes to `dev.db`). Last Newman validation: 35 requests, 94 assertions, 0 failures.
 
-## CI/CD y despliegue
+## CI/CD and deployment
 
-- GitHub Actions en `.github/workflows/`: `backend.yml`, `frontend.yml`, `packages.yml` y `e2e.yml`, con filtros por rutas. Todos pasan en verde en GitHub; el `ci.yml` antiguo se eliminó.
-- Backend y frontend se construyen en Docker por separado (`apps/*/Dockerfile`, con `turbo prune`). El diseño asume **mismo origen**: nginx sirve la SPA y reenvía `/api` al backend.
-- `docker-compose.yml` levanta la pila completa para probar la integración.
+- GitHub Actions in `.github/workflows/`: `backend.yml`, `frontend.yml`, `packages.yml` and `e2e.yml`, with path filters. All pass green on GitHub; the old `ci.yml` was removed.
+- Backend and frontend are built in Docker separately (`apps/*/Dockerfile`, using `turbo prune`). The design assumes **same origin**: nginx serves the SPA and proxies `/api` to the backend.
+- `docker-compose.yml` brings up the full stack to test the integration.
 
-Guía completa en [`docs/deployment.md`](docs/deployment.md).
+Full guide in [`docs/deployment.md`](docs/deployment.md).
 
-## Estado
+## Status
 
-La migración a monorepo está hecha salvo un punto de la validación final: comprobar el despliegue bajo https real. Pendiente a más largo plazo: PostgreSQL, rutas de administración, recuperación de contraseña, módulo de clientes y envío por email.
+The monorepo migration is done except for one item of the final validation: checking the deployment under real https. Longer-term backlog: PostgreSQL, admin routes, password recovery, a clients module, email delivery and, if needed, currency conversion with exchange rates.
