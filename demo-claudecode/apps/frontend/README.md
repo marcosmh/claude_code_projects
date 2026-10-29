@@ -61,7 +61,7 @@ Cliente HTTP (ApiError, envoltura, red, abort, `credentials: include` sin `Autho
 
 Cada prueba arranca con la sesión iniciada (fixture automática en `e2e/fixtures.ts` con la cuenta desechable `e2e@example.com`, que el arranque crea en `e2e.db`): el login por API deja las cookies del access y del refresh en el navegador y el cliente `api` usa el access token del cuerpo en `Authorization` (el backend del e2e corre con `AUTH_COOKIE_ACCESS=1`; Vite sirve `/api` por proxy hacia él, como en producción). `e2e/auth.spec.ts` incluye la renovación transparente (sin token guardado y con token caducado); `e2e/auth.spec.ts` usa el `test` de Playwright sin sesión para probar el login, la redirección y el cierre de sesión.
 
-`npm run test:e2e` levanta su **propia pila**, aislada de `start_apps` y de `prisma/dev.db`: backend en el puerto 4100 con la base `backend/prisma/e2e.db` (se recrea en cada ejecución), build en `.next-e2e` y rate limiting desactivado (`RATE_LIMIT_DISABLED=1`, ignorado con `NODE_ENV=production`), y frontend en el puerto 5174. Cada prueba parte de una base vacía y crea sus datos por la API.
+`npm run test:e2e` levanta su **propia pila**, aislada de `start_apps` y del schema `public`: backend en el puerto 4100 con el schema desechable `e2e` de la base de `apps/backend/.env` (se borra y recrea en cada ejecución con `prisma/drop-test-schema.ts`), build en `.next-e2e` y rate limiting desactivado (`RATE_LIMIT_DISABLED=1`, ignorado con `NODE_ENV=production`), y frontend en el puerto 5174. Cada prueba parte de una base vacía y crea sus datos por la API.
 
 Primera vez: `npx playwright install chromium` (en Linux sin dependencias del sistema, `npx playwright install --with-deps chromium`). Informe tras un fallo: `npm run test:e2e:report`.
 

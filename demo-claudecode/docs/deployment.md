@@ -14,7 +14,7 @@ docker build -f apps/backend/Dockerfile  -t invoices-backend  .
 docker build -f apps/frontend/Dockerfile -t invoices-frontend .
 ```
 
-- **Backend** (`next start`, puerto 4000, SQLite en el volumen `/data`). Variables obligatorias en producción: `JWT_SECRET`,
+- **Backend** (`next start`, puerto 4000, PostgreSQL vía `DATABASE_URL`, p. ej. el Session pooler de Supabase). Variables obligatorias en producción: `JWT_SECRET`,
   `JWT_REFRESH_SECRET` (distinto, ambos con `openssl rand -base64 48`) y `FRONTEND_ORIGIN` (origen https público, sin ruta).
   Detrás de un proxy, `TRUSTED_PROXY_HOPS=1`. El servidor no arranca si falta alguna o es inaceptable.
 - **Frontend** (nginx, puerto 8080). `BACKEND_UPSTREAM` (por defecto `http://backend:4000`) es a donde reenvía `/api`.
@@ -28,9 +28,9 @@ docker build -f apps/frontend/Dockerfile -t invoices-frontend .
 Las migraciones son un paso aparte, no ocurren al arrancar:
 
 ```bash
-docker run --rm -v invoices-data:/data invoices-backend npx prisma migrate deploy
+docker run --rm -e DATABASE_URL=postgresql://... invoices-backend npx prisma migrate deploy
 # solo la primera vez (no hay registro público); la contraseña va por entorno, nunca como argumento:
-docker run --rm -v invoices-data:/data -e USER_PASSWORD=... invoices-backend npm run user:create -- tu@correo.com
+docker run --rm -e DATABASE_URL=postgresql://... -e USER_PASSWORD=... invoices-backend npm run user:create -- tu@correo.com
 ```
 
 ## Probar la pila completa
@@ -42,8 +42,8 @@ JWT_SECRET=$(openssl rand -base64 48) JWT_REFRESH_SECRET=$(openssl rand -base64 
 FRONTEND_ORIGIN=https://app.example.com docker compose up --build
 ```
 
-Es una prueba de integración, no una receta de producción: SQLite en un volumen implica una sola réplica del backend. Con
-varias réplicas hace falta PostgreSQL (aplazado) y un almacén compartido para el rate limiter.
+Es una prueba de integración, no una receta de producción: la base es PostgreSQL, así que el backend ya no está atado a una réplica; con
+varias réplicas hace falta además un almacén compartido para el rate limiter.
 
 ## Versionado y CI
 

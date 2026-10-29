@@ -8,7 +8,7 @@ Invoice (facturas) app, UI text in Spanish. It is an npm-workspaces + Turborepo 
 
 | Path | What it is |
 | --- | --- |
-| `apps/backend` | `@invoices/backend`: REST API, Next.js 16 route handlers only, Prisma 7 + SQLite, Zod, JWT in httpOnly cookies |
+| `apps/backend` | `@invoices/backend`: REST API, Next.js 16 route handlers only, Prisma 7 + PostgreSQL (Supabase), Zod, JWT in httpOnly cookies |
 | `apps/frontend` | `@invoices/frontend`: Vite + React 19 SPA (TanStack Query, Zustand, React Hook Form) |
 | `packages/shared-types`, `shared-utils`, `shared-validation` | REST contract types, money/totals rule, Zod schemas and limits. Isomorphic TypeScript source, no build step |
 | `legacy/` | Archived Next.js monolith. **Not maintained, does not build. Do not add features to it** |
@@ -40,7 +40,7 @@ Run app scripts from inside the app (`cd apps/backend`): the relative `DATABASE_
 - Backend flow is `route.ts` -> controllers -> services -> repositories (the only Prisma access). Wiring is in `src/container.ts`.
 - Auth: access (`at`) and refresh tokens are signed with different keys; in production `JWT_REFRESH_SECRET` and an https `FRONTEND_ORIGIN` are required and the server refuses to start without them.
 - Dark mode is a `dark` class on `<html>`; `src/globals.css` remaps the zinc palette, so use plain palette classes (avoid `text-white` on remapped dark buttons).
-- SQLite stays on purpose; PostgreSQL is postponed. The root pins `typescript` ^6 (used by typescript-eslint) while the backend keeps its own TypeScript 7: do not remove either.
+- Database: PostgreSQL on Supabase (migrated 2026-10-29 from SQLite; baseline migration `20261029120000_init_postgres`). The root pins `typescript` ^6 (used by typescript-eslint) while the backend keeps its own TypeScript 7: do not remove either.
 - API test collections: edit `resources/postman/gen_postman.py` and rerun it, never the JSON; validate with Newman/httpyac against a throwaway database whenever the API changes (recipe in `CLAUDE.md`: export `DATABASE_URL`, `NEXT_DIST_DIR`, `JWT_SECRET` first and verify them before `user:create`, or it hits `prisma/dev.db`).
 
 ## Skills

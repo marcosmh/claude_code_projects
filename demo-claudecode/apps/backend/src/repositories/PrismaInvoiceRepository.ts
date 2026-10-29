@@ -48,7 +48,12 @@ function buildWhere(ownerId: number, options: FindAllInvoicesOptions): Prisma.In
     ...(issuedFrom || issuedTo ? { issueDate } : {}),
     ...(currency ? { currency } : {}),
     ...(term
-      ? { OR: [{ clientName: { contains: term } }, { number: { contains: term } }] }
+      ? {
+          OR: [
+            { clientName: { contains: term, mode: "insensitive" as const } },
+            { number: { contains: term, mode: "insensitive" as const } },
+          ],
+        }
       : {}),
   };
 }

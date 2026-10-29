@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
   // Workspace packages ship TypeScript source (no build step), so Next must compile them.
   transpilePackages: ["@invoices/shared-types", "@invoices/shared-utils", "@invoices/shared-validation"],
   // API-only backend. No pages; CORS is handled in src/proxy.ts.
-  serverExternalPackages: ["@react-pdf/renderer", "better-sqlite3"],
+  serverExternalPackages: ["@react-pdf/renderer", "pg"],
   poweredByHeader: false,
   async headers() {
     return [

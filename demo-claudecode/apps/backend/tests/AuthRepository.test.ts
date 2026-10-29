@@ -3,7 +3,7 @@ import { createPrismaClient } from "../src/lib/prisma";
 import { PrismaAuthRepository, PrismaInvoiceRepository } from "../src/repositories";
 
 const url = process.env.TEST_DATABASE_URL;
-if (!url || url.includes("prisma/dev.db")) throw new Error("Tests need a temporary DB");
+if (!url || !/[?&]schema=test_/.test(url)) throw new Error("Tests need a temporary schema (?schema=test_...)");
 
 const db = createPrismaClient(url);
 const repo = new PrismaAuthRepository(db);

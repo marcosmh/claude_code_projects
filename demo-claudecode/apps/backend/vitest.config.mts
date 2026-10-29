@@ -13,6 +13,9 @@ export default defineConfig({
     globalSetup: ["tests/globalSetup.ts"],
     setupFiles: ["tests/setup.ts"],
     fileParallelism: false,
+    // Repository tests hit a remote PostgreSQL (Supabase): each query is a network round trip.
+    testTimeout: 30_000,
+    hookTimeout: 30_000,
     coverage: {
       provider: "v8",
       include: ["src/**/*.{ts,tsx}"],

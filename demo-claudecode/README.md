@@ -8,7 +8,7 @@ It is a **monorepo** (npm workspaces + Turborepo) with two independent applicati
 
 | Part | Stack |
 | --- | --- |
-| **Backend** (`apps/backend`) | Next.js 16 with route handlers only (REST API), TypeScript, Prisma 7 + SQLite, Zod 4, JWT with `jose`, `@react-pdf/renderer` |
+| **Backend** (`apps/backend`) | Next.js 16 with route handlers only (REST API), TypeScript, Prisma 7 + PostgreSQL (Supabase), Zod 4, JWT with `jose`, `@react-pdf/renderer` |
 | **Frontend** (`apps/frontend`) | React 19, Vite 8, React Router, TanStack Query, Zustand, React Hook Form + Zod, Tailwind v4 |
 | **Shared** (`packages/`) | `shared-types`, `shared-utils`, `shared-validation` (TypeScript, no build step) |
 | **Tooling** | Turborepo 2, Changesets, Vitest 5, Playwright + axe, ESLint, Docker, GitHub Actions. Node 22 |
@@ -105,13 +105,13 @@ Details and decisions in `apps/backend/docs/jwt-migration.md`.
 
 ## Database
 
-SQLite (`apps/backend/prisma/dev.db`). Models: `User`, `RefreshToken`, `Invoice` and `InvoiceItem` (cascade). Amounts are integer cents, each invoice stores its `currency` (invoices that predate that column were left as USD) and totals are never stored; that is why the list's amount filter is computed in memory before paginating (fine with SQLite and small volumes). Indexes match the real queries (owner first). PostgreSQL is postponed on purpose.
+PostgreSQL on Supabase (session pooler, `DATABASE_URL` in `apps/backend/.env`). Models: `User`, `RefreshToken`, `Invoice` and `InvoiceItem` (cascade). Amounts are integer cents, each invoice stores its `currency` (invoices that predate that column were left as USD) and totals are never stored; that is why the list's amount filter is computed in memory before paginating (fine for small volumes). Indexes match the real queries (owner first). The old SQLite file `prisma/dev.db` is kept only as a local backup (git-ignored).
 
 ## Testing
 
 - Unit and integration tests with Vitest in the backend, the frontend and each package, with coverage thresholds that must not drop.
 - E2E with Playwright and accessibility with axe.
-- The collections in `resources/` (`postman/` is generated with `gen_postman.py`; `rest_client/` is written by hand) are validated with Newman and httpyac against a temporary database whenever the API changes (recipe in `CLAUDE.md`: export `DATABASE_URL`, `NEXT_DIST_DIR` and `JWT_SECRET` before creating the user, or it writes to `dev.db`). Last Newman validation: 35 requests, 94 assertions, 0 failures.
+- The collections in `resources/` (`postman/` is generated with `gen_postman.py`; `rest_client/` is written by hand) are validated with Newman and httpyac against a temporary database whenever the API changes (recipe in `CLAUDE.md`: export `DATABASE_URL`, `NEXT_DIST_DIR` and `JWT_SECRET` before creating the user, or it writes to the real database; use a throwaway `?schema=` of the Supabase database). Last Newman validation: 35 requests, 94 assertions, 0 failures.
 
 ## CI/CD and deployment
 

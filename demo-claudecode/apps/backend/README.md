@@ -1,6 +1,6 @@
 # Backend de facturas
 
-API REST en Next.js 16 (route handlers, sin páginas) + TypeScript + Prisma 7 (SQLite). Contrato completo en [docs/api.md](docs/api.md).
+API REST en Next.js 16 (route handlers, sin páginas) + TypeScript + Prisma 7 (PostgreSQL / Supabase). Contrato completo en [docs/api.md](docs/api.md).
 
 ## Arquitectura
 
@@ -34,14 +34,14 @@ Ejecutar siempre desde `backend/`: la `DATABASE_URL` relativa se resuelve contra
 | --- | --- |
 | `npm run dev` | servidor de desarrollo en el puerto 4000 |
 | `npm run build` / `npm start` | build y servidor de producción (puerto 4000) |
-| `npm test` | vitest (usa una base SQLite temporal y repositorio falso; nunca `prisma/dev.db`) |
+| `npm test` | vitest (los tests de repositorio usan un schema temporal `test_*` de la base de `DATABASE_URL`, que se borra al terminar; el resto, repositorio falso; nunca el schema `public`) |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run db:migrate` / `db:generate` / `db:seed` | Prisma |
 | `npm run user:create -- <email> [--role USER\|ADMIN]` | crea un usuario (no hay registro público); contraseña por prompt oculto o variable `USER_PASSWORD` |
 
 ## Variables de entorno
 
-- `DATABASE_URL` (por defecto `file:./prisma/dev.db`)
+- `DATABASE_URL` (obligatoria; cadena PostgreSQL, en Supabase el Session pooler, puerto 5432)
 - `FRONTEND_ORIGIN` origen(es) CORS permitidos, separados por comas (por defecto `http://localhost:5173`)
 - `JWT_SECRET` **obligatoria**: al menos 32 bytes aleatorios (`openssl rand -base64 48`). El servidor no arranca si falta o es corta; nunca se imprime ni se versiona. Cambiarla cierra todas las sesiones.
 - `JWT_EXPIRES_IN` (access token, por defecto `15m`), `JWT_REFRESH_EXPIRES_IN` (refresh token, por defecto `7d`); formato `<número><s|m|h|d>`

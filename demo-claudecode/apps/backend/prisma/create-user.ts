@@ -1,7 +1,6 @@
 import "dotenv/config";
 import { createInterface } from "node:readline";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
-import { PrismaClient } from "../src/generated/prisma/client";
+import { createPrismaClient } from "../src/lib/prisma";
 import { PrismaAuthRepository } from "../src/repositories/PrismaAuthRepository";
 import { AuthService } from "../src/services/AuthService";
 import { AppError } from "../src/utils/errors";
@@ -48,8 +47,9 @@ async function main() {
   const input = newUserSchema.safeParse({ email, password, role });
   if (!input.success) throw new Error(input.error.issues.map((i) => i.message).join("; "));
 
-  const url = process.env.DATABASE_URL ?? "file:./prisma/dev.db";
-  const prisma = new PrismaClient({ adapter: new PrismaBetterSqlite3({ url }) });
+  const url = process.env.DATABASE_URL;
+  if (!url) throw new Error("DATABASE_URL is not set");
+  const prisma = createPrismaClient(url);
   try {
     // Creating an account never signs tokens, so the JWT configuration is not needed here.
     const noJwt = () => {

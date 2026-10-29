@@ -1,5 +1,5 @@
 # Production-like stack on one origin: http://localhost:8080 (SPA + /api). Not for development (use `npm run dev`).
-#   JWT_SECRET=... JWT_REFRESH_SECRET=... FRONTEND_ORIGIN=https://app.example.com docker compose up --build
+#   DATABASE_URL=postgresql://... JWT_SECRET=... JWT_REFRESH_SECRET=... FRONTEND_ORIGIN=https://app.example.com docker compose up --build
 # In production FRONTEND_ORIGIN must be https (the server refuses to start otherwise); behind a TLS terminator in front
 # of this stack, set it to the public origin.
 services:
@@ -9,13 +9,11 @@ services:
       JWT_SECRET: ${JWT_SECRET:?generate one with openssl rand -base64 48}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?generate a different one with openssl rand -base64 48}
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:?public https origin of the app}
+      DATABASE_URL: ${DATABASE_URL:?PostgreSQL connection string (Supabase session pooler)}
       TRUSTED_PROXY_HOPS: "1"
-    volumes: [invoices-data:/data]
   frontend:
     build: { context: ., dockerfile: apps/frontend/Dockerfile }
     environment:
       BACKEND_UPSTREAM: http://backend:4000
     ports: ["8080:8080"]
     depends_on: [backend]
-volumes:
-  invoices-data:

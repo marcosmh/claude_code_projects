@@ -4,7 +4,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 model User {
@@ -15,12 +15,12 @@ model User {
   // Consecutive failed logins; reset on success and when the account gets locked
   failedLogins  Int            @default(0)
   // While in the future the account rejects every login, even with the right password
-  lockedUntil   DateTime?
+  lockedUntil   DateTime?      @db.Timestamptz(3)
   // USER | ADMIN (validated in the service layer, not a Prisma enum)
   role          String         @default("USER")
   // Embedded in access tokens (`ver`); bumping it invalidates every live access token of the user
   tokenVersion  Int            @default(0)
-  createdAt     DateTime       @default(now())
+  createdAt     DateTime       @default(now()) @db.Timestamptz(3)
   refreshTokens RefreshToken[]
   invoices      Invoice[]
 }
@@ -33,12 +33,12 @@ model RefreshToken {
   family     String
   userId     Int
   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  expiresAt  DateTime
+  expiresAt  DateTime  @db.Timestamptz(3)
   // Set when the token is rotated, logged out or revoked
-  revokedAt  DateTime?
+  revokedAt  DateTime? @db.Timestamptz(3)
   // Id of the RefreshToken row that replaced this one on rotation (plain column, no FK: rows may be purged independently)
   replacedBy Int?
-  createdAt  DateTime  @default(now())
+  createdAt  DateTime  @default(now()) @db.Timestamptz(3)
 
   // Matches the queries: family liveness / revocation, per-user revocation, purge of expired rows
   @@index([family, revokedAt, expiresAt])
@@ -55,8 +55,8 @@ model Invoice {
   clientName    String
   clientEmail   String?
   clientAddress String?
-  issueDate     DateTime
-  dueDate       DateTime
+  issueDate     DateTime      @db.Timestamptz(3)
+  dueDate       DateTime      @db.Timestamptz(3)
   // DRAFT | SENT | PAID (validated in the service layer, not a Prisma enum)
   status        String        @default("DRAFT")
   taxRate       Float         @default(0)
@@ -64,8 +64,8 @@ model Invoice {
   currency      String        @default("USD")
   notes         String?
   items         InvoiceItem[]
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  createdAt     DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime      @updatedAt @db.Timestamptz(3)
 
   // Every query filters by owner first: list order (issueDate desc, id desc), status filter and stats window.
   // `dueDate` is never queried (overdue is computed in memory), so it has no index.

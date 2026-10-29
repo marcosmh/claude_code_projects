@@ -2,7 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test as base, type APIRequestContext, type Page } from "@playwright/test";
 
 export const API = "http://localhost:4100/api/v1";
-/** Cuenta de pruebas que crea playwright.config.ts en la base e2e.db (desechable). */
+/** Cuenta de pruebas que crea playwright.config.ts en el schema e2e (desechable). */
 export const E2E_USER = { email: "e2e@example.com", password: "e2e-password-123" };
 
 export interface SeedInvoice {

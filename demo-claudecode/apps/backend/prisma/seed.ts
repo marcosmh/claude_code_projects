@@ -1,8 +1,7 @@
 import "dotenv/config";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
-import { PrismaClient } from "../src/generated/prisma/client";
+import { createPrismaClient } from "../src/lib/prisma";
 
 // Safety: never run in production, and require --force because it wipes all invoices.
 if (process.env.NODE_ENV === "production") {
@@ -12,14 +11,16 @@ if (!process.argv.includes("--force")) {
   throw new Error("Seed deletes ALL invoices. Re-run with --force: npm run db:seed -- --force");
 }
 
-// Safety: the seed deletes invoices, so it only runs against backend/prisma/dev.db.
-const url = process.env.DATABASE_URL ?? "file:./prisma/dev.db";
-const expected = resolve(process.cwd(), "prisma/dev.db");
-if (resolve(process.cwd(), url.replace(/^file:/, "")) !== expected) {
-  throw new Error(`Seed only targets ${expected}, got DATABASE_URL=${url}`);
+// Safety: the seed deletes invoices, so it refuses to run unless SEED_ALLOW_HOST names the database host
+// (e.g. SEED_ALLOW_HOST=localhost). Prevents wiping a shared/remote database by accident.
+const url = process.env.DATABASE_URL;
+if (!url) throw new Error("DATABASE_URL is not set");
+const host = new URL(url).hostname;
+if (process.env.SEED_ALLOW_HOST !== host) {
+  throw new Error(`Seed deletes ALL invoices in ${host}. Re-run with SEED_ALLOW_HOST=${host} to confirm.`);
 }
 
-const prisma = new PrismaClient({ adapter: new PrismaBetterSqlite3({ url }) });
+const prisma = createPrismaClient(url);
 
 interface SeedInvoice {
   clientName: string;
@@ -40,8 +41,9 @@ async function main() {
   // Seeded invoices go to the first user, if any; otherwise they stay unowned until user:create claims them.
   const owner = await prisma.user.findFirst({ orderBy: { id: "asc" }, select: { id: true } });
   await prisma.invoice.deleteMany();
-  // Reset autoincrement so ids (and numbers) start at 1 again.
-  await prisma.$executeRaw`DELETE FROM sqlite_sequence WHERE name IN ('Invoice', 'InvoiceItem')`;
+  // Reset the id sequences so ids (and numbers) start at 1 again.
+  await prisma.$executeRaw`ALTER SEQUENCE "Invoice_id_seq" RESTART WITH 1`;
+  await prisma.$executeRaw`ALTER SEQUENCE "InvoiceItem_id_seq" RESTART WITH 1`;
   for (const [i, inv] of invoices.entries()) {
     await prisma.invoice.create({
       data: {
