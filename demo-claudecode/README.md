@@ -56,7 +56,7 @@ Requirements: Node 22 or later.
 npm install                                  # once, at the root
 
 cd apps/backend
-cp .env.example .env                         # set JWT_SECRET (at least 32 bytes: openssl rand -base64 48)
+cp .env.example .env                         # set DATABASE_URL (Supabase Session pooler, port 5432) and JWT_SECRET (at least 32 bytes: openssl rand -base64 48)
 npx prisma migrate deploy                    # apply the migrations
 npm run user:create -- you@example.com       # no public sign-up; prompts for the password (at least 12 characters)
 npm run db:seed -- --force                   # optional: sample invoices (DELETES all invoices)
@@ -79,7 +79,7 @@ From the root, with Turborepo (`--filter=@invoices/backend` or `@invoices/fronte
 | `npm run lint` | ESLint |
 | `npm run typecheck` | Type checking |
 | `npm test` | Unit and integration tests |
-| `npm run test:e2e` | Playwright + axe (starts its own backend on 4100 with a throwaway database) |
+| `npm run test:e2e` | Playwright + axe (starts its own backend on 4100 with a throwaway `e2e` schema of the same database) |
 | `npm run changeset` | Register a change for versioning |
 | `npm run version-packages` | Apply the pending changesets |
 
@@ -109,7 +109,7 @@ PostgreSQL on Supabase (session pooler, `DATABASE_URL` in `apps/backend/.env`). 
 
 ## Testing
 
-- Unit and integration tests with Vitest in the backend, the frontend and each package, with coverage thresholds that must not drop.
+- Unit and integration tests with Vitest in the backend, the frontend and each package, with coverage thresholds that must not drop. The backend repository tests run against a throwaway `test_<random>` schema in the database of `DATABASE_URL` (dropped afterwards, never `public`), so they need network access and take about 2 minutes.
 - E2E with Playwright and accessibility with axe.
 - The collections in `resources/` (`postman/` is generated with `gen_postman.py`; `rest_client/` is written by hand) are validated with Newman and httpyac against a temporary database whenever the API changes (recipe in `CLAUDE.md`: export `DATABASE_URL`, `NEXT_DIST_DIR` and `JWT_SECRET` before creating the user, or it writes to the real database; use a throwaway `?schema=` of the Supabase database). Last Newman validation: 35 requests, 94 assertions, 0 failures.
 
@@ -117,10 +117,10 @@ PostgreSQL on Supabase (session pooler, `DATABASE_URL` in `apps/backend/.env`). 
 
 - GitHub Actions in `.github/workflows/`: `backend.yml`, `frontend.yml`, `packages.yml` and `e2e.yml`, with path filters. All pass green on GitHub; the old `ci.yml` was removed.
 - Backend and frontend are built in Docker separately (`apps/*/Dockerfile`, using `turbo prune`). The design assumes **same origin**: nginx serves the SPA and proxies `/api` to the backend.
-- `docker-compose.yml` brings up the full stack to test the integration.
+- `docker-compose.yml` brings up the full stack to test the integration; it needs `DATABASE_URL` (PostgreSQL) in addition to the JWT secrets.
 
 Full guide in [`docs/deployment.md`](docs/deployment.md).
 
 ## Status
 
-The monorepo migration is done except for one item of the final validation: checking the deployment under real https. Longer-term backlog: PostgreSQL, admin routes, password recovery, a clients module, email delivery and, if needed, currency conversion with exchange rates.
+The monorepo migration is done except for one item of the final validation: checking the deployment under real https. Longer-term backlog: admin routes, password recovery, a clients module, email delivery and, if needed, currency conversion with exchange rates.

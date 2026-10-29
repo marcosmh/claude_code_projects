@@ -40,8 +40,8 @@ Run app scripts from inside the app (`cd apps/backend`): the relative `DATABASE_
 - Backend flow is `route.ts` -> controllers -> services -> repositories (the only Prisma access). Wiring is in `src/container.ts`.
 - Auth: access (`at`) and refresh tokens are signed with different keys; in production `JWT_REFRESH_SECRET` and an https `FRONTEND_ORIGIN` are required and the server refuses to start without them.
 - Dark mode is a `dark` class on `<html>`; `src/globals.css` remaps the zinc palette, so use plain palette classes (avoid `text-white` on remapped dark buttons).
-- Database: PostgreSQL on Supabase (migrated 2026-10-29 from SQLite; baseline migration `20261029120000_init_postgres`). The root pins `typescript` ^6 (used by typescript-eslint) while the backend keeps its own TypeScript 7: do not remove either.
-- API test collections: edit `resources/postman/gen_postman.py` and rerun it, never the JSON; validate with Newman/httpyac against a throwaway database whenever the API changes (recipe in `CLAUDE.md`: export `DATABASE_URL`, `NEXT_DIST_DIR`, `JWT_SECRET` first and verify them before `user:create`, or it hits `prisma/dev.db`).
+- Database: PostgreSQL on Supabase (migrated 2026-10-29 from SQLite; baseline migration `20261029120000_init_postgres`). Connect through the **Session pooler** (port 5432); the direct host is IPv6-only. Repository tests and E2E use throwaway schemas (`test_*`, `e2e`) and never `public`; `prisma migrate reset` is blocked for agents and needs the user's explicit consent. `.env.example` and `.env` are off limits for the agent by permission settings: never read, print or commit credentials. The root pins `typescript` ^6 (used by typescript-eslint) while the backend keeps its own TypeScript 7: do not remove either.
+- API test collections: edit `resources/postman/gen_postman.py` and rerun it, never the JSON; validate with Newman/httpyac against a throwaway database whenever the API changes (recipe in `CLAUDE.md`: export `DATABASE_URL` with a throwaway `?schema=`, `NEXT_DIST_DIR`, `JWT_SECRET` first and verify them before `user:create`, or it hits the real `public` schema).
 
 ## Skills
 
