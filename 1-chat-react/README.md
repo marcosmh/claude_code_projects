@@ -13,6 +13,7 @@ npm install
 npm run dev      # development
 npm run typecheck # type check (tsc)
 npm run lint     # ESLint
+npm test         # unit/component tests (Vitest)
 npm run build    # type check + production build
 ```
 

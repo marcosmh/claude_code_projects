@@ -9,11 +9,13 @@ npm install
 npm run dev       # Vite dev server (http://localhost:5173)
 npm run typecheck # tsc (strict), no emit
 npm run lint      # ESLint (typescript-eslint, react-hooks, jsx-a11y)
+npm run test      # Vitest (jsdom + Testing Library), single run
+npm run test:watch
 npm run build     # tsc + production build to dist/
 npm run preview   # serve the built bundle
 ```
 
-There is no test runner configured, so there is no single-test command. Verify changes with `npm run lint`, `npm run build` (it type-checks first) and by looking at the running app.
+Run a single test file or test: `npx vitest run src/pages/ChatPage.test.tsx` or `npx vitest run -t "envía con Enter"`. Tests sit next to the code (`*.test.ts(x)`); `src/test/setup.ts` registers jest-dom, stubs `scrollIntoView` (missing in jsdom) and resets `localStorage` / the `dark` class after each test. Before finishing a change run `npm run lint`, `npm test` and `npm run build` (it type-checks first), and look at the running app for visual changes.
 
 Pinned versions: TypeScript is `~6.0` because `typescript-eslint` does not support 7.x yet, and ESLint is `^9` because `eslint-plugin-jsx-a11y` does not support 10. Don't bump them without checking peer ranges.
 
@@ -32,6 +34,7 @@ The React project lives at the repository root (not in a nested `chat-ui/` folde
 - **Message model:** `Message` in `src/types/message.ts` (`id`, `sender`, ISO `sentAt`, `text`). `getMockMessages(currentUser)` in `src/data/mockMessages.ts` simulates the backend. "Own" is **derived** in `MessageList` (`message.sender === currentUser`); there is no `own` flag. Times use `Intl.DateTimeFormat`.
 - **Connection flow is mock-only.** `username` (`null` = disconnected) drives the screen: disconnected shows `ConnectForm` (empty submit shows an inline error) plus `EmptyState`; connected shows `UserBadge`, `MessageList` and `ChatInput`, which are not rendered otherwise. Both forms are real `<form>`s, so Enter and the button share one submit path.
 - **Theme:** `src/hooks/useTheme.ts` holds dark/light, persists it in `localStorage` (`chatroom:theme:v1`), toggles the `dark` class on `<html>` and updates `<meta name="theme-color">`. An inline script in `index.html` applies the stored theme before first paint; keep its key and colors in sync with the hook. Tailwind's `dark:` variant is class-based (`@custom-variant dark` in `src/index.css`).
+- **Font:** Poppins is self-hosted via `@fontsource/poppins` (latin 400/500/600, imported in `main.tsx`); there are no external font requests.
 - **Tailwind v4:** no `tailwind.config.js`; plugin is `@tailwindcss/vite` and tokens live in `src/index.css`.
 
 ## Visual palette

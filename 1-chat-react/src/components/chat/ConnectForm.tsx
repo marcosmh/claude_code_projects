@@ -38,7 +38,7 @@ export default function ConnectForm({ onConnect }: ConnectFormProps) {
             setDraft(event.target.value)
             if (error) setError('')
           }}
-          placeholder="p. ej. marcos…"
+          placeholder="p. ej. Anakin…"
           aria-label="Nombre de usuario"
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? ERROR_ID : undefined}

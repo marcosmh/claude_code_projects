@@ -226,7 +226,7 @@ src/components/ChatHeader.jsx:27 - logo "C" decorativo → `aria-hidden="true"`
 src/components/ChatHeader.jsx:31-36 - estado "En línea/Desconectado" cambia de forma asíncrona sin `aria-live="polite"`
 src/components/ChatHeader.jsx:54 - `transition-all` → listar propiedades; sin `motion-reduce`
 src/components/ChatHeader.jsx:61-68 - input sin `name`; usuario sin `spellCheck={false}`
-src/components/ChatHeader.jsx:65 - placeholder sin `…` ni ejemplo ("p. ej. marcos…")
+src/components/ChatHeader.jsx:65 - placeholder sin `…` ni ejemplo ("p. ej. Anakin…")
 src/components/ChatHeader.jsx:69 - `transition-all`; `focus:` en lugar de `focus-visible:` para el anillo
 src/components/ChatHeader.jsx:73 - botón submit deshabilitado mientras no hay texto (la guía: habilitado hasta que empiece la petición; mostrar error en línea)
 src/components/ChatHeader.jsx:74 - `transition-all`; `hover:-translate-y-px` sin variante `motion-reduce`
