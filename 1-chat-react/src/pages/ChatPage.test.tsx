@@ -50,7 +50,7 @@ describe('ChatPage', () => {
     await connectAs('Anakin')
 
     const own = screen.getByText('¿Cómo están?').closest('li')
-    expect(own).toHaveClass('items-end')
+    expect(own).toHaveAttribute('data-own', 'true')
     expect(own).toHaveTextContent('Anakin')
   })
 

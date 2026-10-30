@@ -15,7 +15,7 @@ const variants: Record<Variant, string> = {
   primary:
     'bg-linear-to-r from-primary to-primary-alt text-white shadow-md shadow-primary/30 hover:-translate-y-px hover:shadow-lg hover:shadow-primary/40 focus-visible:ring-primary/60 disabled:translate-y-0 disabled:opacity-50 disabled:shadow-none',
   danger:
-    'border border-danger/60 text-danger hover:bg-danger hover:text-white focus-visible:ring-danger/50',
+    'border border-danger/60 text-danger hover:bg-danger hover:text-on-danger focus-visible:ring-danger/50',
 }
 
 const sizes: Record<Size, string> = {

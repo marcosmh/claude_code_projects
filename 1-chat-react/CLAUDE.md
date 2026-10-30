@@ -39,7 +39,13 @@ The React project lives at the repository root (not in a nested `chat-ui/` folde
 
 ## Visual palette
 
-Based on Black Dashboard React (Creative Tim). Surface/text colors are **semantic tokens** that change with the theme (`page`, `surface`, `surface-alt`, `field`, `line`, `edge`, `fg`, `muted`, `subtle`, `elevation`): define them once as CSS variables in `:root` / `:root.dark` and use `bg-surface`, `text-muted`, etc. Do not add `dark:` pairs or raw `slate-*`/hex colors for surfaces. Brand colors are fixed: `primary`/`primary-alt` (action blue gradient `#1d8cf8` → `#3358f4`), `accent` pink (`#e14eca`, the user's own name), `success`, `danger`.
+Based on Black Dashboard React (Creative Tim). Surface/text colors are **semantic tokens** that change with the theme (`page`, `surface`, `surface-alt`, `field`, `line`, `edge`, `fg`, `muted`, `subtle`, `elevation`): define them once as CSS variables in `:root` / `:root.dark` and use `bg-surface`, `text-muted`, etc. Do not add `dark:` pairs or raw `slate-*`/hex colors for surfaces.
+
+Brand colors: `primary`/`primary-alt` are the action gradient (`#1470e0` → `#3358f4`, white text on it is >= 4.5:1; it is slightly darker than Black Dashboard's `#1d8cf8` on purpose). Colors used as **text** are theme-aware so they keep WCAG AA on each surface: `brand` (sender names), `accent` (the user's own name), `danger` (+ `on-danger` for text on a danger background). `success` is only used for the status dot. When changing a color, verify its contrast ratio (>= 4.5:1 for text) in both themes.
+
+## Message list design
+
+`MessageList` groups consecutive messages from the same sender within 5 minutes (`startsGroup`); only the first of a group shows the avatar, name and time (continuations get the time in a `title`). `Avatar` (initials, decorative) is shared with `UserBadge`.
 
 ## Skills
 

@@ -9,6 +9,7 @@ export function getMockMessages(currentUser: string): Message[] {
     { id: 2, sender: 'María López', sentAt: '2026-10-30T10:31:00', text: 'Buenos días' },
     { id: 3, sender: currentUser, sentAt: '2026-10-30T10:32:00', text: '¿Cómo están?' },
     { id: 4, sender: 'Juan Pérez', sentAt: '2026-10-30T10:33:00', text: 'Todo bien, revisando el tablero de tareas del sprint.' },
+    { id: 7, sender: 'Juan Pérez', sentAt: '2026-10-30T10:33:40', text: 'Te paso el enlace del tablero en un momento.' },
     { id: 5, sender: 'María López', sentAt: '2026-10-30T10:34:00', text: 'Perfecto. Más tarde subo el diseño nuevo del dashboard.' },
     { id: 6, sender: currentUser, sentAt: '2026-10-30T10:35:00', text: 'Genial, quedo atento. ¡Gracias!' },
   ]

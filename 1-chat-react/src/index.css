@@ -16,7 +16,11 @@
   --edge: #e2e8f0;
   --fg: #344675;
   --muted: #64748b;
-  --subtle: #94a3b8;
+  --subtle: #5f6f85;
+  --brand: #0c70dc;
+  --accent: #b8269f;
+  --danger: #d6336c;
+  --on-danger: #ffffff;
   --elevation: rgb(203 213 225 / 0.4);
   color-scheme: light;
 }
@@ -31,6 +35,10 @@
   --fg: #ffffff;
   --muted: #9a9a9a;
   --subtle: #9a9a9a;
+  --brand: #4ea5fb;
+  --accent: #ee74da;
+  --danger: #fd5d93;
+  --on-danger: #1e1e2f;
   --elevation: rgb(0 0 0 / 0.3);
   color-scheme: dark;
 }
@@ -49,13 +57,16 @@
   --color-subtle: var(--subtle);
   --color-elevation: var(--elevation);
 
-  /* Azul de acción (menú y botones del dashboard): #1d8cf8 -> #3358f4 */
-  --color-primary: #1d8cf8;
+  /* Azul de acción (menú y botones del dashboard). #1470e0 -> #3358f4 con texto blanco cumple AA (>= 4.5:1). */
+  --color-primary: #1470e0;
   --color-primary-alt: #3358f4;
-  /* Rosa de acento (gráficas) */
-  --color-accent: #e14eca;
   --color-success: #00f2c3;
-  --color-danger: #fd5d93;
+
+  /* Colores usados como TEXTO: cambian por tema para mantener contraste AA sobre cada superficie. */
+  --color-brand: var(--brand);
+  --color-accent: var(--accent);
+  --color-danger: var(--danger);
+  --color-on-danger: var(--on-danger);
 }
 
 @media (prefers-reduced-motion: reduce) {
