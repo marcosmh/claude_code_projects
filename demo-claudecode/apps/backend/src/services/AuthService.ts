@@ -115,9 +115,11 @@ export class AuthService {
     if (stored.expiresAt <= now) return this.refreshDenied("expired", stored.userId);
 
     const identity = await this.repository.findAuthIdentity(stored.userId);
-    if (!identity || isLocked(identity, now)) {
+    // A lockout only blocks new logins: whoever knows an email can trigger it, so it must not end sessions that
+    // are already open (the rotation below proves possession of a live refresh token, which a guesser lacks).
+    if (!identity) {
       await this.repository.revokeRefreshTokenFamily(stored.family, now);
-      return this.refreshDenied(identity ? "locked" : "unknown_user", stored.userId);
+      return this.refreshDenied("unknown_user", stored.userId);
     }
 
     const nextJti = this.newId();
@@ -137,7 +139,8 @@ export class AuthService {
 
   /**
    * Resolves an access token to its user, or throws 401. Checks signature, algorithm, exp, iss, aud, then
-   * that the user still exists, is not locked and still has the token's `ver` (a password change bumps it), and
+   * that the user still exists and still has the token's `ver` (a password change bumps it; a login lockout does not
+   * touch open sessions, since anyone who knows the email can trigger it), and
    * that the session (the refresh family in `sid`) was not revoked: logout, reuse detection and a password change
    * on another device cut the access token at once instead of letting it live out its 15 minutes.
    * Two reads in parallel (user by primary key, family by index); role and email come from the user, not the token.
@@ -155,7 +158,7 @@ export class AuthService {
       this.repository.findAuthIdentity(claims.userId),
       this.repository.isRefreshFamilyLive(claims.sessionId, now),
     ]);
-    if (!identity || !sessionLive || identity.tokenVersion !== claims.version || isLocked(identity, now)) {
+    if (!identity || !sessionLive || identity.tokenVersion !== claims.version) {
       throw new UnauthorizedError(NOT_SIGNED_IN);
     }
     return toAuthUser(identity);

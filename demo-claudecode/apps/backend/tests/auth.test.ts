@@ -153,10 +153,14 @@ describe("AuthService", () => {
       await expect(h.service.authenticate(token)).rejects.toBeInstanceOf(UnauthorizedError);
     });
 
-    it("rejects a valid token of a deleted user and of a locked account", async () => {
-      const { token } = await h.service.login("ana@example.com", PASSWORD);
+    it("a lockout does not end an open session (anyone who knows the email can trigger it)", async () => {
+      const { token, user } = await h.service.login("ana@example.com", PASSWORD);
       h.repo.users[0].lockedUntil = new Date(NOW.getTime() + LOCK_MS);
-      await expect(h.service.authenticate(token)).rejects.toBeInstanceOf(UnauthorizedError);
+      await expect(h.service.authenticate(token)).resolves.toEqual(user);
+    });
+
+    it("rejects a valid token of a deleted user", async () => {
+      const { token } = await h.service.login("ana@example.com", PASSWORD);
       h.repo.users.length = 0;
       await expect(h.service.authenticate(token)).rejects.toBeInstanceOf(UnauthorizedError);
     });
@@ -353,11 +357,21 @@ describe("AuthService", () => {
       await expect(h.service.refresh(refreshToken)).rejects.toBeInstanceOf(UnauthorizedError);
     });
 
-    it("rejects (and revokes) when the user is gone or locked", async () => {
+    it("rejects (and revokes) when the user is gone", async () => {
       const { refreshToken } = await h.service.login("ana@example.com", PASSWORD);
-      h.repo.users[0].lockedUntil = new Date(NOW.getTime() + LOCK_MS);
+      h.repo.users.length = 0;
       await expect(h.service.refresh(refreshToken)).rejects.toBeInstanceOf(UnauthorizedError);
       expect(h.repo.refreshTokens[0].revokedAt).not.toBeNull();
+    });
+
+    it("keeps renewing an open session while the account is locked, and the lock still blocks new logins", async () => {
+      const { refreshToken } = await h.service.login("ana@example.com", PASSWORD);
+      h.repo.users[0].lockedUntil = new Date(NOW.getTime() + LOCK_MS);
+      const renewed = await h.service.refresh(refreshToken);
+      await expect(h.service.authenticate(renewed.token)).resolves.toBeDefined();
+      expect(h.repo.refreshTokens[0].revokedAt).not.toBeNull(); // rotated, not family-revoked
+      expect(h.repo.refreshTokens[1].revokedAt).toBeNull();
+      await expect(h.service.login("ana@example.com", PASSWORD)).rejects.toBeInstanceOf(UnauthorizedError);
     });
 
     it("an access token issued after a refresh carries the current ver", async () => {

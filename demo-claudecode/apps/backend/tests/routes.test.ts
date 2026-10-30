@@ -533,12 +533,13 @@ describe("bloqueo y cambio de contraseña (HTTP)", () => {
     expect((await res.json()).error.message).toMatch(/5 intentos fallidos/);
   });
 
-  it("el bloqueo corta también los tokens vivos de esa cuenta", async () => {
+  it("el bloqueo no corta las sesiones abiertas (cualquiera que sepa el email puede provocarlo), pero sí los logins nuevos", async () => {
     const { token, refresh } = await loginAs("ana@example.com");
     for (let i = 0; i < 5; i++) await login("ana@example.com", "wrong password!!");
     bearer = token;
-    expect((await meRoute.GET(json("GET", "/auth/me"))).status).toBe(401);
-    expect((await postRefresh(refresh)).status).toBe(401);
+    expect((await meRoute.GET(json("GET", "/auth/me"))).status).toBe(200);
+    expect((await postRefresh(refresh)).status).toBe(200);
+    expect((await login("ana@example.com", PASSWORD)).status).toBe(401);
   });
 
   it("cambiar la contraseña: 204; el access token vivo muere, el refresh del que cambia renueva, la antigua no sirve", async () => {
