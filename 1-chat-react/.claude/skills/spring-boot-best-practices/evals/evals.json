@@ -1,0 +1,51 @@
+{
+  "skill_name": "spring-boot-best-practices",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "crea un spring boot api para gestionar usuarios (nombre, email, password). Necesito listar, obtener por id y crear.",
+      "expected_output": "Maven project with Java 25 and Boot 4.x, artifactId equal to the workspace directory, base package com.markcode.claude.springboot.<artifactId>.app, layered packages, User entity, UserRepository, UserDto record without password or audit fields, UserMapper, UserService, UserController, application.properties, Maven Wrapper.",
+      "files": [],
+      "assertions": [
+        {"text": "pom.xml has groupId com.markcode.claude.springboot and artifactId equal to the workspace directory name", "type": "file_content"},
+        {"text": "pom.xml sets java.version 25 and jar packaging", "type": "file_content"},
+        {"text": "mvnw, mvnw.cmd and .mvn/ exist", "type": "file_exists"},
+        {"text": "Config is src/main/resources/application.properties and no application.yml/yaml exists", "type": "file_exists"},
+        {"text": "Packages controllers, services, repositories, models, dto and mapper exist under the base package", "type": "structure"},
+        {"text": "UserDto is a Java record and has no password, createdAt, updatedAt, createAt or updateAt component", "type": "file_content"},
+        {"text": "UserController has no import or field of UserRepository and no business logic", "type": "file_content"},
+        {"text": "UserRepository is an interface extending JpaRepository", "type": "file_content"},
+        {"text": "UserMapper is a handwritten class with toDto and toEntity and no MapStruct/ModelMapper dependency in the pom", "type": "file_content"},
+        {"text": "Classes use constructor injection and no field @Autowired", "type": "file_content"},
+        {"text": "./mvnw -DskipTests package succeeds", "type": "command"}
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "add a Product entity (name, price, sku unique) to the existing spring boot project with its repository, service and a controller with create endpoint. Validate that price is positive.",
+      "expected_output": "Product model, ProductRepository, ProductDto record, ProductMapper, ProductService with business rule for duplicate sku, ProductController using @Valid, following the conventions already in the project.",
+      "files": [],
+      "assertions": [
+        {"text": "ProductDto uses Jakarta validation (@NotBlank, @Positive or @DecimalMin) on name and price", "type": "file_content"},
+        {"text": "Duplicate sku is checked in ProductService, not in the controller", "type": "file_content"},
+        {"text": "Controller returns a DTO (ResponseEntity<ProductDto>) and never the Product entity", "type": "file_content"},
+        {"text": "New classes are placed in the existing controllers/services/repositories/models/dto/mapper packages", "type": "structure"},
+        {"text": "The existing project is inspected before generating (no second pom or duplicated base class)", "type": "process"}
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "genera un spring mvc con thymeleaf y tailwind, una pagina home y una lista de tareas (titulo, hecha). Quiero layout base con header, navbar y footer.",
+      "expected_output": "Monolithic MVC app: templates/layouts/base.html, fragments header/navbar/footer, pages/, semantic header/main/footer, @Controller delegating to a TaskService, DTOs passed to the model, Tailwind CSS output in static/css, Thymeleaf starter in the pom.",
+      "files": [],
+      "assertions": [
+        {"text": "templates/layouts/base.html, fragments/header.html, navbar.html, footer.html and pages/ exist", "type": "structure"},
+        {"text": "base layout uses <header>, <main> and <footer> elements", "type": "file_content"},
+        {"text": "pom.xml includes the Thymeleaf starter", "type": "file_content"},
+        {"text": "Page controller depends on TaskService only and puts DTOs, not entities, in the Model", "type": "file_content"},
+        {"text": "Layered packages and explicit TaskMapper are present", "type": "structure"},
+        {"text": "The run instructions use ./mvnw -DskipTests spring-boot:run", "type": "file_content"}
+      ]
+    }
+  ]
+}

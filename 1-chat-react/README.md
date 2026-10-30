@@ -21,7 +21,7 @@ Tailwind v4 is configured in `src/index.css` (`@theme`) through `@tailwindcss/vi
 
 ## Available Skills
 
-Catalog of the skills available in the project. They live in `.claude/skills/` (source in `.agents/skills/`, pinned versions in `skills-lock.json`).
+Catalog of the skills available in the project. They live in `.claude/skills/`. The two Vercel skills have their source in `.agents/skills/` and pinned versions in `skills-lock.json`; `spring-boot-best-practices` is authored directly in `.claude/skills/`.
 
 ### vercel-react-best-practices
 
@@ -36,6 +36,14 @@ Catalog of the skills available in the project. They live in `.claude/skills/` (
 - **Main goal:** detect accessibility, UX and design violations in the UI.
 - **Responsibilities:** read the specified files, apply all the rules and return findings in a terse `file:line` format.
 - **Common use cases:** auditing accessibility, reviewing the UX/design of a component or page, checking the UI before integrating the backend.
+
+### spring-boot-best-practices
+
+- **Functional description:** guide for generating and evolving Spring Boot projects (Java 25, Maven, Spring Boot 4.x) with a layered architecture: controllers, services, repositories, models, DTO records and explicit mappers. It also covers Spring MVC + Thymeleaf + Tailwind monoliths.
+- **Contents:** `SKILL.md` (rules and workflow), `references/` (`pom-template.md`, `project-structure.md`, `layer-templates.md`, `patterns.md`, `thymeleaf-web.md`) loaded on demand, and `evals/evals.json` (3 test cases with assertions).
+- **Main goal:** keep every Spring Boot layer with a single responsibility and a consistent project baseline (Maven Wrapper, `application.properties`, base package from the workspace name).
+- **Responsibilities:** generate the project baseline, entities, repositories, services, controllers, DTOs and mappers, and review or refactor Spring Boot architecture.
+- **Common use cases:** creating a Spring Boot API or project from scratch, adding entities and REST endpoints, refactoring layers, building a server-rendered web app. Likely to be used when the Spring Boot backend for this chat is started.
 
 ## Skills Trigger Rules
 
@@ -52,6 +60,13 @@ Catalog of the skills available in the project. They live in `.claude/skills/` (
 - **Events or actions that trigger it:** an explicit UI review request with a file or pattern (`<file-or-pattern>`); if none is given, it asks which files to review.
 - **When not to use it:** for performance optimization or React patterns (use `vercel-react-best-practices`), or for writing new components from scratch.
 - **Dependencies or prerequisites:** internet access to download the rules on every review.
+
+### spring-boot-best-practices
+
+- **When to run it:** when creating a Spring Boot API or a monolithic Spring Web application, generating a Spring Boot project from scratch, creating or modifying entities, repositories, services or controllers, adding REST endpoints, or refactoring a Spring Boot architecture.
+- **Events or actions that trigger it:** phrases such as "create spring boot api", "generate spring boot project", "create entity", "add repository", "add service", "add controller", "create endpoint", "spring mvc", "thymeleaf", "modify entity", "modify service", "refactor spring boot" and "spring web monolith".
+- **When not to use it:** for the React frontend (use `vercel-react-best-practices` or `web-design-guidelines`), or for non-Spring Java code.
+- **Dependencies or prerequisites:** JDK 25, internet access to verify the Spring Boot version and to use Spring Initializr (falls back to a hand-written `pom.xml`).
 
 ### Maintenance
 

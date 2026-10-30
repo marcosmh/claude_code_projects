@@ -53,6 +53,6 @@ Icons are inline SVGs in `components/common/icons.tsx` (decorative, `aria-hidden
 
 ## Skills
 
-`.claude/skills/` holds two project skills (`vercel-react-best-practices`, `web-design-guidelines`); `.agents/skills/` and `skills-lock.json` are their source/lock. Use them when writing or reviewing React code and UI.
+`.claude/skills/` holds three project skills (`vercel-react-best-practices`, `web-design-guidelines`, `spring-boot-best-practices`; the last one is for the future Spring Boot backend, not the React app); `.agents/skills/` and `skills-lock.json` are the source/lock of the first two. Use the first two when writing or reviewing React code and UI. `spring-boot-best-practices` has `references/` (pom, project structure, layer templates, patterns, Thymeleaf) and `evals/evals.json`; when changing its rules, update the relevant reference and the evals' assertions together.
 
 Catalog and activation rules for each skill are documented in the "Available Skills" and "Skills Trigger Rules" sections of `README.md`. When adding or changing a skill, update both sections so they stay in sync with `.claude/skills/`.
