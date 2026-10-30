@@ -99,6 +99,16 @@ describe("classify y clientKey", () => {
     expect(bucketKey(h({ "x-forwarded-for": "5.5.5.5" }), true, 0)).toBeNull();
   });
 
+  it("en producción sin IP fiable la cookie del access token también cuenta como credencial (rutas de datos del navegador)", () => {
+    const h = (init: Record<string, string>) => new Headers(init);
+    expect(bucketKey(h({ cookie: "x=1; at=abc.def.ghi" }), true, 0)).toBe("cred:abc.def.ghi");
+    expect(bucketKey(h({ cookie: "__Secure-at=abc.def.ghi" }), true, 0)).toBe("cred:abc.def.ghi");
+    expect(bucketKey(h({ cookie: "format=1; flat=2" }), true, 0)).toBeNull(); // "at=" inside another name is not it
+    // Bearer wins over cookies, and the refresh cookie over the access cookie (auth routes see both).
+    expect(bucketKey(h({ authorization: "Bearer bbb.bbb.bbb", cookie: "at=aaa.aaa.aaa" }), true, 0)).toBe("cred:bbb.bbb.bbb");
+    expect(bucketKey(h({ cookie: "at=aaa.aaa.aaa; refresh=rrr.rrr.rrr" }), true, 0)).toBe("cred:rrr.rrr.rrr");
+  });
+
   it("con proxy de confianza la clave es la IP", () => {
     expect(bucketKey(new Headers({ "x-forwarded-for": "1.1.1.1, 2.2.2.2" }), true, 1)).toBe("ip:2.2.2.2");
   });

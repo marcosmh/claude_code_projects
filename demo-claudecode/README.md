@@ -15,7 +15,7 @@ It is a **monorepo** (npm workspaces + Turborepo) with two independent applicati
 
 ## Features
 
-- **Access**: sign in and out, password change (signs out the other sessions) and account lockout after 5 failed attempts. Each user only sees their own invoices.
+- **Access**: sign in and out, password change (signs out the other sessions) and account lockout after 5 failed attempts (the lockout blocks new logins; sessions already open keep working). Each user only sees their own invoices.
 - **Invoices**
   - Dynamic line items (description, quantity, unit price) with live totals.
   - Configurable tax per invoice and client data embedded in the invoice.
@@ -97,15 +97,18 @@ Each app also has its own scripts (`test:coverage`, `db:migrate`, `db:seed`, `us
 
 - JWT in `HttpOnly; SameSite=Strict` cookies: a 15-minute access token and a rotating refresh token, signed with **different keys**. Neither is readable from JavaScript.
 - Logging out, reusing a refresh token or changing the password on another device revokes the access token immediately.
+- The login and refresh responses carry only the user. Scripts (curl, Postman, REST Client) ask for the access token in the body with `"mode": "token"`; the browser never receives it in a readable form.
+- **Audit trail and alerts**: logins, lockouts, refresh reuse, logouts and password changes are written to stdout and to the `AuditEvent` table (no passwords, tokens, emails or IPs). A reused refresh token raises an alert at once, and a spike of rejected logins on locked accounts raises another; alerts go to stderr and, optionally, to a webhook (`AUDIT_ALERT_WEBHOOK_URL`). Details in `apps/backend/README.md`.
 - CSRF protection: an allowed `Origin` (or a same-origin request) is required on every write authenticated by cookie.
 - Rate limiting, security headers on the API and a full CSP on the production frontend.
-- In production the server **does not start** without distinct, high-entropy `JWT_SECRET` and `JWT_REFRESH_SECRET`, or without `FRONTEND_ORIGIN` (an https origin). The refresh cookie is named `__Secure-refresh`.
+- In production the server is **not usable** without distinct, high-entropy `JWT_SECRET` and `JWT_REFRESH_SECRET`, or without `FRONTEND_ORIGIN` (an https origin): the startup check rejects the configuration, but `next start` stays up answering 500 on every route instead of exiting, so give the container a healthcheck. The cookies are named `__Secure-refresh` and `__Secure-at`.
+- Behind a reverse proxy set `TRUSTED_PROXY_HOPS=1` (the compose file and the nginx template already do): without it there is no per-IP limit on login, only the per-email limit and the account lockout.
 
 Details and decisions in `apps/backend/docs/jwt-migration.md`.
 
 ## Database
 
-PostgreSQL on Supabase (session pooler, `DATABASE_URL` in `apps/backend/.env`). Models: `User`, `RefreshToken`, `Invoice` and `InvoiceItem` (cascade). Amounts are integer cents, each invoice stores its `currency` (invoices that predate that column were left as USD) and totals are never stored; that is why the list's amount filter is computed in memory before paginating (fine for small volumes). Indexes match the real queries (owner first). The old SQLite file `prisma/dev.db` is kept only as a local backup (git-ignored).
+PostgreSQL on Supabase (session pooler, `DATABASE_URL` in `apps/backend/.env`). Models: `User`, `RefreshToken`, `Invoice` and `InvoiceItem` (cascade), plus `AuditEvent` (security trail, no relation to `User` so it outlives the account; no purge yet). Amounts are integer cents, each invoice stores its `currency` (invoices that predate that column were left as USD) and totals are never stored; that is why the list's amount filter is computed in memory before paginating (fine for small volumes). Indexes match the real queries (owner first). The old SQLite file `prisma/dev.db` is kept only as a local backup (git-ignored).
 
 ## Testing
 
@@ -123,4 +126,4 @@ Full guide in [`docs/deployment.md`](docs/deployment.md).
 
 ## Status
 
-The monorepo migration is done except for one item of the final validation: checking the deployment under real https. Longer-term backlog: admin routes, password recovery, a clients module, email delivery and, if needed, currency conversion with exchange rates.
+The monorepo migration is done. The production-only behaviour was checked under https on 2026-10-29 (`__Secure-` cookies, security headers, CSRF guards, startup checks, rate limits; see `CLAUDE.md` for the findings). Open items: a healthcheck for the containers, applying the `AuditEvent` migration to the real database, `kid`-based key rotation and a shared rate-limit store for multiple instances. Longer-term backlog: admin routes, password recovery, a clients module, email delivery and, if needed, currency conversion with exchange rates.

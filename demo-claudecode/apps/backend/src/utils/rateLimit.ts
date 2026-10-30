@@ -112,6 +112,8 @@ export function bucketKey(
   if (!production) return "local";
   const bearer = headers.get("authorization")?.match(/^Bearer\s+(\S+)$/i)?.[1];
   const refresh = headers.get("cookie")?.match(/(?:^|;\s*)(?:__Secure-)?refresh=([^;]+)/)?.[1];
-  const credential = bearer ?? refresh;
+  // The browser authenticates data routes with the access cookie only (the refresh cookie is scoped to /auth).
+  const access = headers.get("cookie")?.match(/(?:^|;\s*)(?:__Secure-)?at=([^;]+)/)?.[1];
+  const credential = bearer ?? refresh ?? access;
   return credential ? `cred:${credential.slice(-32)}` : null;
 }
