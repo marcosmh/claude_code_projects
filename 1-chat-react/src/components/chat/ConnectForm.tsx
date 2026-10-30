@@ -1,10 +1,13 @@
 import { useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import Button from '../common/Button'
+import { AlertIcon, AtIcon } from '../common/icons'
 import TextInput from '../common/TextInput'
 
 const MAX_USERNAME_LENGTH = 24
+const INPUT_ID = 'username'
 const ERROR_ID = 'username-error'
+const HINT_ID = 'username-hint'
 
 interface ConnectFormProps {
   // Punto de integración futuro con Spring Boot.
@@ -20,7 +23,7 @@ export default function ConnectForm({ onConnect }: ConnectFormProps) {
     event.preventDefault()
     const username = draft.trim()
     if (!username) {
-      setError('Ingresa un nombre de usuario.')
+      setError('Escribe un nombre de usuario para unirte al chat.')
       inputRef.current?.focus()
       return
     }
@@ -28,32 +31,43 @@ export default function ConnectForm({ onConnect }: ConnectFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="flex min-w-0 flex-1 flex-col gap-1">
-      <div className="flex min-w-0 items-center gap-2">
+    <form onSubmit={handleSubmit} noValidate className="mt-8 flex flex-col gap-5 text-left">
+      <div className="flex flex-col gap-2">
+        <label htmlFor={INPUT_ID} className="text-sm font-medium">
+          Nombre de usuario
+        </label>
         <TextInput
           ref={inputRef}
+          id={INPUT_ID}
           name="username"
+          inputSize="lg"
+          icon={<AtIcon />}
           value={draft}
           onChange={(event) => {
             setDraft(event.target.value)
             if (error) setError('')
           }}
           placeholder="p. ej. Anakin…"
-          aria-label="Nombre de usuario"
           aria-invalid={error ? true : undefined}
-          aria-describedby={error ? ERROR_ID : undefined}
+          aria-describedby={error ? ERROR_ID : HINT_ID}
           maxLength={MAX_USERNAME_LENGTH}
           autoComplete="off"
           spellCheck={false}
-          className="flex-1 sm:w-48 sm:flex-none"
         />
-        <Button type="submit">Conectar</Button>
+        {error ? (
+          <p id={ERROR_ID} role="alert" className="flex items-center gap-1.5 text-sm text-danger">
+            <AlertIcon />
+            {error}
+          </p>
+        ) : (
+          <p id={HINT_ID} className="text-xs text-subtle">
+            Hasta {MAX_USERNAME_LENGTH} caracteres. No necesitas contraseña.
+          </p>
+        )}
       </div>
-      {error && (
-        <p id={ERROR_ID} role="alert" className="text-xs text-danger">
-          {error}
-        </p>
-      )}
+      <Button type="submit" size="lg" className="w-full">
+        Conectar
+      </Button>
     </form>
   )
 }

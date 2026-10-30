@@ -4,7 +4,7 @@ Chat interface (frontend only) built with React + TypeScript + Vite + Tailwind C
 There is no business logic or real connection: the backend (Spring Boot, WebSocket/STOMP) will be integrated later.
 
 ## Flow
-1. Disconnected: the header shows a username field and the **Conectar** (Connect) button; the chat area shows an empty state.
+1. Disconnected: a centered card asks for a username with the **Conectar** (Connect) button.
 2. Connected (mock): it shows "Conectado como: <name>" (Connected as), the **Desconectar** (Disconnect) button, the message list and the message input.
 
 ## Scripts

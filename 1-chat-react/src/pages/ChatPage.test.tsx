@@ -12,11 +12,11 @@ async function connectAs(name: string) {
 }
 
 describe('ChatPage', () => {
-  it('desconectado: muestra el estado vacío y oculta mensajes e input', () => {
+  it('desconectado: muestra la tarjeta de acceso y oculta mensajes e input', () => {
     render(<ChatPage />)
 
-    expect(screen.getByText('Bienvenido a ChatRoom')).toBeInTheDocument()
-    expect(screen.getByText('Desconectado')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Bienvenido a ChatRoom' })).toBeInTheDocument()
+    expect(screen.getByText('Offline')).toBeInTheDocument()
     expect(screen.queryByRole('log')).not.toBeInTheDocument()
     expect(screen.queryByRole('textbox', { name: 'Mensaje' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Enviar' })).not.toBeInTheDocument()
@@ -28,9 +28,9 @@ describe('ChatPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Conectar' }))
 
-    expect(screen.getByRole('alert')).toHaveTextContent('Ingresa un nombre de usuario.')
+    expect(screen.getByRole('alert')).toHaveTextContent('Escribe un nombre de usuario')
     expect(screen.getByRole('textbox', { name: 'Nombre de usuario' })).toHaveFocus()
-    expect(screen.getByText('Desconectado')).toBeInTheDocument()
+    expect(screen.getByText('Offline')).toBeInTheDocument()
   })
 
   it('conecta con Enter y muestra el usuario, los mensajes y el input', async () => {
@@ -39,8 +39,8 @@ describe('ChatPage', () => {
 
     await user.type(screen.getByRole('textbox', { name: 'Nombre de usuario' }), 'Anakin{Enter}')
 
-    expect(screen.getByText('En línea')).toBeInTheDocument()
-    expect(screen.getByText('Anakin', { selector: 'p span' })).toBeInTheDocument()
+    expect(screen.getByText('Online')).toBeInTheDocument()
+    expect(screen.getByText('Anakin', { selector: 'header p span' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Desconectar' })).toBeInTheDocument()
     expect(screen.getByRole('log', { name: 'Mensajes' })).toBeInTheDocument()
     expect(screen.getByRole('textbox', { name: 'Mensaje' })).toBeInTheDocument()
@@ -73,12 +73,12 @@ describe('ChatPage', () => {
     expect(input).toHaveValue('   ')
   })
 
-  it('al desconectar vuelve al estado vacío', async () => {
+  it('al desconectar vuelve a la pantalla de acceso', async () => {
     const user = await connectAs('Anakin')
 
     await user.click(screen.getByRole('button', { name: 'Desconectar' }))
 
-    expect(screen.getByText('Bienvenido a ChatRoom')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Bienvenido a ChatRoom' })).toBeInTheDocument()
     expect(screen.queryByRole('log')).not.toBeInTheDocument()
   })
 

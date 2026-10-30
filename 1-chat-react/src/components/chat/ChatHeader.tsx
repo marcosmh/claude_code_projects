@@ -1,45 +1,38 @@
 import type { Theme } from '../../hooks/useTheme'
+import Button from '../common/Button'
+import { LogOutIcon } from '../common/icons'
 import BrandLogo from '../layout/BrandLogo'
 import ThemeToggle from '../layout/ThemeToggle'
-import ConnectForm from './ConnectForm'
 import ConnectionStatus from './ConnectionStatus'
 import UserBadge from './UserBadge'
 
 interface ChatHeaderProps {
-  username: string | null
+  username: string
   theme: Theme
   onToggleTheme: () => void
-  onConnect: (username: string) => void
   onDisconnect: () => void
 }
 
-export default function ChatHeader({
-  username,
-  theme,
-  onToggleTheme,
-  onConnect,
-  onDisconnect,
-}: ChatHeaderProps) {
+export default function ChatHeader({ username, theme, onToggleTheme, onDisconnect }: ChatHeaderProps) {
   return (
-    <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-b border-line px-4 py-3 transition-colors duration-300 sm:px-6 sm:py-4">
+    <header className="flex items-center justify-between gap-3 border-b border-line bg-surface px-4 py-3 sm:px-6 sm:py-4">
       <div className="flex min-w-0 items-center gap-3">
         <BrandLogo />
-        <div className="min-w-0">
-          <h1 className="truncate text-base font-semibold sm:text-lg">ChatRoom</h1>
-          <ConnectionStatus isConnected={username !== null} />
+        <div className="flex min-w-0 flex-col gap-1">
+          <h1 translate="no" className="truncate text-base font-semibold leading-none sm:text-lg">
+            ChatRoom
+          </h1>
+          <ConnectionStatus isConnected />
         </div>
       </div>
 
-      <div className="ml-auto">
+      <div className="flex min-w-0 items-center gap-2">
+        <UserBadge username={username} />
         <ThemeToggle theme={theme} onToggle={onToggleTheme} />
-      </div>
-
-      <div className="flex w-full min-w-0 items-start sm:w-auto">
-        {username !== null ? (
-          <UserBadge username={username} onDisconnect={onDisconnect} />
-        ) : (
-          <ConnectForm onConnect={onConnect} />
-        )}
+        <Button variant="danger" size="sm" onClick={onDisconnect} className="max-sm:size-10 max-sm:p-0">
+          <LogOutIcon />
+          <span className="max-sm:sr-only">Desconectar</span>
+        </Button>
       </div>
     </header>
   )

@@ -45,7 +45,7 @@ export default function MessageList({ messages, currentUser }: MessageListProps)
           ))}
         </ul>
       )}
-      <div ref={endRef} />
+      <div ref={endRef} className="scroll-mb-5" />
     </div>
   )
 }

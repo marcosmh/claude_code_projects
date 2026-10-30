@@ -16,8 +16,8 @@ export default function MessageItem({ message, isOwn, isGroupStart }: MessageIte
   return (
     <li
       data-own={isOwn}
-      className={`flex items-start gap-2.5 ${isOwn ? 'flex-row-reverse' : ''} ${
-        isGroupStart ? 'mt-5 first:mt-0' : 'mt-1'
+      className={`animate-enter flex items-start gap-3 ${isOwn ? 'flex-row-reverse' : ''} ${
+        isGroupStart ? 'mt-6 first:mt-0' : 'mt-1'
       }`}
     >
       {isGroupStart ? (
@@ -33,15 +33,15 @@ export default function MessageItem({ message, isOwn, isGroupStart }: MessageIte
           <div className="mb-1 flex items-baseline gap-2 px-1 text-xs text-muted">
             <span className={`font-semibold ${isOwn ? 'text-accent' : 'text-brand'}`}>{sender}</span>
             <span aria-hidden="true">·</span>
-            <time dateTime={sentAt}>{timeFormatter.format(new Date(sentAt))}</time>
+            <time dateTime={sentAt} className="tabular-nums text-subtle">{timeFormatter.format(new Date(sentAt))}</time>
           </div>
         )}
         <p
           title={isGroupStart ? undefined : timeFormatter.format(new Date(sentAt))}
-          className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed wrap-break-word shadow-sm transition-colors duration-200 ${
+          className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed wrap-break-word shadow-sm ${
             isOwn
-              ? 'rounded-tr-md bg-linear-to-r from-primary to-primary-alt text-white shadow-primary/20'
-              : 'rounded-tl-md bg-surface-alt text-fg'
+              ? 'rounded-tr-md bg-linear-to-br from-primary to-primary-alt text-white shadow-md shadow-primary/20'
+              : 'rounded-tl-md border border-line bg-surface-alt text-fg'
           }`}
         >
           {text}
