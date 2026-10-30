@@ -50,6 +50,9 @@ Claude Code Projects
 
 * https://www.skills.sh/anthropics/skills/frontend-design
 
+* https://www.skills.sh/vercel-labs/agent-skills/vercel-react-best-practices
+
+* https://www.skills.sh/vercel-labs/agent-skills/web-design-guidelines
 
 ## Docs
 
@@ -72,3 +75,9 @@ Claude Code Projects
 * https://github.com/ChromeDevTools/chrome-devtools-mcp/blob/main/docs/client-configurations.md
 
 * https://claude.com/es/marketplace/connectors/context7
+
+
+-------------------
+
+
+

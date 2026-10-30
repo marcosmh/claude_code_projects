@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Paleta inspirada en Black Dashboard React (Creative Tim) */
+@theme {
+  --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
+
+  --color-bd-bg: #1e1e2f;
+  --color-bd-card: #27293d;
+  --color-bd-card-alt: #2f3148;
+  --color-bd-border: #3a3d57;
+  --color-bd-muted: #9a9a9a;
+
+  /* Azul de acción (menú y botones del dashboard): #1d8cf8 -> #3358f4 */
+  --color-primary: #1d8cf8;
+  --color-primary-alt: #3358f4;
+  --color-info: #1d8cf8;
+  /* Rosa de acento (gráficas) */
+  --color-accent: #e14eca;
+  --color-success: #00f2c3;
+  --color-danger: #fd5d93;
+
+  --color-ld-bg: #f5f6fa;
+  --color-ld-text: #344675;
+}
+
+body {
+  @apply bg-ld-bg text-ld-text antialiased transition-colors duration-300 dark:bg-bd-bg dark:text-white;
+}
+
+/* Scrollbar discreto */
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(154 154 154 / 0.4) transparent;
+}
