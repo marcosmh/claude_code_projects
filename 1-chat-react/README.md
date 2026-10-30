@@ -12,6 +12,7 @@ There is no business logic or real connection: the backend (Spring Boot, WebSock
 npm install
 npm run dev      # development
 npm run typecheck # type check (tsc)
+npm run lint     # ESLint
 npm run build    # type check + production build
 ```
 

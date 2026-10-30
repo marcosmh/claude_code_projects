@@ -2,35 +2,60 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Paleta inspirada en Black Dashboard React (Creative Tim) */
-@theme {
+/*
+ * Tokens semánticos: cada uno cambia de valor según el tema (clase `dark` en <html>),
+ * así los componentes usan `bg-surface` en lugar de pares `bg-x dark:bg-y`.
+ * Paleta inspirada en Black Dashboard React (Creative Tim).
+ */
+:root {
+  --page: #f5f6fa;
+  --surface: #ffffff;
+  --surface-alt: #f1f5f9;
+  --field: #f8fafc;
+  --line: #e2e8f0;
+  --edge: #e2e8f0;
+  --fg: #344675;
+  --muted: #64748b;
+  --subtle: #94a3b8;
+  --elevation: rgb(203 213 225 / 0.4);
+  color-scheme: light;
+}
+
+:root.dark {
+  --page: #1e1e2f;
+  --surface: #27293d;
+  --surface-alt: #2f3148;
+  --field: #1e1e2f;
+  --line: rgb(58 61 87 / 0.6);
+  --edge: #3a3d57;
+  --fg: #ffffff;
+  --muted: #9a9a9a;
+  --subtle: #9a9a9a;
+  --elevation: rgb(0 0 0 / 0.3);
+  color-scheme: dark;
+}
+
+@theme inline {
   --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
 
-  --color-bd-bg: #1e1e2f;
-  --color-bd-card: #27293d;
-  --color-bd-card-alt: #2f3148;
-  --color-bd-border: #3a3d57;
-  --color-bd-muted: #9a9a9a;
+  --color-page: var(--page);
+  --color-surface: var(--surface);
+  --color-surface-alt: var(--surface-alt);
+  --color-field: var(--field);
+  --color-line: var(--line);
+  --color-edge: var(--edge);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-subtle: var(--subtle);
+  --color-elevation: var(--elevation);
 
   /* Azul de acción (menú y botones del dashboard): #1d8cf8 -> #3358f4 */
   --color-primary: #1d8cf8;
   --color-primary-alt: #3358f4;
-  --color-info: #1d8cf8;
   /* Rosa de acento (gráficas) */
   --color-accent: #e14eca;
   --color-success: #00f2c3;
   --color-danger: #fd5d93;
-
-  --color-ld-bg: #f5f6fa;
-  --color-ld-text: #344675;
-}
-
-html {
-  color-scheme: light;
-}
-
-html.dark {
-  color-scheme: dark;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -43,7 +68,7 @@ html.dark {
 }
 
 body {
-  @apply bg-ld-bg text-ld-text antialiased transition-colors duration-300 dark:bg-bd-bg dark:text-white;
+  @apply bg-page text-fg antialiased transition-colors duration-300;
 }
 
 /* Scrollbar discreto */

@@ -8,7 +8,7 @@ export default function EmptyState() {
         💬
       </div>
       <h2 className="text-lg font-semibold sm:text-xl">Bienvenido a ChatRoom</h2>
-      <p className="max-w-xs text-sm text-slate-500 dark:text-bd-muted">
+      <p className="max-w-xs text-sm text-muted">
         Ingresa un nombre de usuario para conectarte al chat.
       </p>
     </div>
