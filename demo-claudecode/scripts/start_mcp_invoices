@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# Starts the invoices MCP server (apps/invoices-mcp; needs DATABASE_URL in its .env) in the background, building it first if dist/ is missing or older
+# than the sources. It speaks MCP over stdio, so it has no port: its stdin is a FIFO that the process itself holds open
+# (O_RDWR), which keeps it from exiting on EOF. Claude Code and other clients spawn their own copy from .mcp.json; this
+# instance is for checking that the server boots (log in scripts/.run/invoices-mcp.log). Stop with scripts/stop_mcp_invoices.
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+RUN="$ROOT/scripts/.run"
+APP="$ROOT/apps/invoices-mcp"
+pidfile="$RUN/invoices-mcp.pid"
+fifo="$RUN/invoices-mcp.stdin"
+log="$RUN/invoices-mcp.log"
+mkdir -p "$RUN"
+
+alive() { kill -0 "$1" 2>/dev/null; }
+
+if [[ -f "$pidfile" ]] && alive "$(cat "$pidfile")"; then
+  echo "invoices-mcp ya está en ejecución (PID $(cat "$pidfile"))"; exit 0
+fi
+rm -f "$pidfile"
+
+if [[ ! -f "$APP/dist/index.js" ]] || [[ -n "$(find "$APP/src" "$APP/package.json" -newer "$APP/dist/index.js" -print -quit)" ]]; then
+  echo "Compilando invoices-mcp..."
+  (cd "$APP" && npm run build >"$RUN/invoices-mcp.build.log" 2>&1) || {
+    echo "ERROR: falló el build; revisa $RUN/invoices-mcp.build.log" >&2; exit 1
+  }
+fi
+
+rm -f "$fifo"; mkfifo "$fifo"
+# `$$` survives the exec, so the PID file holds the session leader that stop_mcp_invoices signals (see start_apps).
+(cd "$APP"; setsid bash -c 'echo $$ >"$1"; exec 0<>"$2"; exec node dist/index.js' _ "$pidfile" "$fifo" \
+  >"$log" 2>&1 &)
+
+for _ in $(seq 1 20); do
+  if grep -q "listo (stdio)" "$log" 2>/dev/null; then
+    echo "invoices-mcp listo (stdio, PID $(cat "$pidfile")); log en scripts/.run/invoices-mcp.log"; exit 0
+  fi
+  if [[ -f "$pidfile" ]] && ! alive "$(cat "$pidfile")"; then break; fi
+  sleep 0.25
+done
+echo "ERROR: invoices-mcp no arrancó; revisa $log" >&2; exit 1

@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# Stops the instance started by scripts/start_mcp_invoices (signals its whole process group). Exits 1 if it will not die.
+set -uo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+RUN="$ROOT/scripts/.run"
+pidfile="$RUN/invoices-mcp.pid"
+
+alive() { kill -0 "$1" 2>/dev/null; }
+pgid_of() { ps -o pgid= -p "$1" 2>/dev/null | tr -d ' '; }
+
+if [[ ! -f "$pidfile" ]] || ! alive "$(cat "$pidfile")"; then
+  rm -f "$pidfile" "$RUN/invoices-mcp.stdin"
+  echo "invoices-mcp: no estaba en ejecución"; exit 0
+fi
+
+pid=$(cat "$pidfile")
+# Never touch a process that is not ours: it must be node running this project's dist/index.js.
+if ! tr '\0' ' ' <"/proc/$pid/cmdline" 2>/dev/null | grep -q "dist/index.js"; then
+  rm -f "$pidfile"
+  echo "ERROR: el PID $pid ya no es invoices-mcp; no se toca" >&2; exit 1
+fi
+pgid=$(pgid_of "$pid")
+target=$pid
+[[ -n "$pgid" && "$pgid" == "$pid" && "$pgid" != "$(pgid_of $$)" ]] && target="-$pgid"
+
+kill -TERM -- "$target" 2>/dev/null
+for _ in $(seq 1 20); do alive "$pid" || break; sleep 0.25; done
+alive "$pid" && { kill -KILL -- "$target" 2>/dev/null; sleep 0.5; }
+
+if alive "$pid"; then
+  echo "ERROR: invoices-mcp (PID $pid) sigue en ejecución" >&2; exit 1
+fi
+rm -f "$pidfile" "$RUN/invoices-mcp.stdin"
+echo "invoices-mcp detenido"
