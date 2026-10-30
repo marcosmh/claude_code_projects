@@ -84,3 +84,16 @@ model InvoiceItem {
 
   @@index([invoiceId])
 }
+
+// Security trail (logins, lockouts, refresh reuse, password changes): see src/utils/audit.ts. No relation to User on
+// purpose: the trail must outlive the account. Never stores passwords, tokens, emails or IPs.
+model AuditEvent {
+  id        Int      @id @default(autoincrement())
+  action    String
+  userId    Int?
+  reason    String?
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([action, createdAt])
+  @@index([userId, createdAt])
+}

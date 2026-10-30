@@ -8,14 +8,22 @@ vi.hoisted(() => {
 });
 
 // Route handlers import the container, which imports the Prisma-backed repository: swap it for a fake.
-const fake = vi.hoisted(() => ({ repo: undefined as unknown, auth: undefined as unknown }));
+const fake = vi.hoisted(() => ({
+  repo: undefined as unknown,
+  auth: undefined as unknown,
+  audit: [] as { action: string; userId?: number; reason?: string }[],
+}));
 vi.mock("../src/repositories", async () => {
   const { FakeInvoiceRepository } = await import("./helpers/FakeInvoiceRepository");
   const { FakeAuthRepository } = await import("./helpers/FakeAuthRepository");
   const repo = new FakeInvoiceRepository();
   fake.repo = repo;
   fake.auth = new FakeAuthRepository(repo);
-  return { invoiceRepository: repo, authRepository: fake.auth };
+  const auditRepository = {
+    record: async (event: { action: string; userId?: number; reason?: string }) => void fake.audit.push(event),
+    findRecent: async () => [],
+  };
+  return { invoiceRepository: repo, authRepository: fake.auth, auditRepository };
 });
 
 import * as loginRoute from "@/app/api/v1/auth/login/route";
@@ -421,6 +429,17 @@ describe("autenticación y autorización", () => {
       expect(replay.status).toBe(401);
       expect(replay.headers.get("Set-Cookie")).toMatch(/^refresh=; Max-Age=0;/);
       expect((await postRefresh(next)).status).toBe(401);
+    });
+
+    it("la reutilización de un refresh token queda en la traza de auditoría, sin email ni tokens", async () => {
+      fake.audit.length = 0;
+      const { refresh } = await loginAs("ana@example.com");
+      await postRefresh(refresh);
+      (fake.auth as FakeAuthRepository).refreshTokens.find((t) => t.replacedBy !== null)!.revokedAt = new Date(Date.now() - 60_000);
+      await postRefresh(refresh);
+      await new Promise((resolve) => setTimeout(resolve, 0)); // the trail is written fire-and-forget
+      expect(fake.audit.map((e) => e.action)).toEqual(["login_success", "refresh_reuse_detected"]); // refresh_success is not kept
+      expect(JSON.stringify(fake.audit)).not.toMatch(/ana@example|refresh=|eyJ/);
     });
 
     it("un refresh token reutilizado dentro de la ventana de gracia -> 401 sin borrar la cookie ni revocar la familia", async () => {
