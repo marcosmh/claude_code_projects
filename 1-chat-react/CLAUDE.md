@@ -7,25 +7,26 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 npm install
 npm run dev       # Vite dev server (http://localhost:5173)
-npm run build     # production build to dist/
+npm run typecheck # tsc (strict), no emit
+npm run build     # tsc + production build to dist/
 npm run preview   # serve the built bundle
 ```
 
-There is no linter and no test runner configured, so there is no single-test command. Verify changes with `npm run build` and by looking at the running app.
+There is no linter and no test runner configured, so there is no single-test command. Verify changes with `npm run build` (it type-checks first) and by looking at the running app.
 
 ## Project
 
-ChatRoom (package name `chat-ui`) is a **frontend-only** chat UI: React 19 + Vite + Tailwind CSS v4. There is deliberately no business logic and no backend communication yet. Spring Boot (REST, WebSocket/STOMP or Socket.IO, authentication) will be integrated later, so keep components decoupled and expose integration points as props/callbacks rather than hardcoding behavior.
+ChatRoom (package name `chat-ui`) is a **frontend-only** chat UI: React 19 + TypeScript (strict) + Vite + Tailwind CSS v4. There is deliberately no business logic and no backend communication yet. Spring Boot (REST, WebSocket/STOMP or Socket.IO, authentication) will be integrated later, so keep components decoupled and expose integration points as props/callbacks rather than hardcoding behavior.
 
 The React project lives at the repository root (not in a nested `chat-ui/` folder). The UI copy is in Spanish.
 
 ## Architecture
 
-All state lives in `src/pages/ChatPage.jsx`; everything under `components/` is presentational and receives data and callbacks via props. `ChatLayout` is a slot-based shell (`header`, `children`, `footer`).
+App state lives in `src/pages/ChatPage.tsx` (theme is in the `useTheme` hook); everything under `components/` is presentational and receives data and callbacks via props. `ChatLayout` is a slot-based shell (`header`, `children`, `footer`).
 
 - **Connection flow is mock-only.** `username` state (`null` = disconnected) drives the whole screen: disconnected shows the username form in `ChatHeader` plus `EmptyState`; connected shows `MessageList` and `ChatInput`, which are not rendered at all otherwise. `onConnect(username)`, `onDisconnect` and `ChatInput`'s `onSend` are the future Spring Boot hooks (`handleSend` is intentionally a no-op).
-- **Mock data:** `src/data/mockMessages.js`. Messages with `own: true` have `user: null`; `ChatPage` fills in the connected username when mapping them, so "own" is decided by that flag, not by comparing names.
-- **Theme:** dark/light is a `theme` state in `ChatPage` that toggles the `dark` class on `<html>` (`index.html` starts with `class="dark"`). Tailwind's `dark:` variant is redefined in `src/index.css` via `@custom-variant dark (&:where(.dark, .dark *))`, so it is class-based, not OS-based.
+- **Mock data:** `getMockMessages(currentUser)` in `src/data/mockMessages.ts` returns `Message` objects (`src/types/message.ts`: `id`, `sender`, ISO `sentAt`, `text`), simulating the backend. "Own" is **derived** in `MessageList` (`message.sender === currentUser`); there is no `own` flag in the data. Times are formatted with `Intl.DateTimeFormat`.
+- **Theme:** `src/hooks/useTheme.ts` holds dark/light, persists it in `localStorage` (`chatroom:theme:v1`), toggles the `dark` class on `<html>` and updates `<meta name="theme-color">`. An inline script in `index.html` applies the stored theme before first paint; keep its key and colors in sync with the hook. Tailwind's `dark:` variant is redefined in `src/index.css` via `@custom-variant dark (&:where(.dark, .dark *))`, so it is class-based, not OS-based.
 - **Tailwind v4:** there is no `tailwind.config.js`. Plugin is `@tailwindcss/vite` in `vite.config.js`; the design tokens live in the `@theme` block of `src/index.css`.
 
 ## Visual palette

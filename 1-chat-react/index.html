@@ -7,10 +7,19 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="theme-color" content="#1e1e2f" />
+    <!-- Aplica el tema guardado antes del primer pintado. Misma clave/colores que src/hooks/useTheme.ts -->
+    <script>
+      try {
+        var light = localStorage.getItem('chatroom:theme:v1') === 'light'
+        document.documentElement.classList.toggle('dark', !light)
+        document.querySelector('meta[name="theme-color"]').setAttribute('content', light ? '#f5f6fa' : '#1e1e2f')
+      } catch (e) {}
+    </script>
     <title>ChatRoom</title>
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

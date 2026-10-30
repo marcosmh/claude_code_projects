@@ -1,6 +1,6 @@
 # chat-ui
 
-Chat interface (frontend only) built with React + Vite + Tailwind CSS v4, with an aesthetic inspired by Black Dashboard React.
+Chat interface (frontend only) built with React + TypeScript + Vite + Tailwind CSS v4, with an aesthetic inspired by Black Dashboard React.
 There is no business logic or real connection: the backend (Spring Boot, WebSocket/STOMP) will be integrated later.
 
 ## Flow
@@ -11,7 +11,8 @@ There is no business logic or real connection: the backend (Spring Boot, WebSock
 ```bash
 npm install
 npm run dev      # development
-npm run build    # production
+npm run typecheck # type check (tsc)
+npm run build    # type check + production build
 ```
 
 Tailwind v4 is configured in `src/index.css` (`@theme`) through `@tailwindcss/vite`, so there is no `tailwind.config.js`.

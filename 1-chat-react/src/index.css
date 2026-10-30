@@ -25,6 +25,23 @@
   --color-ld-text: #344675;
 }
 
+html {
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
 body {
   @apply bg-ld-bg text-ld-text antialiased transition-colors duration-300 dark:bg-bd-bg dark:text-white;
 }
