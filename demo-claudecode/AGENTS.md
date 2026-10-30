@@ -11,6 +11,7 @@ Invoice (facturas) app, UI text in Spanish. It is an npm-workspaces + Turborepo 
 | `apps/backend` | `@invoices/backend`: REST API, Next.js 16 route handlers only, Prisma 7 + PostgreSQL (Supabase), Zod, JWT in httpOnly cookies |
 | `apps/frontend` | `@invoices/frontend`: Vite + React 19 SPA (TanStack Query, Zustand, React Hook Form) |
 | `apps/mcp-weather` | `@invoices/mcp-weather`: standalone MCP server (stdio) with `get_weather` and `recommend_clothing`; unrelated to invoices, shares nothing with the backend |
+| `apps/invoices-mcp` | `@invoices/invoices-mcp`: read-only MCP server (stdio) over the invoices with `get_invoice_summary`, `get_client_invoice` and `get_summary_totals`; reads PostgreSQL directly with `DATABASE_URL` from its own `.env` (never the backend's), `INVOICES_OWNER_EMAIL` limits it to one user |
 | `packages/shared-types`, `shared-utils`, `shared-validation` | REST contract types, money/totals rule, Zod schemas and limits. Isomorphic TypeScript source, no build step |
 | `legacy/` | Archived Next.js monolith. **Not maintained, does not build. Do not add features to it** |
 | `resources/`, `docs/`, `scripts/`, `.changeset/` | API test collections, deployment guide, `start_apps`/`stop_apps`, versioning |

@@ -9,6 +9,12 @@
       "args": [
         "apps/mcp-weather/dist/index.js"
       ]
+    },
+    "invoices": {
+      "command": "node",
+      "args": [
+        "apps/invoices-mcp/dist/index.js"
+      ]
     }
   }
 }
