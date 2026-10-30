@@ -135,7 +135,7 @@ def block(*lines):
 
 auth_items = [
     req("Login", "POST", "/auth/login",
-        "Inicia sesión. Con `\"mode\": \"token\"` (como aquí, para scripts) devuelve además el access token en el cuerpo (se guarda en `{{token}}` para Bearer); sin `mode`, el cuerpo solo lleva el usuario y el token viaja únicamente en cookies. Fija DOS cookies HttpOnly que Postman conserva en su cookie jar: `at` (access token, `Path=/api/v1`) y `refresh` (`Path=/api/v1/auth`). El navegador usa solo las cookies; esta colección usa Bearer, salvo la carpeta **Cookies y CSRF**. Límite: 10 intentos por minuto por IP y por email; 5 fallos seguidos bloquean la cuenta 15 min.",
+        "Inicia sesión. Con `\"mode\": \"token\"` (como aquí, para scripts) devuelve además el access token en el cuerpo (se guarda en `{{token}}` para Bearer); sin `mode`, el cuerpo solo lleva el usuario y el token viaja únicamente en cookies. Fija DOS cookies HttpOnly que Postman conserva en su cookie jar: `at` (access token, `Path=/api/v1`) y `refresh` (`Path=/api/v1/auth`). El navegador usa solo las cookies; esta colección usa Bearer, salvo la carpeta **Cookies y CSRF**. Límite: 10 intentos por minuto por IP y por email; 5 fallos seguidos bloquean la cuenta 15 min (el bloqueo solo impide nuevos logins y cambios de contraseña; las sesiones abiertas siguen funcionando).",
         body={"email": "{{email}}", "password": "{{password}}", "mode": "token"}, auth=False, tests=SAVE_TOKEN + SET_COOKIES,
         examples=[example("200 OK", 200, "OK", SESSION, [{"key": "Content-Type", "value": "application/json"}, {"key": "Set-Cookie", "value": "refresh=<JWT>; Max-Age=604800; Path=/api/v1/auth; HttpOnly; SameSite=Strict"}, {"key": "Set-Cookie", "value": "at=<JWT>; Max-Age=900; Path=/api/v1; HttpOnly; SameSite=Strict"}]),
                   example("401 Credenciales inválidas", 401, "Unauthorized", {"error": {"code": "UNAUTHENTICATED", "message": "Email o contraseña incorrectos. Tras 5 intentos fallidos la cuenta se bloquea 15 minutos."}})]),
@@ -325,6 +325,11 @@ errors_items = [
         body={"email": "no-existe@example.com", "password": "contraseña-incorrecta-123"}, auth=False,
         tests=["pm.test('Status 401', () => pm.response.to.have.status(401));",
                "pm.test('Sin cookie refresh nueva', () => pm.expect(pm.response.headers.has('Set-Cookie')).to.be.false);"]),
+    req("Login con mode inválido → 400", "POST", "/auth/login",
+        "`mode` solo admite `\"token\"`; cualquier otro valor es un 400 `VALIDATION_ERROR` y no inicia sesión (no cuenta como intento fallido de contraseña, pero sí para el límite de 10 logins por minuto).",
+        body={"email": "{{email}}", "password": "{{password}}", "mode": "cookie"}, auth=False,
+        tests=["pm.test('Status 400', () => pm.response.to.have.status(400));",
+               "pm.test('Sin cookies nuevas', () => pm.expect(pm.response.headers.has('Set-Cookie')).to.be.false);"]),
 ]
 
 ERR403 = {"error": {"code": "FORBIDDEN", "message": "Origen no permitido"}}
@@ -376,6 +381,20 @@ after_logout = req("Access token tras el logout → 401", "GET", "/auth/me",
     tests=["pm.test('Status 401', () => pm.response.to.have.status(401));",
            "pm.test('UNAUTHENTICATED', () => pm.expect(pm.response.json().error.code).to.eql('UNAUTHENTICATED'));"])
 
+login_no_mode = req("Login sin mode → sin token en el cuerpo", "POST", "/auth/login",
+    "Es lo que hace el navegador: sin `mode` el cuerpo solo lleva el usuario y el access token viaja únicamente en la cookie `at`. Va al final porque abre una sesión nueva (cookies nuevas en el cookie jar): no guarda `{{token}}`. Ejecuta Logout si quieres cerrarla.",
+    body={"email": "{{email}}", "password": "{{password}}"}, auth=False,
+    tests=["pm.test('Status 200', () => pm.response.to.have.status(200));",
+           "pm.test('El cuerpo solo lleva el usuario', () => {",
+           "  const json = pm.response.json();",
+           "  pm.expect(json.data).to.not.have.property('token');",
+           "  pm.expect(json.data.user).to.include.all.keys('id', 'email', 'role');",
+           "});",
+           "pm.test('Fija las cookies at y refresh', () => {",
+           "  pm.expect(pm.cookies.has('refresh')).to.be.true;",
+           "  pm.expect(pm.cookies.has('at')).to.be.true;",
+           "});"])
+
 collection = {
     "info": {
         "name": "API de Facturas v1",
@@ -389,6 +408,7 @@ collection = {
             "**Notas**\n"
             "- La autenticación Bearer está definida a nivel de colección con `{{token}}`; Login, Refresh y Logout la desactivan.\n"
             "- Si el token caduca (15 min) o cambias la contraseña, ejecuta **Auth → Refresh**.\n"
+            "- Login y Refresh envían `\"mode\": \"token\"` para recibir el access token en el cuerpo (Bearer). Sin `mode` (como el navegador) el cuerpo solo lleva el usuario y el token va únicamente en cookies; el último paso de **Cierre de sesión** lo comprueba.\n"
             "- Límites por IP y minuto: 120 lecturas, 30 escrituras, 10 PDF, 10 logins/cambios de contraseña, 20 refresh. 5 logins fallidos bloquean la cuenta 15 min.\n"
             "- Postman guarda las cookies `at` y `refresh` de Login y las envía solas; con `Authorization: Bearer` gana el token. Postman no envía `Origin`: las escrituras con Bearer no se ven afectadas, y la carpeta **Cookies y CSRF** prueba qué pasa con cookie y con orígenes ajenos.\n"
             "- Dinero en centavos enteros; fechas ISO 8601."
@@ -414,8 +434,8 @@ collection = {
         {"name": "Errors", "item": errors_items, "description": "Casos de error esperados (401, 400, 404, 422). Las cookies de sesión se anulan donde hace falta probar \"sin credenciales\"."},
         {"name": "Cookies y CSRF", "item": cookie_items,
          "description": "Auth por cookie httpOnly (la que usa el navegador) y guardias CSRF. Requiere haber ejecutado Login: Postman guarda las cookies `at` y `refresh` en su cookie jar. No modifica datos."},
-        {"name": "Cierre de sesión", "item": [auth_items[3], auth_items[1], auth_items[4], after_logout],
-         "description": "Al final de la ejecución: cambiar la contraseña invalida el access token, así que Refresh lo renueva y Logout cierra la sesión. Para volver a probar, ejecuta Login otra vez."},
+        {"name": "Cierre de sesión", "item": [auth_items[3], auth_items[1], auth_items[4], after_logout, login_no_mode],
+         "description": "Al final de la ejecución: cambiar la contraseña invalida el access token, así que Refresh lo renueva y Logout cierra la sesión. El último paso, Login sin mode, deja una sesión abierta con cookies (ciérrala con Logout). Para volver a probar, ejecuta Login otra vez."},
     ],
 }
 

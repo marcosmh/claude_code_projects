@@ -22,7 +22,12 @@
 #     cookies, los casos "sin credenciales" llevan "# @no-cookie-jar".
 #   - Límites por IP y minuto: 120 lecturas, 30 escrituras, 10 PDF, 10 logins
 #     o cambios de contraseña, 20 refresh. 5 logins fallidos bloquean la
-#     cuenta 15 min (por eso el login inválido usa un email inexistente).
+#     cuenta 15 min (por eso el login inválido usa un email inexistente). El
+#     bloqueo solo impide nuevos logins y cambios de contraseña: las sesiones
+#     abiertas siguen funcionando y renovándose.
+#   - Login y Refresh piden "mode": "token" para recibir el access token en el
+#     cuerpo (Bearer). Sin "mode" (como el navegador) el cuerpo solo lleva el
+#     usuario y el token va únicamente en las cookies.
 #   - Dinero en centavos enteros; fechas ISO 8601.
 ###############################################################################
 
@@ -361,6 +366,20 @@ GET {{baseUrl}}/invoices/abc
 Authorization: Bearer {{token}}
 
 
+### Login con mode inválido -> 400
+# "mode" solo admite "token". No inicia sesión ni cuenta como contraseña fallida,
+# pero sí para el límite de 10 logins por minuto.
+# ESPERADO  400 VALIDATION_ERROR, sin cabecera Set-Cookie
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}",
+  "mode": "cookie"
+}
+
+
 ### Login con credenciales inválidas -> 401
 # Usa un email inexistente a propósito para no bloquear tu cuenta. Cuenta para
 # el límite de 10 logins por minuto.
@@ -525,3 +544,18 @@ POST {{baseUrl}}/auth/logout
 # @no-cookie-jar
 GET {{baseUrl}}/auth/me
 Authorization: Bearer {{refreshedToken}}
+
+
+### 6) Login sin mode -> sin token en el cuerpo
+# Es lo que hace el navegador: el cuerpo solo lleva el usuario y el access token
+# va únicamente en la cookie "at". Abre una sesión nueva (cookies nuevas), por
+# eso va al final; ejecuta el Logout (paso 4) si quieres cerrarla.
+# ESPERADO  200 OK  { "data": { "user": { "id": 1, "email": "...", "role": "USER" } } }
+#           sin "token" en el cuerpo; Set-Cookie: refresh=<JWT> y at=<JWT>
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
