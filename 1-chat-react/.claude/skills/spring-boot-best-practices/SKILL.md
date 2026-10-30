@@ -1,6 +1,6 @@
 ---
 name: spring-boot-best-practices
-description: Generate, maintain and evolve Spring Boot projects (Java 25, Maven, Spring Boot 4.x) with a strict layered architecture - controllers, services, repositories, models, DTO records and explicit mappers. Use this skill whenever the user asks to create a Spring Boot API or project, generate a Spring Boot project from scratch, create or modify entities, repositories, services or controllers, add REST endpoints, refactor a Spring Boot architecture, or build a monolithic Spring MVC / Thymeleaf web app ("spring mvc", "thymeleaf", "spring web monolith"), even if they do not name the skill.
+description: Generate, maintain and evolve Spring Boot projects (Java 25, Maven, Spring Boot 4.x) with a strict layered architecture - controllers, services, repositories, models, DTO records and explicit mappers. Use this skill whenever the user asks to create a Spring Boot API or project, generate a Spring Boot project from scratch, create or modify entities, repositories, services or controllers, add REST endpoints, refactor a Spring Boot architecture, or build a monolithic Spring MVC / Thymeleaf web app ("spring mvc", "thymeleaf", "spring web monolith"), or configure Spring beans, Spring Security, JWT, CORS or application properties (the config package), even if they do not name the skill.
 ---
 
 # Spring Boot Best Practices
@@ -28,7 +28,7 @@ Rules for building Spring Boot code that stays maintainable: each layer has one 
 - Maven, `<packaging>jar</packaging>`, Java 25 (`<java.version>25</java.version>`).
 - `groupId`: `com.markcode.claude.springboot`.
 - `artifactId`: **exactly the name of the current workspace directory** (run `basename "$PWD"`).
-- Base package: `com.markcode.claude.springboot.<artifactId>.app`. Java packages cannot contain `-`, so convert the artifactId segment (drop hyphens or use `_`) and keep the pom's artifactId unchanged.
+- Base package: `com.markcode.claude.springboot.<artifactId>.app`. Java packages cannot contain `-` or start with a digit, so convert the artifactId segment (drop hyphens, use `_`, and drop a leading numeric prefix like `2-` in `2-chat-backend` -> `chatbackend`) and keep the pom's artifactId unchanged. Mention the conversion in the project docs.
 - Dependencies, at minimum: Web, Validation, Data JPA, H2, DevTools, Actuator. All must resolve for the selected Boot version.
 - Configuration lives in `src/main/resources/application.properties`. Never create `application.yml`/`.yaml`; if Initializr or the user's project has one, convert it.
 - The Maven Wrapper (`.mvn/`, `mvnw`, `mvnw.cmd`) must be present. Every build/run/test example uses it, and the default way to run locally is:
@@ -49,6 +49,7 @@ models/        JPA entities
 dto/           records exposed through the API
 mapper/        one explicit mapper per entity
 exceptions/    domain exceptions thrown by services (optional, add when needed)
+config/        ALL Spring and Spring Security configuration (@Configuration, @ConfigurationProperties)
 ```
 
 | Layer | Does | Must not |
@@ -57,8 +58,11 @@ exceptions/    domain exceptions thrown by services (optional, add when needed)
 | Service | Business rules and functional validation, coordinate repositories, map entity <-> DTO through the mapper | know about HTTP types |
 | Repository | `interface X extends JpaRepository<Entity, Id>`; derived queries or `@Query` | contain logic |
 | Model | JPA entity with domain-only behavior | depend on DTOs, services or web classes |
+| Config | `@Configuration` / `@ConfigurationProperties` wiring: security filter chain, password encoder, CORS, JPA auditing, typed properties | hold business logic or call repositories (security users come from a `UserDetailsService` in `services/`) |
 
-The reason for the strict split: a controller that reads a repository couples the HTTP contract to the schema, and entities leaking out of the API expose internals (and lazy-loading surprises). Keep the dependency direction `controller -> service -> repository`.
+The reason for the strict split: a controller that reads a repository couples the HTTP contract to the schema, and entities leaking out of the API expose internals (and lazy-loading surprises). Keep the dependency direction `controller -> service -> repository`. `config/` sits beside the layers: it may depend on `services` (through interfaces such as `UserDetailsService`), and the layers do not import it, apart from typed properties records.
+
+Put every Spring and Spring Security configuration class in `config/` instead of scattering `@Configuration` classes across layers, so how the application is assembled is readable in one place. Create the package (with a `package-info.java`) in every new project even if it starts empty; read `references/config-security.md` before adding security, CORS, properties binding or JPA auditing.
 
 Code conventions: constructor injection only (single constructor, `private final` fields, no `@Autowired` on fields); Jakarta Validation annotations (`@NotBlank`, `@Email`, `@Size`...) on DTO components; apply SOLID; comments only when they explain a non-obvious *why*; follow standard Spring Boot conventions (`@RestController`, `ResponseEntity` or status annotations, `@RequestMapping` base paths like `/api/<resources>`).
 
@@ -88,6 +92,7 @@ Read the references when they apply:
 
 - `references/pom-template.md` - reference `pom.xml`, `application.properties` and wrapper notes; when Initializr is unavailable or you need to verify starters.
 - `references/project-structure.md` - folder and package tree plus naming and dependency-direction rules.
+- `references/config-security.md` - the `config/` package: Spring Security (stateless API and Thymeleaf variants), password encoder, CORS, typed properties, JPA auditing and their tests.
 - `references/layer-templates.md` - full entity, repository, mapper, service, controller, error handling and test templates.
 - `references/patterns.md` - do/don't list and a review checklist; use it when refactoring or reviewing Spring Boot code.
 
@@ -100,8 +105,9 @@ When the user wants a server-rendered web app (not just a REST API), read `refer
 1. Confirm the baseline above exists (or generate it).
 2. For each new entity create, in order: model -> repository -> DTO record -> mapper -> service -> controller. Add a global `@RestControllerAdvice` for validation/not-found errors if none exists.
 3. When modifying an entity, update its DTO and mapper in the same change and check validation annotations still fit.
-4. Build and verify: `./mvnw -q test` (add at least a slice/service test for new behavior) and, for runnable changes, `./mvnw -DskipTests spring-boot:run` then hit `/actuator/health` and the new endpoint.
-5. Report what was generated and anything you could not verify (e.g. network unavailable for version lookup).
+4. Anything that is wiring (security rules, CORS, bean definitions, properties binding) goes in `config/`, not in controllers or services. When adding Spring Security, add the starter, the `SecurityConfig` and the Actuator/health rules together, because the starter locks every endpoint by default.
+5. Build and verify: `./mvnw -q test` (add at least a slice/service test for new behavior) and, for runnable changes, `./mvnw -DskipTests spring-boot:run` then hit `/actuator/health` and the new endpoint.
+6. Report what was generated and anything you could not verify (e.g. network unavailable for version lookup).
 
 ## 6. Project documentation
 

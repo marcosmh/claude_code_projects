@@ -96,6 +96,7 @@ Replace `{artifactId}` with the workspace directory name and `{bootVersion}` wit
 ## Variants
 
 - **Thymeleaf monolith:** add `spring-boot-starter-thymeleaf` (and `spring-boot-starter-thymeleaf-test` in test scope).
+- **Spring Security:** add `spring-boot-starter-security` and `spring-boot-starter-security-test` (test scope), then create `config/SecurityConfig` in the same change (see `config-security.md`).
 - **No H2 console:** drop `spring-boot-h2console`.
 - Do not add MapStruct, Lombok or other generators unless the user asks.
 
@@ -108,6 +109,8 @@ spring.jpa.hibernate.ddl-auto=update
 spring.jpa.open-in-view=false
 management.endpoints.web.exposure.include=health,info
 ```
+
+When CORS/JWT are added, bind them under `app.*` (see `config-security.md`), e.g. `app.cors.allowed-origins=http://localhost:5173` and `app.security.jwt.secret=${JWT_SECRET}`.
 
 `open-in-view=false` keeps lazy loading out of the controller layer, which matches the rule that entities never leave the service.
 

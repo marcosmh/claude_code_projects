@@ -4,20 +4,57 @@
     {
       "id": 1,
       "prompt": "crea un spring boot api para gestionar usuarios (nombre, email, password). Necesito listar, obtener por id y crear.",
-      "expected_output": "Maven project with Java 25 and Boot 4.x, artifactId equal to the workspace directory, base package com.markcode.claude.springboot.<artifactId>.app, layered packages, User entity, UserRepository, UserDto record without password or audit fields, UserMapper, UserService, UserController, application.properties, Maven Wrapper.",
+      "expected_output": "Maven project with Java 25 and Boot 4.x, artifactId equal to the workspace directory, base package com.markcode.claude.springboot.<artifactId>.app, layered packages, User entity, UserRepository, UserDto record without password or audit fields, UserMapper, UserService, UserController, application.properties, Maven Wrapper. The config package exists (with package-info) for Spring/Security configuration.",
       "files": [],
       "assertions": [
-        {"text": "pom.xml has groupId com.markcode.claude.springboot and artifactId equal to the workspace directory name", "type": "file_content"},
-        {"text": "pom.xml sets java.version 25 and jar packaging", "type": "file_content"},
-        {"text": "mvnw, mvnw.cmd and .mvn/ exist", "type": "file_exists"},
-        {"text": "Config is src/main/resources/application.properties and no application.yml/yaml exists", "type": "file_exists"},
-        {"text": "Packages controllers, services, repositories, models, dto and mapper exist under the base package", "type": "structure"},
-        {"text": "UserDto is a Java record and has no password, createdAt, updatedAt, createAt or updateAt component", "type": "file_content"},
-        {"text": "UserController has no import or field of UserRepository and no business logic", "type": "file_content"},
-        {"text": "UserRepository is an interface extending JpaRepository", "type": "file_content"},
-        {"text": "UserMapper is a handwritten class with toDto and toEntity and no MapStruct/ModelMapper dependency in the pom", "type": "file_content"},
-        {"text": "Classes use constructor injection and no field @Autowired", "type": "file_content"},
-        {"text": "./mvnw -DskipTests package succeeds", "type": "command"}
+        {
+          "text": "pom.xml has groupId com.markcode.claude.springboot and artifactId equal to the workspace directory name",
+          "type": "file_content"
+        },
+        {
+          "text": "pom.xml sets java.version 25 and jar packaging",
+          "type": "file_content"
+        },
+        {
+          "text": "mvnw, mvnw.cmd and .mvn/ exist",
+          "type": "file_exists"
+        },
+        {
+          "text": "Config is src/main/resources/application.properties and no application.yml/yaml exists",
+          "type": "file_exists"
+        },
+        {
+          "text": "Packages controllers, services, repositories, models, dto and mapper exist under the base package",
+          "type": "structure"
+        },
+        {
+          "text": "Package config exists under the base package (empty with package-info.java is acceptable) and no @Configuration class lives outside it",
+          "type": "structure"
+        },
+        {
+          "text": "UserDto is a Java record and has no password, createdAt, updatedAt, createAt or updateAt component",
+          "type": "file_content"
+        },
+        {
+          "text": "UserController has no import or field of UserRepository and no business logic",
+          "type": "file_content"
+        },
+        {
+          "text": "UserRepository is an interface extending JpaRepository",
+          "type": "file_content"
+        },
+        {
+          "text": "UserMapper is a handwritten class with toDto and toEntity and no MapStruct/ModelMapper dependency in the pom",
+          "type": "file_content"
+        },
+        {
+          "text": "Classes use constructor injection and no field @Autowired",
+          "type": "file_content"
+        },
+        {
+          "text": "./mvnw -DskipTests package succeeds",
+          "type": "command"
+        }
       ]
     },
     {
@@ -26,11 +63,26 @@
       "expected_output": "Product model, ProductRepository, ProductDto record, ProductMapper, ProductService with business rule for duplicate sku, ProductController using @Valid, following the conventions already in the project.",
       "files": [],
       "assertions": [
-        {"text": "ProductDto uses Jakarta validation (@NotBlank, @Positive or @DecimalMin) on name and price", "type": "file_content"},
-        {"text": "Duplicate sku is checked in ProductService, not in the controller", "type": "file_content"},
-        {"text": "Controller returns a DTO (ResponseEntity<ProductDto>) and never the Product entity", "type": "file_content"},
-        {"text": "New classes are placed in the existing controllers/services/repositories/models/dto/mapper packages", "type": "structure"},
-        {"text": "The existing project is inspected before generating (no second pom or duplicated base class)", "type": "process"}
+        {
+          "text": "ProductDto uses Jakarta validation (@NotBlank, @Positive or @DecimalMin) on name and price",
+          "type": "file_content"
+        },
+        {
+          "text": "Duplicate sku is checked in ProductService, not in the controller",
+          "type": "file_content"
+        },
+        {
+          "text": "Controller returns a DTO (ResponseEntity<ProductDto>) and never the Product entity",
+          "type": "file_content"
+        },
+        {
+          "text": "New classes are placed in the existing controllers/services/repositories/models/dto/mapper packages",
+          "type": "structure"
+        },
+        {
+          "text": "The existing project is inspected before generating (no second pom or duplicated base class)",
+          "type": "process"
+        }
       ]
     },
     {
@@ -39,12 +91,70 @@
       "expected_output": "Monolithic MVC app: templates/layouts/base.html, fragments header/navbar/footer, pages/, semantic header/main/footer, @Controller delegating to a TaskService, DTOs passed to the model, Tailwind CSS output in static/css, Thymeleaf starter in the pom.",
       "files": [],
       "assertions": [
-        {"text": "templates/layouts/base.html, fragments/header.html, navbar.html, footer.html and pages/ exist", "type": "structure"},
-        {"text": "base layout uses <header>, <main> and <footer> elements", "type": "file_content"},
-        {"text": "pom.xml includes the Thymeleaf starter", "type": "file_content"},
-        {"text": "Page controller depends on TaskService only and puts DTOs, not entities, in the Model", "type": "file_content"},
-        {"text": "Layered packages and explicit TaskMapper are present", "type": "structure"},
-        {"text": "The run instructions use ./mvnw -DskipTests spring-boot:run", "type": "file_content"}
+        {
+          "text": "templates/layouts/base.html, fragments/header.html, navbar.html, footer.html and pages/ exist",
+          "type": "structure"
+        },
+        {
+          "text": "base layout uses <header>, <main> and <footer> elements",
+          "type": "file_content"
+        },
+        {
+          "text": "pom.xml includes the Thymeleaf starter",
+          "type": "file_content"
+        },
+        {
+          "text": "Page controller depends on TaskService only and puts DTOs, not entities, in the Model",
+          "type": "file_content"
+        },
+        {
+          "text": "Layered packages and explicit TaskMapper are present",
+          "type": "structure"
+        },
+        {
+          "text": "The run instructions use ./mvnw -DskipTests spring-boot:run",
+          "type": "file_content"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "agrega spring security con jwt stateless al proyecto, que el front de react en localhost:5173 pueda llamar a /api, y deja el health de actuator publico",
+      "expected_output": "spring-boot-starter-security added to the pom; SecurityConfig (SecurityFilterChain, PasswordEncoder, CORS source) and typed AppProperties placed in the config package (JWT filter/service in config/security if created); health permitted; secrets from environment variables; UserDetailsService in services.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "pom.xml includes the Spring Security starter",
+          "type": "file_content"
+        },
+        {
+          "text": "SecurityConfig is in the config package and defines a SecurityFilterChain bean with STATELESS session policy",
+          "type": "file_content"
+        },
+        {
+          "text": "Every @Configuration/@ConfigurationProperties class is inside config/ (or config/security/)",
+          "type": "structure"
+        },
+        {
+          "text": "/actuator/health is permitAll in the filter chain",
+          "type": "file_content"
+        },
+        {
+          "text": "CORS allowed origins come from properties (app.cors.allowed-origins), not hard-coded",
+          "type": "file_content"
+        },
+        {
+          "text": "JWT secret is read from an environment variable placeholder in application.properties and not committed in plain text",
+          "type": "file_content"
+        },
+        {
+          "text": "UserDetailsService (or equivalent user lookup) lives in services/ and config/ does not import any repository",
+          "type": "file_content"
+        },
+        {
+          "text": "PasswordEncoder bean exists and no plain-text password comparison is used",
+          "type": "file_content"
+        }
       ]
     }
   ]

@@ -13,6 +13,7 @@ demo-api/
     ├── main/
     │   ├── java/com/markcode/claude/springboot/demoapi/app/
     │   │   ├── DemoApiApplication.java      @SpringBootApplication, nothing else
+    │   │   ├── config/                      SecurityConfig, CorsConfig, AppProperties (all Spring/Security config)
     │   │   ├── controllers/                 UserController, ApiExceptionHandler
     │   │   ├── services/                    UserService
     │   │   ├── repositories/                UserRepository
@@ -33,5 +34,6 @@ demo-api/
 - One package per responsibility, one top-level type per file. Group by layer, not by feature, unless the project has grown past ~10 entities; then propose a feature-based split to the user before doing it.
 - Naming: `XController`, `XService`, `XRepository`, `X` (entity), `XDto`, `XMapper`. In MVC apps, name page controllers `XPageController` to separate them from REST controllers.
 - Tests mirror the main package and use the slice that matches the layer (`@WebMvcTest`, `@DataJpaTest`, plain JUnit for services and mappers).
-- Dependency direction is one-way: `controllers -> services -> repositories`, and `services -> mapper`. `models` and `dto` depend on nothing in the app. Flag any import that breaks this when reviewing.
+- Dependency direction is one-way: `controllers -> services -> repositories`, and `services -> mapper`; `config -> services` only through interfaces (e.g. `UserDetailsService`). `models` and `dto` depend on nothing in the app. Flag any import that breaks this when reviewing.
+- `config/` holds every Spring and Spring Security configuration class (see `config-security.md`); it is created with the project, even when empty. Use a `config/security/` subpackage once JWT classes appear. Layers do not import from `config/` except typed properties records.
 - `exceptions/` holds domain exceptions thrown by services; `ApiExceptionHandler` in `controllers/` translates them to HTTP.
