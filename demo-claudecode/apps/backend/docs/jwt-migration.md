@@ -149,7 +149,7 @@ El secreto real nunca se versiona ni se imprime en logs. Rotarlo invalida todos 
    - Riesgo residual: un XSS activo sigue pudiendo actuar como el usuario mientras la pestaña esté abierta; la CSP estricta sigue siendo obligatoria.
    - Pasos: (1) esta decisión; (2) cabeceras de seguridad; (3) CSRF en `proxy.ts`; (4) backend dual tras flag; (5) frontend sin token;
      (6) corte; (7) limpieza (`accessToken` heredado y tabla `Session`).
-   - Estado: pasos 1 a 5 hechos (el 4, modo dual, encendido por defecto; `AUTH_COOKIE_ACCESS=0` lo apaga; `mode: "token"` queda para el corte, paso 6); lo demás **no está implementado**: hoy el access token sigue en `localStorage` y `Authorization: Bearer`.
+   - Estado: pasos 1 a 6 hechos (el 4, modo dual, encendido por defecto; `AUTH_COOKIE_ACCESS=0` lo apaga). Paso 6 (2026-10-29): login y refresh ya no llevan el token en el cuerpo; los scripts lo piden con `mode: "token"` (cuerpo del login; cuerpo opcional del refresh). Queda el paso 7 (limpieza).
 
 Las decisiones 1 a 5 siguen vigentes salvo lo que sustituye la 6.
 

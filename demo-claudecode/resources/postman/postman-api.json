@@ -96,10 +96,10 @@
                 "login"
               ]
             },
-            "description": "Inicia sesión. Devuelve el access token en el cuerpo (se guarda en `{{token}}` para los clientes con Bearer) y fija DOS cookies HttpOnly que Postman conserva en su cookie jar: `at` (access token, `Path=/api/v1`) y `refresh` (`Path=/api/v1/auth`). El navegador usa solo las cookies; esta colección usa Bearer, salvo la carpeta **Cookies y CSRF**. Límite: 10 intentos por minuto por IP y por email; 5 fallos seguidos bloquean la cuenta 15 min.",
+            "description": "Inicia sesión. Con `\"mode\": \"token\"` (como aquí, para scripts) devuelve además el access token en el cuerpo (se guarda en `{{token}}` para Bearer); sin `mode`, el cuerpo solo lleva el usuario y el token viaja únicamente en cookies. Fija DOS cookies HttpOnly que Postman conserva en su cookie jar: `at` (access token, `Path=/api/v1`) y `refresh` (`Path=/api/v1/auth`). El navegador usa solo las cookies; esta colección usa Bearer, salvo la carpeta **Cookies y CSRF**. Límite: 10 intentos por minuto por IP y por email; 5 fallos seguidos bloquean la cuenta 15 min.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"mode\": \"token\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -162,7 +162,7 @@
                 },
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+                  "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"mode\": \"token\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -187,7 +187,7 @@
                   "value": "at=<JWT>; Max-Age=900; Path=/api/v1; HttpOnly; SameSite=Strict"
                 }
               ],
-              "body": "{\n  \"data\": {\n    \"token\": \"<access JWT>\",\n    \"user\": {\n      \"id\": 1,\n      \"email\": \"ana@example.com\",\n      \"role\": \"USER\"\n    }\n  }\n}"
+              "body": "{\n  \"data\": {\n    \"token\": \"<access JWT; solo con mode: token>\",\n    \"user\": {\n      \"id\": 1,\n      \"email\": \"ana@example.com\",\n      \"role\": \"USER\"\n    }\n  }\n}"
             },
             {
               "name": "401 Credenciales inválidas",
@@ -212,7 +212,7 @@
                 },
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+                  "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"mode\": \"token\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -237,7 +237,13 @@
           "name": "Refresh (renovar access token)",
           "request": {
             "method": "POST",
-            "header": [],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/auth/refresh",
               "host": [
@@ -248,7 +254,16 @@
                 "refresh"
               ]
             },
-            "description": "Sin cuerpo: lee la cookie `refresh` y la rota; vuelve a fijar las dos cookies. Devuelve un access token nuevo en el cuerpo (se guarda en `{{token}}`). Úsalo cuando el token caduque (15 min) o tras cambiar la contraseña. Límite: 20 por minuto por IP.",
+            "description": "Lee la cookie `refresh` y la rota; vuelve a fijar las dos cookies. El cuerpo es opcional: con `{\"mode\": \"token\"}` (como aquí) devuelve un access token nuevo en el cuerpo (se guarda en `{{token}}`); sin cuerpo solo devuelve el usuario. Úsalo cuando el token caduque (15 min) o tras cambiar la contraseña. Límite: 20 por minuto por IP.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mode\": \"token\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
             "auth": {
               "type": "noauth"
             }
@@ -286,7 +301,13 @@
               "name": "200 OK",
               "originalRequest": {
                 "method": "POST",
-                "header": [],
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
                 "url": {
                   "raw": "{{baseUrl}}/auth/refresh",
                   "host": [
@@ -296,6 +317,15 @@
                     "auth",
                     "refresh"
                   ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"mode\": \"token\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
                 }
               },
               "status": "OK",
@@ -315,13 +345,19 @@
                   "value": "at=<JWT nuevo>; Max-Age=900; Path=/api/v1; HttpOnly; SameSite=Strict"
                 }
               ],
-              "body": "{\n  \"data\": {\n    \"token\": \"<access JWT>\",\n    \"user\": {\n      \"id\": 1,\n      \"email\": \"ana@example.com\",\n      \"role\": \"USER\"\n    }\n  }\n}"
+              "body": "{\n  \"data\": {\n    \"token\": \"<access JWT; solo con mode: token>\",\n    \"user\": {\n      \"id\": 1,\n      \"email\": \"ana@example.com\",\n      \"role\": \"USER\"\n    }\n  }\n}"
             },
             {
               "name": "401 Sin sesión",
               "originalRequest": {
                 "method": "POST",
-                "header": [],
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
                 "url": {
                   "raw": "{{baseUrl}}/auth/refresh",
                   "host": [
@@ -331,6 +367,15 @@
                     "auth",
                     "refresh"
                   ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"mode\": \"token\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
                 }
               },
               "status": "Unauthorized",
@@ -2849,7 +2894,13 @@
           "name": "Refresh (renovar access token)",
           "request": {
             "method": "POST",
-            "header": [],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/auth/refresh",
               "host": [
@@ -2860,7 +2911,16 @@
                 "refresh"
               ]
             },
-            "description": "Sin cuerpo: lee la cookie `refresh` y la rota; vuelve a fijar las dos cookies. Devuelve un access token nuevo en el cuerpo (se guarda en `{{token}}`). Úsalo cuando el token caduque (15 min) o tras cambiar la contraseña. Límite: 20 por minuto por IP.",
+            "description": "Lee la cookie `refresh` y la rota; vuelve a fijar las dos cookies. El cuerpo es opcional: con `{\"mode\": \"token\"}` (como aquí) devuelve un access token nuevo en el cuerpo (se guarda en `{{token}}`); sin cuerpo solo devuelve el usuario. Úsalo cuando el token caduque (15 min) o tras cambiar la contraseña. Límite: 20 por minuto por IP.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mode\": \"token\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
             "auth": {
               "type": "noauth"
             }
@@ -2898,7 +2958,13 @@
               "name": "200 OK",
               "originalRequest": {
                 "method": "POST",
-                "header": [],
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
                 "url": {
                   "raw": "{{baseUrl}}/auth/refresh",
                   "host": [
@@ -2908,6 +2974,15 @@
                     "auth",
                     "refresh"
                   ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"mode\": \"token\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
                 }
               },
               "status": "OK",
@@ -2927,13 +3002,19 @@
                   "value": "at=<JWT nuevo>; Max-Age=900; Path=/api/v1; HttpOnly; SameSite=Strict"
                 }
               ],
-              "body": "{\n  \"data\": {\n    \"token\": \"<access JWT>\",\n    \"user\": {\n      \"id\": 1,\n      \"email\": \"ana@example.com\",\n      \"role\": \"USER\"\n    }\n  }\n}"
+              "body": "{\n  \"data\": {\n    \"token\": \"<access JWT; solo con mode: token>\",\n    \"user\": {\n      \"id\": 1,\n      \"email\": \"ana@example.com\",\n      \"role\": \"USER\"\n    }\n  }\n}"
             },
             {
               "name": "401 Sin sesión",
               "originalRequest": {
                 "method": "POST",
-                "header": [],
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
                 "url": {
                   "raw": "{{baseUrl}}/auth/refresh",
                   "host": [
@@ -2943,6 +3024,15 @@
                     "auth",
                     "refresh"
                   ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"mode\": \"token\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
                 }
               },
               "status": "Unauthorized",

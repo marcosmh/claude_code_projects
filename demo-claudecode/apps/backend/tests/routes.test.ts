@@ -71,7 +71,7 @@ async function loginAs(email: string, password = PASSWORD): Promise<Session> {
     new Request(`${BASE}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, mode: "token" }),
     }),
   );
   return { token: (await res.json()).data.token, refresh: refreshCookieOf(res) };
@@ -82,8 +82,14 @@ async function signUp(email: string, role: "USER" | "ADMIN" = "USER"): Promise<S
   return loginAs(email);
 }
 
-const postRefresh = (cookie?: string) =>
-  refreshRoute.POST(new Request(`${BASE}/auth/refresh`, { method: "POST", headers: cookie ? { Cookie: cookie } : {} }));
+const postRefresh = (cookie?: string, mode?: "token") =>
+  refreshRoute.POST(
+    new Request(`${BASE}/auth/refresh`, {
+      method: "POST",
+      headers: { ...(cookie && { Cookie: cookie }), ...(mode && { "Content-Type": "application/json" }) },
+      ...(mode && { body: JSON.stringify({ mode }) }),
+    }),
+  );
 
 beforeEach(async () => {
   const repo = fake.repo as FakeInvoiceRepository;
@@ -295,12 +301,12 @@ describe("autenticación y autorización", () => {
     }
   });
 
-  it("login correcto: access token en el cuerpo y refresh en cookie httpOnly acotada a /api/v1/auth", async () => {
+  it("login con mode token: access token en el cuerpo y refresh en cookie httpOnly acotada a /api/v1/auth", async () => {
     const res = await loginRoute.POST(
       new Request(`${BASE}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: " ANA@example.com ", password: PASSWORD }),
+        body: JSON.stringify({ email: " ANA@example.com ", password: PASSWORD, mode: "token" }),
       }),
     );
     expect(res.status).toBe(200);
@@ -351,10 +357,38 @@ describe("autenticación y autorización", () => {
     });
   });
 
+  it("sin mode, login y refresh no llevan el token en el cuerpo (solo en cookies); un mode inválido es 400", async () => {
+    await container.authService.createUser("cookie@example.com", PASSWORD);
+    const plain = await loginRoute.POST(
+      new Request(`${BASE}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: "cookie@example.com", password: PASSWORD }),
+      }),
+    );
+    expect(plain.status).toBe(200);
+    const cookies = plain.headers.getSetCookie();
+    expect(cookies.some((c) => c.startsWith("at="))).toBe(true);
+    expect(await plain.json()).toEqual({ data: { user: { id: expect.any(Number), email: "cookie@example.com", role: "USER" } } });
+
+    const refreshed = await postRefresh(refreshCookieOf(plain));
+    expect(refreshed.status).toBe(200);
+    expect(Object.keys((await refreshed.json()).data)).toEqual(["user"]);
+
+    const bad = await loginRoute.POST(
+      new Request(`${BASE}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: "cookie@example.com", password: PASSWORD, mode: "cookie" }),
+      }),
+    );
+    expect(bad.status).toBe(400);
+  });
+
   describe("refresh y logout", () => {
     it("refresh rota la cookie y devuelve un access token nuevo con el mismo formato que el login", async () => {
       const { refresh, token } = await loginAs("ana@example.com");
-      const res = await postRefresh(refresh);
+      const res = await postRefresh(refresh, "token");
       expect(res.status).toBe(200);
       const { data } = await res.json();
       expect(data).toEqual({ token: expect.any(String), user: { id: expect.any(Number), email: "ana@example.com", role: "USER" } });
@@ -548,7 +582,7 @@ describe("bloqueo y cambio de contraseña (HTTP)", () => {
     const res = await passwordRoute.POST(json("POST", "/auth/password", { currentPassword: PASSWORD, newPassword: NEW }, { Cookie: refresh }));
     expect(res.status).toBe(204);
     expect((await meRoute.GET(json("GET", "/auth/me"))).status).toBe(401);
-    const renewed = await postRefresh(refresh);
+    const renewed = await postRefresh(refresh, "token");
     expect(renewed.status).toBe(200);
     bearer = (await renewed.json()).data.token;
     expect((await meRoute.GET(json("GET", "/auth/me"))).status).toBe(200);

@@ -41,7 +41,7 @@ async function resetData(request: APIRequestContext) {
 
 /** Inicia sesión por la API: devuelve el access token y deja la cookie del refresh en el contexto del navegador. */
 export async function loginByApi(request: APIRequestContext, credentials = E2E_USER): Promise<string> {
-  const res = await request.post(`${API}/auth/login`, { data: credentials });
+  const res = await request.post(`${API}/auth/login`, { data: { ...credentials, mode: "token" } });
   expect(res.status()).toBe(200);
   return (await res.json()).data.token;
 }

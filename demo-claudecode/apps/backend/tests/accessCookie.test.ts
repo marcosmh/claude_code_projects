@@ -92,14 +92,14 @@ describe("AuthController: Set-Cookie", () => {
     const res = await controller().login(login());
     expect(res.headers.getSetCookie()).toEqual([expect.stringMatching(/^refresh=refresh\.jwt;/)]);
   });
-  it("por defecto pone también la cookie del access con la vida del token, y el cuerpo conserva el token", async () => {
+  it("por defecto pone también la cookie del access con la vida del token, y el cuerpo no lleva el token", async () => {
     vi.stubEnv("AUTH_COOKIE_ACCESS", "1");
     const res = await controller().login(login());
     expect(res.headers.getSetCookie()).toEqual([
       expect.stringMatching(/^refresh=refresh\.jwt;/),
       "at=access.jwt; Max-Age=900; Path=/api/v1; HttpOnly; SameSite=Strict",
     ]);
-    expect((await res.json()).data.token).toBe("access.jwt");
+    expect((await res.json()).data.token).toBeUndefined(); // sin mode: "token" el cuerpo no lleva el token
   });
   it("el logout limpia las dos cookies salvo con AUTH_COOKIE_ACCESS=0", async () => {
     vi.stubEnv("AUTH_COOKIE_ACCESS", "0");

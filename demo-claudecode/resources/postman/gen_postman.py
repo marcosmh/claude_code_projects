@@ -80,7 +80,7 @@ ERR400 = {"error": {"code": "VALIDATION_ERROR", "message": "Datos de entrada inv
     {"field": "issueDate", "message": "Fecha de emisión inválida (use ISO 8601)"}]}}
 ERR422 = {"error": {"code": "UNPROCESSABLE_ENTITY", "message": "La factura incumple reglas de negocio", "details": [
     {"field": "dueDate", "message": "El vencimiento no puede ser anterior a la emisión"}]}}
-SESSION = {"data": {"token": "<access JWT>", "user": {"id": 1, "email": "ana@example.com", "role": "USER"}}}
+SESSION = {"data": {"token": "<access JWT; solo con mode: token>", "user": {"id": 1, "email": "ana@example.com", "role": "USER"}}}
 
 SAVE_TOKEN = [
     "const json = pm.response.json();",
@@ -135,13 +135,13 @@ def block(*lines):
 
 auth_items = [
     req("Login", "POST", "/auth/login",
-        "Inicia sesión. Devuelve el access token en el cuerpo (se guarda en `{{token}}` para los clientes con Bearer) y fija DOS cookies HttpOnly que Postman conserva en su cookie jar: `at` (access token, `Path=/api/v1`) y `refresh` (`Path=/api/v1/auth`). El navegador usa solo las cookies; esta colección usa Bearer, salvo la carpeta **Cookies y CSRF**. Límite: 10 intentos por minuto por IP y por email; 5 fallos seguidos bloquean la cuenta 15 min.",
-        body={"email": "{{email}}", "password": "{{password}}"}, auth=False, tests=SAVE_TOKEN + SET_COOKIES,
+        "Inicia sesión. Con `\"mode\": \"token\"` (como aquí, para scripts) devuelve además el access token en el cuerpo (se guarda en `{{token}}` para Bearer); sin `mode`, el cuerpo solo lleva el usuario y el token viaja únicamente en cookies. Fija DOS cookies HttpOnly que Postman conserva en su cookie jar: `at` (access token, `Path=/api/v1`) y `refresh` (`Path=/api/v1/auth`). El navegador usa solo las cookies; esta colección usa Bearer, salvo la carpeta **Cookies y CSRF**. Límite: 10 intentos por minuto por IP y por email; 5 fallos seguidos bloquean la cuenta 15 min.",
+        body={"email": "{{email}}", "password": "{{password}}", "mode": "token"}, auth=False, tests=SAVE_TOKEN + SET_COOKIES,
         examples=[example("200 OK", 200, "OK", SESSION, [{"key": "Content-Type", "value": "application/json"}, {"key": "Set-Cookie", "value": "refresh=<JWT>; Max-Age=604800; Path=/api/v1/auth; HttpOnly; SameSite=Strict"}, {"key": "Set-Cookie", "value": "at=<JWT>; Max-Age=900; Path=/api/v1; HttpOnly; SameSite=Strict"}]),
                   example("401 Credenciales inválidas", 401, "Unauthorized", {"error": {"code": "UNAUTHENTICATED", "message": "Email o contraseña incorrectos. Tras 5 intentos fallidos la cuenta se bloquea 15 minutos."}})]),
     req("Refresh (renovar access token)", "POST", "/auth/refresh",
-        "Sin cuerpo: lee la cookie `refresh` y la rota; vuelve a fijar las dos cookies. Devuelve un access token nuevo en el cuerpo (se guarda en `{{token}}`). Úsalo cuando el token caduque (15 min) o tras cambiar la contraseña. Límite: 20 por minuto por IP.",
-        auth=False, tests=SAVE_TOKEN + SET_COOKIES,
+        "Lee la cookie `refresh` y la rota; vuelve a fijar las dos cookies. El cuerpo es opcional: con `{\"mode\": \"token\"}` (como aquí) devuelve un access token nuevo en el cuerpo (se guarda en `{{token}}`); sin cuerpo solo devuelve el usuario. Úsalo cuando el token caduque (15 min) o tras cambiar la contraseña. Límite: 20 por minuto por IP.",
+        body={"mode": "token"}, auth=False, tests=SAVE_TOKEN + SET_COOKIES,
         examples=[example("200 OK", 200, "OK", SESSION, [{"key": "Content-Type", "value": "application/json"}, {"key": "Set-Cookie", "value": "refresh=<JWT nuevo>; Max-Age=604800; Path=/api/v1/auth; HttpOnly; SameSite=Strict"}, {"key": "Set-Cookie", "value": "at=<JWT nuevo>; Max-Age=900; Path=/api/v1; HttpOnly; SameSite=Strict"}]), example("401 Sin sesión", 401, "Unauthorized", ERR401)]),
     req("Me (usuario actual)", "GET", "/auth/me", "Devuelve el usuario del access token actual.",
         tests=["pm.test('Status 200', () => pm.response.to.have.status(200));",

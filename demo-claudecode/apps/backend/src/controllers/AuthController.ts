@@ -14,17 +14,17 @@ import { getJwtConfig } from "../utils/jwt";
 import { RateLimitedError, RefreshReplayInGraceError, UnauthorizedError } from "../utils/errors";
 import { errorResponse, noContent, ok } from "../utils/http";
 import { EMAIL_LOGIN_LIMIT, RateLimiter } from "../utils/rateLimit";
-import { changePasswordSchema, loginBodySchema } from "../validators/auth.validator";
-import { parseBody } from "./requestParsers";
+import { changePasswordSchema, loginBodySchema, refreshBodySchema } from "../validators/auth.validator";
+import { parseBody, parseOptionalBody } from "./requestParsers";
 
 const refreshTokenOf = (request: Request) => readCookie(request.headers.get("cookie"), refreshCookieName());
 
 /**
- * Session response: access token in the body, rotated refresh token in its httpOnly cookie. In dual mode the access
- * token also goes in its own httpOnly cookie (the body keeps it until the cut-over step of decision 6).
+ * Session response: rotated refresh token in its httpOnly cookie, and (unless AUTH_COOKIE_ACCESS=0) the access token in
+ * its own httpOnly cookie. The body carries the access token only for `mode: "token"` clients (scripts).
  */
-function sessionResponse(session: SessionTokens): Response {
-  const response = ok(toSessionDto(session));
+function sessionResponse(session: SessionTokens, includeToken: boolean): Response {
+  const response = ok(toSessionDto(session, includeToken));
   response.headers.append("Set-Cookie", refreshCookie(session.refreshToken, session.refreshMaxAgeSeconds));
   if (accessCookieEnabled()) response.headers.append("Set-Cookie", accessCookie(session.token, getJwtConfig().accessTtlSeconds));
   return response;
@@ -45,18 +45,19 @@ export class AuthController {
   ) {}
 
   async login(request: Request): Promise<Response> {
-    const { email, password } = await parseBody(loginBodySchema, request);
+    const { email, password, mode } = await parseBody(loginBodySchema, request);
     // Counts every attempt for the address, existing or not, with the same answer: reveals nothing about accounts.
     const hit = this.emailLimitDisabled ? undefined : this.emailLimiter.hit(`login:${email}`, EMAIL_LOGIN_LIMIT);
     if (hit && !hit.allowed) {
       throw new RateLimitedError("Demasiadas peticiones, inténtalo de nuevo en unos segundos", hit.retryAfter);
     }
-    return sessionResponse(await this.auth.login(email, password));
+    return sessionResponse(await this.auth.login(email, password), mode === "token");
   }
 
   async refresh(request: Request): Promise<Response> {
+    const { mode } = await parseOptionalBody(refreshBodySchema, request);
     try {
-      return sessionResponse(await this.auth.refresh(refreshTokenOf(request)));
+      return sessionResponse(await this.auth.refresh(refreshTokenOf(request)), mode === "token");
     } catch (error) {
       if (!(error instanceof UnauthorizedError)) throw error;
       const response = errorResponse(error);

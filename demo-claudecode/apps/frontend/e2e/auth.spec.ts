@@ -158,7 +158,7 @@ test.describe("cambio de contraseña", () => {
     } finally {
       // Deja la cuenta como estaba para el resto de la suite, falle lo que falle arriba: entra con la nueva
       // contraseña (si llegó a cambiarse) y la devuelve a la original.
-      const login = await page.request.post(`${API}/auth/login`, { data: { email: E2E_USER.email, password: NEW } });
+      const login = await page.request.post(`${API}/auth/login`, { data: { email: E2E_USER.email, password: NEW, mode: "token" } });
       if (login.status() === 200) {
         const token = (await login.json()).data.token;
         const res = await page.request.post(`${API}/auth/password`, {

@@ -10,8 +10,18 @@ const email = z
   .max(AUTH_LIMITS.email, `Máximo ${AUTH_LIMITS.email} caracteres`)
   .pipe(z.email("Email inválido"));
 
+/**
+ * `mode: "token"` is for scripts (curl, Postman, REST Client): the response body then also carries the access
+ * token for `Authorization: Bearer`. Without it the token travels only in its httpOnly cookie.
+ */
+const sessionMode = z.literal("token", "El modo debe ser \"token\"").optional();
+
+/** POST /auth/refresh has no required body: the schema only exists to read the optional `mode`. */
+export const refreshBodySchema = z.object({ mode: sessionMode });
+
 /** Login does not enforce the password policy: it only bounds the size (scrypt cost grows with input). */
 export const loginBodySchema = z.object({
+  mode: sessionMode,
   email,
   password: z
     .string("La contraseña es obligatoria")
