@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# Starts the weather MCP server (apps/mcp-weather) in the background, building it first if dist/ is missing or older
+# than the sources. It speaks MCP over stdio, so it has no port: its stdin is a FIFO that the process itself holds open
+# (O_RDWR), which keeps it from exiting on EOF. Claude Code and other clients spawn their own copy from .mcp.json; this
+# instance is for checking that the server boots (log in scripts/.run/mcp-weather.log). Stop with scripts/stop_mcp_weather.
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+RUN="$ROOT/scripts/.run"
+APP="$ROOT/apps/mcp-weather"
+pidfile="$RUN/mcp-weather.pid"
+fifo="$RUN/mcp-weather.stdin"
+log="$RUN/mcp-weather.log"
+mkdir -p "$RUN"
+
+alive() { kill -0 "$1" 2>/dev/null; }
+
+if [[ -f "$pidfile" ]] && alive "$(cat "$pidfile")"; then
+  echo "mcp-weather ya está en ejecución (PID $(cat "$pidfile"))"; exit 0
+fi
+rm -f "$pidfile"
+
+if [[ ! -f "$APP/dist/index.js" ]] || [[ -n "$(find "$APP/src" "$APP/package.json" -newer "$APP/dist/index.js" -print -quit)" ]]; then
+  echo "Compilando mcp-weather..."
+  (cd "$APP" && npm run build >"$RUN/mcp-weather.build.log" 2>&1) || {
+    echo "ERROR: falló el build; revisa $RUN/mcp-weather.build.log" >&2; exit 1
+  }
+fi
+
+rm -f "$fifo"; mkfifo "$fifo"
+# `$$` survives the exec, so the PID file holds the session leader that stop_mcp_weather signals (see start_apps).
+(cd "$APP"; setsid bash -c 'echo $$ >"$1"; exec 0<>"$2"; exec node dist/index.js' _ "$pidfile" "$fifo" \
+  >"$log" 2>&1 &)
+
+for _ in $(seq 1 20); do
+  if grep -q "listo (stdio)" "$log" 2>/dev/null; then
+    echo "mcp-weather listo (stdio, PID $(cat "$pidfile")); log en scripts/.run/mcp-weather.log"; exit 0
+  fi
+  if [[ -f "$pidfile" ]] && ! alive "$(cat "$pidfile")"; then break; fi
+  sleep 0.25
+done
+echo "ERROR: mcp-weather no arrancó; revisa $log" >&2; exit 1

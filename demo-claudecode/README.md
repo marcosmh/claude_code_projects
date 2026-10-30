@@ -10,6 +10,7 @@ It is a **monorepo** (npm workspaces + Turborepo) with two independent applicati
 | --- | --- |
 | **Backend** (`apps/backend`) | Next.js 16 with route handlers only (REST API), TypeScript, Prisma 7 + PostgreSQL (Supabase), Zod 4, JWT with `jose`, `@react-pdf/renderer` |
 | **Frontend** (`apps/frontend`) | React 19, Vite 8, React Router, TanStack Query, Zustand, React Hook Form + Zod, Tailwind v4 |
+| **MCP weather** (`apps/mcp-weather`) | TypeScript, `@modelcontextprotocol/sdk`, Zod 4, Open-Meteo (no API key). Standalone; not part of the invoices app |
 | **Shared** (`packages/`) | `shared-types`, `shared-utils`, `shared-validation` (TypeScript, no build step) |
 | **Tooling** | Turborepo 2, Changesets, Vitest 5, Playwright + axe, ESLint, Docker, GitHub Actions. Node 22 |
 
@@ -34,7 +35,8 @@ It is a **monorepo** (npm workspaces + Turborepo) with two independent applicati
 demo-claudecode/                 monorepo root
 ├── apps/
 │   ├── backend/                 REST API (src/, prisma/, tests/, docs/, Dockerfile)
-│   └── frontend/                SPA (src/, e2e/, build/, deploy/, Dockerfile)
+│   ├── frontend/                SPA (src/, e2e/, build/, deploy/, Dockerfile)
+│   └── mcp-weather/             MCP server (stdio): weather and clothing advice (src/, tests/)
 ├── packages/
 │   ├── shared-types/            REST contract types, statuses and labels
 │   ├── shared-utils/            totals and cents calculation

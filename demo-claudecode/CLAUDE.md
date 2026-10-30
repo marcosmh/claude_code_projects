@@ -12,6 +12,10 @@ The active app is the layered rewrite introduced in commit `de8b5fe` ("refactor 
 
 Day to day: install once from `demo-claudecode/` (`npm install`; the apps have no lockfile of their own). `bash scripts/start_apps` starts both apps in the background (logs and PIDs in `scripts/.run/`) and `bash scripts/stop_apps` stops them by process group; both are idempotent, `stop_apps` exits 1 if a port stays busy and never touches a process that is not from this project. Run app scripts from inside each app (they load `apps/backend/.env`), with `npm run <script> --workspace=@invoices/<app>`, or with `npx turbo run <task>` from the root. The root pins `typescript` ^6 (hoisted, used by typescript-eslint) while the backend keeps its own TypeScript 7 nested; do not remove either. `npm` warns that install scripts of `prisma` and `esbuild` are not approved; builds and tests work regardless.
 
+### MCP weather (`apps/mcp-weather/`)
+
+Custom MCP server (stdio, `@modelcontextprotocol/sdk`, TypeScript, Zod) added 2026-10-29. Standalone: no backend, DB or shared packages; it is **not** registered in `.mcp.json` (see its README). Tools `get_weather` (local time + weather) and `recommend_clothing` (rules in `src/domain/clothing.ts`). Layers: tools -> `WeatherService` (TTL cache) -> `WeatherProvider` (`OpenMeteoProvider`, free API without key; only the city name leaves the machine). Stdout is the protocol: log only to stderr. Scripts: `npm run lint|typecheck|test|test:coverage|build` inside the app.
+
 ### Backend (`apps/backend/`)
 
 Next.js 16 route handlers only (no pages) + TypeScript + Prisma 7 (PostgreSQL on Supabase) + Zod. Contract: `apps/backend/docs/api.md`. `GET /invoices` filters (all optional): `status` (one or several, comma-separated), `search`, `issuedFrom`/`issuedTo` (inclusive `YYYY-MM-DD`), `currency`, `minTotalCents`/`maxTotalCents` (require `currency`, 400 otherwise). Totals are derived, so the amount range is applied in memory in `InvoiceService.listByTotal` before paginating (fine for small volumes; revisit if it grows).
