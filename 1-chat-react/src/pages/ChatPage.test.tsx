@@ -217,4 +217,57 @@ describe('ChatPage', () => {
     expect(screen.getByRole('switch', { name: 'Cambiar tema' })).toHaveAttribute('aria-checked', 'false')
     expect(document.documentElement).not.toHaveClass('dark')
   })
+
+  it('muestra quién escribe, lo oculta al llegar su mensaje y soporta varios a la vez', async () => {
+    await connectAs('Anakin')
+
+    await act(async () => {
+      socket().handlers.onTyping({ username: 'Beto', typing: true })
+    })
+    expect(screen.getByRole('status')).toHaveTextContent('Beto está escribiendo')
+
+    await act(async () => {
+      socket().handlers.onTyping({ username: 'Carla', typing: true })
+    })
+    expect(screen.getByRole('status')).toHaveTextContent('Beto y Carla están escribiendo')
+
+    await act(async () => {
+      socket().handlers.onMessage({ id: 9, sender: 'Beto', sentAt: '2026-10-30T10:50:00Z', text: 'listo' })
+    })
+    expect(screen.getByRole('status')).toHaveTextContent('Carla está escribiendo')
+
+    await act(async () => {
+      socket().handlers.onTyping({ username: 'Carla', typing: false })
+    })
+    expect(screen.getByRole('status')).toBeEmptyDOMElement()
+  })
+
+  it('avisa una sola vez al teclear, y al enviar avisa que dejó de escribir', async () => {
+    const user = await connectAs('Anakin')
+
+    await user.type(screen.getByRole('textbox', { name: 'Mensaje' }), 'hola')
+    expect(socket().typing).toEqual([true])
+
+    await user.keyboard('{Enter}')
+    expect(socket().typing).toEqual([true, false])
+    expect(socket().sent).toEqual(['hola'])
+  })
+
+  it('el indicador caduca solo si no llega el aviso de que dejó de escribir', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      await connectAs('Anakin')
+      await act(async () => {
+        socket().handlers.onTyping({ username: 'Beto', typing: true })
+      })
+      expect(screen.getByRole('status')).toHaveTextContent('Beto está escribiendo')
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(6500)
+      })
+      expect(screen.getByRole('status')).toBeEmptyDOMElement()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
 })

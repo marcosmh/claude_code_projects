@@ -42,6 +42,8 @@ export default function ChatPage() {
           disabled={!chat.isConnected}
           error={chat.error}
           onDismissError={chat.clearError}
+          onTypingChange={chat.setTyping}
+          typingUsers={chat.typingUsers}
         />
       }
     >

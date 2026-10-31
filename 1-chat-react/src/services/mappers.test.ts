@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { toMessage, toPresenceEvent, toSystemNotice } from './mappers'
+import { toMessage, toPresenceEvent, toSystemNotice, toTypingEvent } from './mappers'
 
 describe('mappers', () => {
   it('convierte el DTO del backend al modelo Message del frontend', () => {
@@ -31,5 +31,13 @@ describe('mappers', () => {
       at: '2026-10-30T10:00:00Z',
     })
     expect(toSystemNotice({ ...base, type: 'CHAT' })).toBeNull()
+  })
+
+  it('convierte los eventos de escritura y descarta otros tipos', () => {
+    const base = { username: 'Anakin', timestamp: '2026-10-30T10:00:00Z' }
+
+    expect(toTypingEvent({ ...base, type: 'USER_TYPING' })).toEqual({ username: 'Anakin', typing: true })
+    expect(toTypingEvent({ ...base, type: 'USER_STOPPED_TYPING' })).toEqual({ username: 'Anakin', typing: false })
+    expect(toTypingEvent({ ...base, type: 'CHAT' })).toBeNull()
   })
 })

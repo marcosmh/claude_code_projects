@@ -1,6 +1,6 @@
-import type { PresenceEvent, SystemNotice } from '../types/chat'
+import type { PresenceEvent, SystemNotice, TypingEvent } from '../types/chat'
 import type { Message } from '../types/message'
-import type { ChatMessageDto, SystemEventDto, UserSessionDto } from './dto'
+import type { ChatMessageDto, SystemEventDto, TypingEventDto, UserSessionDto } from './dto'
 
 export function toMessage(dto: ChatMessageDto): Message {
   return { id: dto.id, sender: dto.username, sentAt: dto.timestamp, text: dto.content }
@@ -21,4 +21,10 @@ export function toSystemNotice(dto: SystemEventDto): SystemNotice | null {
     text: dto.content,
     at: dto.timestamp,
   }
+}
+
+export function toTypingEvent(dto: TypingEventDto): TypingEvent | null {
+  if (dto.type === 'USER_TYPING') return { username: dto.username, typing: true }
+  if (dto.type === 'USER_STOPPED_TYPING') return { username: dto.username, typing: false }
+  return null
 }

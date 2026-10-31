@@ -19,3 +19,9 @@ export interface SystemNotice {
   text: string
   at: string
 }
+
+// Alguien empezó (typing: true) o dejó de escribir.
+export interface TypingEvent {
+  username: string
+  typing: boolean
+}

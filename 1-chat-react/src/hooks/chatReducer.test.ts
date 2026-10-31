@@ -54,6 +54,32 @@ describe('chatReducer', () => {
     expect(chatReducer(once, { type: 'system', notice })).toBe(once)
   })
 
+  it('typing soporta varios usuarios, ignora al propio y no duplica', () => {
+    const one = chatReducer(connected, { type: 'typing', event: { username: 'Anakin', typing: true } })
+    const two = chatReducer(one, { type: 'typing', event: { username: 'Luke', typing: true } })
+    expect(two.typingUsers).toEqual(['Anakin', 'Luke'])
+    expect(chatReducer(two, { type: 'typing', event: { username: 'Luke', typing: true } })).toBe(two)
+    expect(chatReducer(two, { type: 'typing', event: { username: 'Ana', typing: true } })).toBe(two)
+
+    const stopped = chatReducer(two, { type: 'typing', event: { username: 'Anakin', typing: false } })
+    expect(stopped.typingUsers).toEqual(['Luke'])
+  })
+
+  it('un mensaje, una salida o una reconexión quitan el indicador de escritura', () => {
+    const typing: ChatState = { ...connected, typingUsers: ['Beto', 'Luke'] }
+
+    const afterMessage = chatReducer(typing, { type: 'message', message: msg(1, '2026-10-30T10:01:00Z', 'Beto') })
+    expect(afterMessage.typingUsers).toEqual(['Luke'])
+
+    const afterLeave = chatReducer(afterMessage, {
+      type: 'presence',
+      event: { username: 'Luke', status: 'DISCONNECTED', at: '2026-10-30T10:02:00Z' },
+    })
+    expect(afterLeave.typingUsers).toEqual([])
+
+    expect(chatReducer(typing, { type: 'reconnecting' }).typingUsers).toEqual([])
+  })
+
   it('users reemplaza la lista local por la del servidor, siempre incluyendo al propio usuario', () => {
     const stale: ChatState = { ...connected, onlineUsers: ['Ana', 'Zed'] }
 

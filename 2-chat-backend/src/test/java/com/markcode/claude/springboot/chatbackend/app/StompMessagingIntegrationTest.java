@@ -5,6 +5,8 @@ import com.markcode.claude.springboot.chatbackend.app.dto.ChatMessageRequest;
 import com.markcode.claude.springboot.chatbackend.app.dto.ErrorDto;
 import com.markcode.claude.springboot.chatbackend.app.dto.JoinRequest;
 import com.markcode.claude.springboot.chatbackend.app.dto.SystemEventDto;
+import com.markcode.claude.springboot.chatbackend.app.dto.TypingEventDto;
+import com.markcode.claude.springboot.chatbackend.app.dto.TypingRequest;
 import com.markcode.claude.springboot.chatbackend.app.dto.UserSessionDto;
 import com.markcode.claude.springboot.chatbackend.app.models.ConnectionStatus;
 import com.markcode.claude.springboot.chatbackend.app.models.MessageType;
@@ -159,6 +161,49 @@ class StompMessagingIntegrationTest {
         assertThat(event).isNotNull();
         assertThat(event.type()).isEqualTo(MessageType.USER_DISCONNECTED);
         assertThat(event.content()).isEqualTo("bye-user ha salido del chat.");
+    }
+
+    @Test
+    void typingEventsReachEveryoneAreNotPersistedAndKeepTheirAuthor() throws Exception {
+        StompSession anakin = connect();
+        StompSession luke = connect();
+        BlockingQueue<UserSessionDto> presence = subscribe(anakin, "/topic/presence", UserSessionDto.class);
+        BlockingQueue<TypingEventDto> typing = subscribe(luke, "/topic/typing", TypingEventDto.class);
+        long messagesBefore = messageService.history(200).size();
+
+        anakin.send("/app/chat.join", new JoinRequest("typer-a"));
+        assertThat(presence.poll(5, TimeUnit.SECONDS)).isNotNull();
+        luke.send("/app/chat.join", new JoinRequest("typer-b"));
+        assertThat(presence.poll(5, TimeUnit.SECONDS)).isNotNull();
+
+        anakin.send("/app/chat.typing", new TypingRequest(MessageType.USER_TYPING));
+        TypingEventDto started = typing.poll(5, TimeUnit.SECONDS);
+        assertThat(started).isNotNull();
+        assertThat(started.type()).isEqualTo(MessageType.USER_TYPING);
+        assertThat(started.username()).isEqualTo("typer-a");
+
+        luke.send("/app/chat.typing", new TypingRequest(MessageType.USER_TYPING));
+        assertThat(typing.poll(5, TimeUnit.SECONDS).username()).isEqualTo("typer-b");
+
+        anakin.send("/app/chat.typing", new TypingRequest(MessageType.USER_STOPPED_TYPING));
+        TypingEventDto stopped = typing.poll(5, TimeUnit.SECONDS);
+        assertThat(stopped.type()).isEqualTo(MessageType.USER_STOPPED_TYPING);
+        assertThat(stopped.username()).isEqualTo("typer-a");
+        assertThat(messageService.history(200)).hasSize((int) messagesBefore);
+    }
+
+    @Test
+    void typingWithoutJoiningOrWithAnInvalidTypeReturnsAnError() throws Exception {
+        StompSession lurker = connect();
+        BlockingQueue<ErrorDto> errors = subscribe(lurker, "/user/queue/errors", ErrorDto.class);
+        BlockingQueue<TypingEventDto> typing = subscribe(lurker, "/topic/typing", TypingEventDto.class);
+
+        lurker.send("/app/chat.typing", new TypingRequest(MessageType.USER_TYPING));
+        assertThat(errors.poll(5, TimeUnit.SECONDS)).isNotNull();
+
+        lurker.send("/app/chat.typing", new TypingRequest(MessageType.CHAT));
+        assertThat(errors.poll(5, TimeUnit.SECONDS)).isNotNull();
+        assertThat(typing.poll(500, TimeUnit.MILLISECONDS)).isNull();
     }
 
     private StompSession connect() throws Exception {

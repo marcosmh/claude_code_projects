@@ -12,13 +12,20 @@ export interface UserSessionDto {
   status: 'CONNECTED' | 'DISCONNECTED'
 }
 
-export type MessageType = 'CHAT' | 'USER_CONNECTED' | 'USER_DISCONNECTED'
+export type MessageType = 'CHAT' | 'USER_CONNECTED' | 'USER_DISCONNECTED' | 'USER_TYPING' | 'USER_STOPPED_TYPING'
 
 // Aviso del sistema publicado en /topic/system (no es un mensaje de chat y no está en el historial).
 export interface SystemEventDto {
   type: MessageType
   username: string
   content: string
+  timestamp: string
+}
+
+// Estado de escritura efímero publicado en /topic/typing (no se guarda).
+export interface TypingEventDto {
+  type: MessageType
+  username: string
   timestamp: string
 }
 

@@ -1,17 +1,19 @@
 import { Client } from '@stomp/stompjs'
 import type { IMessage } from '@stomp/stompjs'
 import { env } from '../config/env'
-import type { PresenceEvent, SystemNotice } from '../types/chat'
+import type { PresenceEvent, SystemNotice, TypingEvent } from '../types/chat'
 import type { Message } from '../types/message'
-import type { ChatMessageDto, ErrorDto, SystemEventDto, UserSessionDto } from './dto'
-import { toMessage, toPresenceEvent, toSystemNotice } from './mappers'
+import type { ChatMessageDto, ErrorDto, SystemEventDto, TypingEventDto, UserSessionDto } from './dto'
+import { toMessage, toPresenceEvent, toSystemNotice, toTypingEvent } from './mappers'
 
 // Destinos STOMP del backend.
 const DEST_JOIN = '/app/chat.join'
 const DEST_SEND = '/app/chat.send'
+const DEST_TYPING = '/app/chat.typing'
 const TOPIC_MESSAGES = '/topic/messages'
 const TOPIC_PRESENCE = '/topic/presence'
 const TOPIC_SYSTEM = '/topic/system'
+const TOPIC_TYPING = '/topic/typing'
 const QUEUE_ERRORS = '/user/queue/errors'
 
 const RECONNECT_DELAY_MS = 3000
@@ -28,6 +30,8 @@ export interface ChatSocketHandlers {
   onPresence: (event: PresenceEvent) => void
   // Aviso del sistema (alguien se conectó o salió) para mostrarlo en el chat.
   onSystemEvent: (notice: SystemNotice) => void
+  // Alguien (también el propio usuario) empezó o dejó de escribir.
+  onTyping: (event: TypingEvent) => void
   // No se pudo entrar al chat (nombre en uso, servidor caído...). El cliente no reintenta.
   onJoinFailed: (message: string) => void
   // Error no fatal con la sesión ya iniciada (p. ej. mensaje inválido).
@@ -73,6 +77,14 @@ export class ChatSocket {
     return true
   }
 
+  // Estado de escritura; false si no hay sesión unida (no es un error: es efímero y se puede perder).
+  sendTyping(typing: boolean): boolean {
+    if (!this.client?.connected || !this.joined) return false
+    const type = typing ? 'USER_TYPING' : 'USER_STOPPED_TYPING'
+    this.client.publish({ destination: DEST_TYPING, body: JSON.stringify({ type }) })
+    return true
+  }
+
   confirmJoined(): void {
     if (this.joined || !this.client) return
     this.joined = true
@@ -99,6 +111,10 @@ export class ChatSocket {
     client.subscribe(TOPIC_SYSTEM, (frame) => {
       const notice = toSystemNotice(parse<SystemEventDto>(frame))
       if (notice) this.handlers.onSystemEvent(notice)
+    })
+    client.subscribe(TOPIC_TYPING, (frame) => {
+      const event = toTypingEvent(parse<TypingEventDto>(frame))
+      if (event) this.handlers.onTyping(event)
     })
     client.subscribe(QUEUE_ERRORS, (frame) => this.handleServerError(parse<ErrorDto>(frame).message))
     this.joined = false

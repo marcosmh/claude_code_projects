@@ -4,10 +4,13 @@ import com.markcode.claude.springboot.chatbackend.app.dto.ChatMessageDto;
 import com.markcode.claude.springboot.chatbackend.app.dto.ChatMessageRequest;
 import com.markcode.claude.springboot.chatbackend.app.dto.ErrorDto;
 import com.markcode.claude.springboot.chatbackend.app.dto.JoinRequest;
+import com.markcode.claude.springboot.chatbackend.app.dto.TypingEventDto;
+import com.markcode.claude.springboot.chatbackend.app.dto.TypingRequest;
 import com.markcode.claude.springboot.chatbackend.app.dto.UserSessionDto;
 import com.markcode.claude.springboot.chatbackend.app.exceptions.BusinessRuleException;
 import com.markcode.claude.springboot.chatbackend.app.services.ChatMessageService;
 import com.markcode.claude.springboot.chatbackend.app.services.SystemEventService;
+import com.markcode.claude.springboot.chatbackend.app.services.TypingService;
 import com.markcode.claude.springboot.chatbackend.app.services.UserSessionService;
 import jakarta.validation.Valid;
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
@@ -30,13 +33,16 @@ public class ChatWebSocketController {
     private final UserSessionService userSessions;
     private final ChatMessageService messages;
     private final SystemEventService systemEvents;
+    private final TypingService typing;
     private final SimpMessagingTemplate messaging;
 
     public ChatWebSocketController(UserSessionService userSessions, ChatMessageService messages,
-                                   SystemEventService systemEvents, SimpMessagingTemplate messaging) {
+                                   SystemEventService systemEvents, TypingService typing,
+                                   SimpMessagingTemplate messaging) {
         this.userSessions = userSessions;
         this.messages = messages;
         this.systemEvents = systemEvents;
+        this.typing = typing;
         this.messaging = messaging;
     }
 
@@ -52,6 +58,12 @@ public class ChatWebSocketController {
     @SendTo("/topic/messages")
     public ChatMessageDto send(@Valid @Payload ChatMessageRequest request, SimpMessageHeaderAccessor headers) {
         return messages.send(headers.getSessionId(), request);
+    }
+
+    @MessageMapping("/chat.typing")
+    @SendTo("/topic/typing")
+    public TypingEventDto typing(@Valid @Payload TypingRequest request, SimpMessageHeaderAccessor headers) {
+        return typing.relay(headers.getSessionId(), request);
     }
 
     @MessageExceptionHandler(BusinessRuleException.class)
