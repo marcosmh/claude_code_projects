@@ -22,6 +22,7 @@ Use when writing or reviewing Spring Boot code. Each item says why, because the 
 - **Update by loading, then changing, then saving** (`findById` -> apply DTO fields -> `save`) so `createdAt` and other server-managed fields are not overwritten by a blind `toEntity`.
 
 - **Keep all Spring and Spring Security configuration in `config/`**, wiring only, so the application assembly is readable in one folder.
+- **Treat STOMP handlers like REST controllers** (delegate to services, return DTOs, derive the author from the session/Principal, never from the payload).
 - **Bind settings with a `@ConfigurationProperties` record** and keep secrets in environment variables.
 
 ## Don't

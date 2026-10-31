@@ -1,6 +1,6 @@
 ---
 name: spring-boot-best-practices
-description: Generate, maintain and evolve Spring Boot projects (Java 25, Maven, Spring Boot 4.x) with a strict layered architecture - controllers, services, repositories, models, DTO records and explicit mappers. Use this skill whenever the user asks to create a Spring Boot API or project, generate a Spring Boot project from scratch, create or modify entities, repositories, services or controllers, add REST endpoints, refactor a Spring Boot architecture, or build a monolithic Spring MVC / Thymeleaf web app ("spring mvc", "thymeleaf", "spring web monolith"), or configure Spring beans, Spring Security, JWT, CORS or application properties (the config package), even if they do not name the skill.
+description: Generate, maintain and evolve Spring Boot projects (Java 25, Maven, Spring Boot 4.x) with a strict layered architecture - controllers, services, repositories, models, DTO records and explicit mappers. Use this skill whenever the user asks to create a Spring Boot API or project, generate a Spring Boot project from scratch, create or modify entities, repositories, services or controllers, add REST endpoints, refactor a Spring Boot architecture, or build a monolithic Spring MVC / Thymeleaf web app ("spring mvc", "thymeleaf", "spring web monolith"), configure Spring beans, Spring Security, JWT, CORS or application properties (the config package), or build real-time features with WebSocket/STOMP (chat, presence, messaging broker), even if they do not name the skill.
 ---
 
 # Spring Boot Best Practices
@@ -93,6 +93,7 @@ Read the references when they apply:
 - `references/pom-template.md` - reference `pom.xml`, `application.properties` and wrapper notes; when Initializr is unavailable or you need to verify starters.
 - `references/project-structure.md` - folder and package tree plus naming and dependency-direction rules.
 - `references/config-security.md` - the `config/` package: Spring Security (stateless API and Thymeleaf variants), password encoder, CORS, typed properties, JPA auditing and their tests.
+- `references/websocket-stomp.md` - real-time messaging with WebSocket + STOMP (chat, presence, live updates): config, join/send handlers, errors per session, persistence notes, tests and gotchas.
 - `references/layer-templates.md` - full entity, repository, mapper, service, controller, error handling and test templates.
 - `references/patterns.md` - do/don't list and a review checklist; use it when refactoring or reviewing Spring Boot code.
 

@@ -156,6 +156,46 @@
           "type": "file_content"
         }
       ]
+    },
+    {
+      "id": 5,
+      "prompt": "agrega un chat en tiempo real con websocket y stomp: varios usuarios, mensajes que se distribuyan a los demas, guardados en h2, historial por rest y aviso cuando alguien entra o sale",
+      "expected_output": "WebSocketConfig in config/ with /ws endpoint, simple broker and /app prefix; @MessageMapping join/send in controllers delegating to services; messages persisted with server-side author and timestamp; presence on a topic via session disconnect event; REST history and connected users; errors sent to the offending session; integration test with real STOMP clients.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "pom.xml includes spring-boot-starter-websocket",
+          "type": "file_content"
+        },
+        {
+          "text": "WebSocketConfig is in config/ and enables a simple broker with an /app application prefix",
+          "type": "file_content"
+        },
+        {
+          "text": "STOMP handlers (@MessageMapping) are in controllers/ and only delegate to services",
+          "type": "file_content"
+        },
+        {
+          "text": "The message author is derived from the session, not from the client payload, and the timestamp is set by the server",
+          "type": "file_content"
+        },
+        {
+          "text": "DTOs are records and do not expose the session id",
+          "type": "file_content"
+        },
+        {
+          "text": "Disconnection is handled by a SessionDisconnectEvent listener that publishes presence",
+          "type": "file_content"
+        },
+        {
+          "text": "Message time column is not named plain 'timestamp' in the database (H2 reserved word)",
+          "type": "file_content"
+        },
+        {
+          "text": "An integration test with WebSocketStompClient exists and ./mvnw test passes",
+          "type": "command"
+        }
+      ]
     }
   ]
 }

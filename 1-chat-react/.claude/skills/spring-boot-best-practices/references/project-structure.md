@@ -36,4 +36,5 @@ demo-api/
 - Tests mirror the main package and use the slice that matches the layer (`@WebMvcTest`, `@DataJpaTest`, plain JUnit for services and mappers).
 - Dependency direction is one-way: `controllers -> services -> repositories`, and `services -> mapper`; `config -> services` only through interfaces (e.g. `UserDetailsService`). `models` and `dto` depend on nothing in the app. Flag any import that breaks this when reviewing.
 - `config/` holds every Spring and Spring Security configuration class (see `config-security.md`); it is created with the project, even when empty. Use a `config/security/` subpackage once JWT classes appear. Layers do not import from `config/` except typed properties records.
+- STOMP `@MessageMapping` handlers and WebSocket event listeners live in `controllers/` (see `websocket-stomp.md`); `WebSocketConfig` lives in `config/`.
 - `exceptions/` holds domain exceptions thrown by services; `ApiExceptionHandler` in `controllers/` translates them to HTTP.

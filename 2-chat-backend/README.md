@@ -2,7 +2,7 @@
 
 Backend skeleton for ChatRoom (the React frontend lives in `../1-chat-react`). Spring Boot with a layered architecture.
 
-**Current scope: structure only.** There is no business logic, no functional endpoints, no broker/WebSocket/AI integration and no connection to the frontend yet. See [docs/architecture.md](docs/architecture.md) for the architecture, initial decisions and the phased roadmap.
+**Current scope:** a real-time messaging broker. Users connect over WebSocket/STOMP, send messages that are distributed to everyone connected and persisted in H2, and get presence updates; REST exposes the history, the connected users and the status. There is no authentication, no external broker, no AI and no connection to the frontend yet. See [docs/architecture.md](docs/architecture.md) for the design and roadmap and [docs/websocket-api.md](docs/websocket-api.md) for the contract.
 
 ## Requirements
 
@@ -17,9 +17,22 @@ Backend skeleton for ChatRoom (the React frontend lives in `../1-chat-react`). S
 ./mvnw clean package
 ```
 
+## Try it
+
+```bash
+./mvnw -DskipTests spring-boot:run
+curl localhost:8080/api/status
+curl localhost:8080/api/users/connected
+curl 'localhost:8080/api/messages?limit=10'
+```
+
+- WebSocket endpoint: `ws://localhost:8080/ws` (destinations and payloads in `docs/websocket-api.md`).
+- H2 console: `http://localhost:8080/h2-console` (JDBC URL `jdbc:h2:mem:chatdb`, user `sa`, empty password).
+- `./mvnw test` includes an integration test that connects real STOMP clients.
+
 ## Stack
 
-Java 25, Spring Boot 4.1.2, Maven (jar), Spring Web (MVC), Validation, Data JPA, H2 (in memory), DevTools, Actuator. Configuration lives only in `src/main/resources/application.properties`.
+Java 25, Spring Boot 4.1.2, Maven (jar), Spring Web (MVC), WebSocket (STOMP), Validation, Data JPA, H2 (in memory), DevTools, Actuator. Configuration lives only in `src/main/resources/application.properties`.
 
 ## Layout
 
@@ -28,8 +41,9 @@ Base package: `com.markcode.claude.springboot.chatbackend.app`. The Maven `artif
 ```
 src/main/java/.../chatbackend/app/
 ├── ChatBackendApplication.java
-├── config/         Spring and Spring Security configuration
-├── controllers/    REST endpoints
+├── config/         Spring and Spring Security configuration (WebSocket, properties, Clock)
+├── controllers/    REST endpoints and STOMP entry points
+├── exceptions/     domain exceptions
 ├── services/       business logic
 ├── repositories/   JpaRepository interfaces
 ├── models/         JPA entities
@@ -37,7 +51,7 @@ src/main/java/.../chatbackend/app/
 └── mapper/         explicit entity <-> DTO mappers
 ```
 
-The packages are empty on purpose; each one has a `package-info.java` describing its responsibility.
+Packages without classes of their own keep a `package-info.java` describing their responsibility.
 
 ## Skill
 
