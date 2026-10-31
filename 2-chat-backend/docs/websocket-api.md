@@ -1,13 +1,13 @@
 # Real-time API (STOMP over WebSocket) and REST
 
-Contract for the future frontend integration. There is no authentication yet: a client chooses its `username` when it joins.
+Contract used by the React frontend (`../1-chat-react`: `src/services/chatSocket.ts` and `chatApi.ts`). There is no authentication yet: a client chooses its `username` when it joins.
 
 ## Connection
 
 | Item | Value |
 |---|---|
 | WebSocket endpoint | `ws://localhost:8080/ws` (plain WebSocket, no SockJS) |
-| Allowed origins | `app.cors.allowed-origins` (default `http://localhost:5173`); other origins get `403` |
+| Allowed origins | `app.cors.allowed-origins` (default `http://localhost:5173`); other origins get `403`. The same property drives CORS for `/api/**` (GET, OPTIONS) in `config/WebConfig` and the WebSocket origins in `config/WebSocketConfig` |
 | Application prefix | `/app` |
 | Broker (in memory) | `/topic`, `/queue` |
 
@@ -60,4 +60,4 @@ client.onConnect = () => {
 client.activate()
 ```
 
-Subscribe before joining so the client does not miss its own presence event.
+Subscribe before joining so the client does not miss its own presence event. Frames of one session are not strictly ordered on the server, so a client should not wait forever for that event: the React client verifies with `GET /api/users/connected` when no confirmation arrives within 2.5 s.

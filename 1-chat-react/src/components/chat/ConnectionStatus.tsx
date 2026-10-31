@@ -1,25 +1,43 @@
+import type { ConnectionState } from '../../types/chat'
+
 interface ConnectionStatusProps {
-  isConnected: boolean
+  status: ConnectionState
 }
 
-// Badge de estado: Online / Offline. Usa tokens con contraste AA sobre su fondo tintado.
-export default function ConnectionStatus({ isConnected }: ConnectionStatusProps) {
+const labels: Record<ConnectionState, string> = {
+  connected: 'Online',
+  connecting: 'Conectando…',
+  reconnecting: 'Reconectando…',
+  disconnected: 'Offline',
+}
+
+// Badge de estado. Usa tokens con contraste AA sobre su fondo tintado.
+export default function ConnectionStatus({ status }: ConnectionStatusProps) {
+  const isOnline = status === 'connected'
+  const isBusy = status === 'connecting' || status === 'reconnecting'
+
   return (
     <p
       aria-live="polite"
       className={`inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${
-        isConnected ? 'bg-ok/10 text-ok' : 'bg-surface-alt text-subtle'
+        isOnline ? 'bg-ok/10 text-ok' : 'bg-surface-alt text-subtle'
       }`}
     >
       <span className="relative flex size-2" aria-hidden="true">
-        {isConnected && (
-          <span className="absolute inline-flex size-full animate-ping rounded-full bg-success opacity-60" />
+        {(isOnline || isBusy) && (
+          <span
+            className={`absolute inline-flex size-full animate-ping rounded-full opacity-60 ${
+              isOnline ? 'bg-success' : 'bg-primary'
+            }`}
+          />
         )}
         <span
-          className={`relative inline-flex size-2 rounded-full ${isConnected ? 'bg-success' : 'bg-subtle'}`}
+          className={`relative inline-flex size-2 rounded-full ${
+            isOnline ? 'bg-success' : isBusy ? 'bg-primary' : 'bg-subtle'
+          }`}
         />
       </span>
-      {isConnected ? 'Online' : 'Offline'}
+      {labels[status]}
     </p>
   )
 }

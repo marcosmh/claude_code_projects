@@ -1,17 +1,28 @@
 import type { Theme } from '../../hooks/useTheme'
+import type { ConnectionState } from '../../types/chat'
 import BrandLogo from '../layout/BrandLogo'
 import ThemeToggle from '../layout/ThemeToggle'
 import ConnectForm from './ConnectForm'
 import ConnectionStatus from './ConnectionStatus'
 
 interface ConnectScreenProps {
+  status: ConnectionState
+  error: string | null
+  onDismissError: () => void
   theme: Theme
   onToggleTheme: () => void
   onConnect: (username: string) => void
 }
 
 // Pantalla de acceso: tarjeta centrada con la marca y el formulario (no es un login real).
-export default function ConnectScreen({ theme, onToggleTheme, onConnect }: ConnectScreenProps) {
+export default function ConnectScreen({
+  status,
+  error,
+  onDismissError,
+  theme,
+  onToggleTheme,
+  onConnect,
+}: ConnectScreenProps) {
   return (
     <div className="relative isolate flex min-h-dvh flex-col overflow-hidden px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
@@ -20,7 +31,7 @@ export default function ConnectScreen({ theme, onToggleTheme, onConnect }: Conne
       </div>
 
       <div className="mx-auto flex w-full max-w-5xl items-center justify-between py-2">
-        <ConnectionStatus isConnected={false} />
+        <ConnectionStatus status={status} />
         <ThemeToggle theme={theme} onToggle={onToggleTheme} />
       </div>
 
@@ -41,7 +52,12 @@ export default function ConnectScreen({ theme, onToggleTheme, onConnect }: Conne
           <p className="mx-auto mt-2 max-w-xs text-pretty text-sm text-muted sm:text-base">
             Elige un nombre de usuario y únete a la conversación.
           </p>
-          <ConnectForm onConnect={onConnect} />
+          <ConnectForm
+            onConnect={onConnect}
+            isConnecting={status === 'connecting'}
+            serverError={error}
+            onDismissError={onDismissError}
+          />
         </section>
       </main>
     </div>

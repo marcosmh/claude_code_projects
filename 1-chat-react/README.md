@@ -1,11 +1,26 @@
 # chat-ui
 
-Chat interface (frontend only) built with React + TypeScript + Vite + Tailwind CSS v4, with an aesthetic inspired by Black Dashboard React.
-There is no business logic or real connection: the backend (Spring Boot, WebSocket/STOMP) will be integrated later.
+Chat client built with React + TypeScript + Vite + Tailwind CSS v4, with an aesthetic inspired by Black Dashboard React.
+It talks to the Spring Boot backend in `../2-chat-backend` over REST (history, connected users) and WebSocket + STOMP (real-time messages and presence). There is no authentication yet.
 
 ## Flow
-1. Disconnected: a centered card asks for a username with the **Conectar** (Connect) button.
-2. Connected (mock): it shows "Conectado como: <name>" (Connected as), the **Desconectar** (Disconnect) button, the message list and the message input.
+1. Disconnected: a centered card asks for a username with the **Conectar** (Connect) button. The server can reject the name (e.g. already in use) and the error is shown on the card.
+2. Connected: "Conectado como <name>", the **Desconectar** (Disconnect) button, an Online badge with the number of users online, the message history loaded from the backend, live messages from other users, "se unió / salió" notices and the message input. If the connection drops it reconnects automatically.
+
+## Configuration
+The backend URLs are read from environment variables (see `.env.example`; put overrides in `.env.local`):
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `VITE_API_URL` | `http://localhost:8080` | REST base URL |
+| `VITE_WS_URL` | `VITE_API_URL` with `ws://` + `/ws` | WebSocket/STOMP endpoint |
+
+## Run with the backend
+```bash
+cd ../2-chat-backend && ./mvnw -DskipTests spring-boot:run   # http://localhost:8080
+npm install && npm run dev                                    # http://localhost:5173
+```
+Open the app in two browser windows with different usernames to see messages and presence in real time. The backend allows the origin `http://localhost:5173` (property `app.cors.allowed-origins`).
 
 ## Scripts
 ```bash

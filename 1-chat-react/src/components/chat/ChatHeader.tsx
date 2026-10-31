@@ -1,4 +1,5 @@
 import type { Theme } from '../../hooks/useTheme'
+import type { ConnectionState } from '../../types/chat'
 import Button from '../common/Button'
 import { LogOutIcon } from '../common/icons'
 import BrandLogo from '../layout/BrandLogo'
@@ -8,12 +9,21 @@ import UserBadge from './UserBadge'
 
 interface ChatHeaderProps {
   username: string
+  status: ConnectionState
+  onlineCount: number
   theme: Theme
   onToggleTheme: () => void
   onDisconnect: () => void
 }
 
-export default function ChatHeader({ username, theme, onToggleTheme, onDisconnect }: ChatHeaderProps) {
+export default function ChatHeader({
+  username,
+  status,
+  onlineCount,
+  theme,
+  onToggleTheme,
+  onDisconnect,
+}: ChatHeaderProps) {
   return (
     <header className="flex items-center justify-between gap-3 border-b border-line bg-surface px-4 py-3 sm:px-6 sm:py-4">
       <div className="flex min-w-0 items-center gap-3">
@@ -22,7 +32,12 @@ export default function ChatHeader({ username, theme, onToggleTheme, onDisconnec
           <h1 translate="no" className="truncate text-base font-semibold leading-none sm:text-lg">
             ChatRoom
           </h1>
-          <ConnectionStatus isConnected />
+          <div className="flex items-center gap-2">
+            <ConnectionStatus status={status} />
+            <span className="hidden text-xs tabular-nums text-subtle sm:inline">
+              {onlineCount} en línea
+            </span>
+          </div>
         </div>
       </div>
 

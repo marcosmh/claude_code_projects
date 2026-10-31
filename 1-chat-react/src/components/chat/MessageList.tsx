@@ -1,27 +1,58 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
+import type { PresenceNotice } from '../../types/chat'
 import type { Message } from '../../types/message'
 import MessageItem from './MessageItem'
 
 interface MessageListProps {
   messages: Message[]
   currentUser: string
+  // Avisos de conexión/desconexión que se intercalan por hora entre los mensajes.
+  notices?: PresenceNotice[]
 }
 
 // Mensajes seguidos del mismo autor dentro de esta ventana se agrupan bajo un solo encabezado.
 const GROUP_WINDOW_MS = 5 * 60 * 1000
 
-function startsGroup(previous: Message | undefined, current: Message): boolean {
-  if (!previous || previous.sender !== current.sender) return true
-  return new Date(current.sentAt).getTime() - new Date(previous.sentAt).getTime() > GROUP_WINDOW_MS
+const noNotices: PresenceNotice[] = []
+
+type TimelineItem =
+  | { kind: 'message'; key: string; at: number; message: Message }
+  | { kind: 'notice'; key: string; at: number; notice: PresenceNotice }
+
+function startsGroup(previous: TimelineItem | undefined, current: Message): boolean {
+  if (previous?.kind !== 'message' || previous.message.sender !== current.sender) return true
+  return new Date(current.sentAt).getTime() - new Date(previous.message.sentAt).getTime() > GROUP_WINDOW_MS
 }
 
-export default function MessageList({ messages, currentUser }: MessageListProps) {
+function noticeText({ username, status }: PresenceNotice): string {
+  return status === 'CONNECTED' ? `${username} se unió` : `${username} salió`
+}
+
+export default function MessageList({ messages, currentUser, notices = noNotices }: MessageListProps) {
   const endRef = useRef<HTMLDivElement>(null)
 
-  // Solo al cambiar la cantidad de mensajes, no en cada render del padre.
+  const timeline = useMemo<TimelineItem[]>(() => {
+    const items: TimelineItem[] = [
+      ...messages.map((message): TimelineItem => ({
+        kind: 'message',
+        key: `m-${message.id}`,
+        at: new Date(message.sentAt).getTime(),
+        message,
+      })),
+      ...notices.map((notice): TimelineItem => ({
+        kind: 'notice',
+        key: `n-${notice.id}`,
+        at: new Date(notice.at).getTime(),
+        notice,
+      })),
+    ]
+    return items.sort((a, b) => a.at - b.at)
+  }, [messages, notices])
+
+  // Solo al cambiar la cantidad de elementos, no en cada render del padre.
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: 'end' })
-  }, [messages.length])
+  }, [timeline.length])
 
   return (
     <div
@@ -29,20 +60,28 @@ export default function MessageList({ messages, currentUser }: MessageListProps)
       aria-label="Mensajes"
       className="scroll-thin min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6"
     >
-      {messages.length === 0 ? (
+      {timeline.length === 0 ? (
         <p className="flex h-full items-center justify-center text-center text-sm text-muted">
           Aún no hay mensajes. ¡Escribe el primero!
         </p>
       ) : (
         <ul className="flex flex-col">
-          {messages.map((message, index) => (
-            <MessageItem
-              key={message.id}
-              message={message}
-              isOwn={message.sender === currentUser}
-              isGroupStart={startsGroup(messages[index - 1], message)}
-            />
-          ))}
+          {timeline.map((item, index) =>
+            item.kind === 'message' ? (
+              <MessageItem
+                key={item.key}
+                message={item.message}
+                isOwn={item.message.sender === currentUser}
+                isGroupStart={startsGroup(timeline[index - 1], item.message)}
+              />
+            ) : (
+              <li key={item.key} className="my-3 flex justify-center">
+                <span className="rounded-full bg-surface-alt px-3 py-1 text-xs text-subtle">
+                  {noticeText(item.notice)}
+                </span>
+              </li>
+            ),
+          )}
         </ul>
       )}
       <div ref={endRef} className="scroll-mb-5" />

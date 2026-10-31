@@ -4,20 +4,24 @@ import Button from '../common/Button'
 import { SendIcon } from '../common/icons'
 
 interface ChatInputProps {
-  // Punto de integración futuro (WebSocket/STOMP o REST con Spring Boot).
-  onSend?: (text: string) => void
+  // Devuelve false si el mensaje no pudo salir: entonces se conserva el texto.
+  onSend?: (text: string) => boolean | void
+  // Sin conexión (p. ej. reconectando): no se puede enviar.
+  disabled?: boolean
+  error?: string | null
+  onDismissError?: () => void
 }
 
-export default function ChatInput({ onSend }: ChatInputProps) {
+export default function ChatInput({ onSend, disabled = false, error = null, onDismissError }: ChatInputProps) {
   const [value, setValue] = useState('')
-  const canSend = value.trim().length > 0
+  const canSend = !disabled && value.trim().length > 0
 
   // Enter y el botón comparten este camino; el navegador ya ignora Enter durante una composición IME.
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const text = value.trim()
-    if (!text) return
-    onSend?.(text)
+    if (!text || disabled) return
+    if (onSend?.(text) === false) return
     setValue('')
   }
 
@@ -31,8 +35,11 @@ export default function ChatInput({ onSend }: ChatInputProps) {
           type="text"
           name="message"
           value={value}
-          onChange={(event) => setValue(event.target.value)}
-          placeholder="Escribe un mensaje…"
+          onChange={(event) => {
+            setValue(event.target.value)
+            onDismissError?.()
+          }}
+          placeholder={disabled ? 'Reconectando…' : 'Escribe un mensaje…'}
           aria-label="Mensaje"
           autoComplete="off"
           className="min-w-0 flex-1 bg-transparent py-2 text-sm text-fg placeholder:text-subtle focus:outline-none"
@@ -42,6 +49,11 @@ export default function ChatInput({ onSend }: ChatInputProps) {
           <span className="max-sm:sr-only">Enviar</span>
         </Button>
       </div>
+      {error && (
+        <p role="alert" className="mt-2 px-1 text-xs text-danger">
+          {error}
+        </p>
+      )}
       <p className="mt-2 hidden px-1 text-xs text-subtle sm:block">
         <kbd className="rounded border border-edge bg-surface-alt px-1.5 py-0.5 font-sans text-[11px]">Enter</kbd>{' '}
         para enviar

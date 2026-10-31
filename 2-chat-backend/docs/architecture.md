@@ -2,7 +2,7 @@
 
 ## Goal
 
-Provide the server side of ChatRoom incrementally. Current state: a real-time messaging broker over WebSocket/STOMP with H2 persistence and a small REST API (contract in [websocket-api.md](websocket-api.md)). There is still no authentication, no external broker and no frontend integration.
+Provide the server side of ChatRoom incrementally. Current state: a real-time messaging broker over WebSocket/STOMP with H2 persistence and a small REST API (contract in [websocket-api.md](websocket-api.md)). It is consumed by the React frontend in `../1-chat-react`. There is still no authentication and no external broker.
 
 ## Layers
 
@@ -49,6 +49,7 @@ Conventions: constructor injection, Jakarta Validation on DTOs, SOLID, comments 
 | Actuator exposes only `health,info` | Minimal surface while there is no security |
 | WebSocket + STOMP with the simple in-memory broker | Standard Spring support, no extra infrastructure; scaling out needs an external broker (later phase) |
 | Plain WebSocket, no SockJS | Modern browsers support it; fewer moving parts |
+| One `app.cors.allowed-origins` property for REST and WebSocket | A single place to change allowed origins (later per profile) |
 | Session ids stay out of DTOs | They identify live connections and are not needed by clients |
 | H2 console enabled | Development convenience only; must be disabled/secured outside dev |
 | `artifactId` `2-chat-backend`, package `chatbackend` | `artifactId` must equal the folder; Java packages cannot start with a digit |
@@ -64,9 +65,9 @@ Conventions: constructor injection, Jakarta Validation on DTOs, SOLID, comments 
 | 1 | First full vertical slice (done as part of phase 2): entity, repository, DTO, mapper, service, controller, `exceptions/`, tests per layer | Reference pattern for the rest |
 | 2 | Messaging core (done): STOMP join/send/presence, H2 persistence, history and status over REST | Contract in `websocket-api.md`; maps onto the frontend `Message` |
 | 3 | Identity and connection: users and authentication (Spring Security + JWT). Adds the security starter, `config/SecurityConfig`, `config/security/*` (JWT filter and service), `UserDetailsService` in `services/`, health left public | Replaces the mock "connect with a name" |
-| 4 | Frontend integration: CORS (`config/CorsConfig` + `app.cors.allowed-origins`), HTTP client inside `useConnection` / `useMessages`, environment variables | Only the hooks' internals change |
+| 4 | Frontend integration (done): REST CORS in `config/WebConfig` and WebSocket origins from `app.cors.allowed-origins`; the frontend uses `services/` (REST + STOMP client) behind `useChat` with env-based URLs | Reconnection and history reload on the client side |
 | 5 | Scale and resilience: external broker relay (RabbitMQ/ActiveMQ), reconnection handling, rooms/private chat if wanted | Replaces the simple broker in `WebSocketConfig` |
 | 6 | Real persistence: PostgreSQL + Flyway, `dev`/`prod` profiles | H2 only for dev and tests |
 | 7 | Hardening: observability, integration tests, CI, Docker | |
 
-Out of scope until their phase: authentication/JWT/roles, external brokers, AI/LLM, external databases, distributed scaling, private chats/groups, frontend connection.
+Out of scope until their phase: authentication/JWT/roles, external brokers, AI/LLM, external databases, distributed scaling, private chats/groups.

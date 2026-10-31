@@ -1,0 +1,61 @@
+import { describe, expect, it } from 'vitest'
+import type { Message } from '../types/message'
+import { chatReducer, initialChatState, mergeMessages } from './chatReducer'
+import type { ChatState } from './chatReducer'
+
+const msg = (id: number, sentAt: string, sender = 'Ana'): Message => ({ id, sender, sentAt, text: `m${id}` })
+
+describe('mergeMessages', () => {
+  it('quita duplicados por id y ordena cronológicamente', () => {
+    const merged = mergeMessages(
+      [msg(2, '2026-10-30T10:02:00Z'), msg(1, '2026-10-30T10:01:00Z')],
+      [msg(2, '2026-10-30T10:02:00Z'), msg(3, '2026-10-30T10:03:00Z')],
+    )
+
+    expect(merged.map((m) => m.id)).toEqual([1, 2, 3])
+  })
+})
+
+describe('chatReducer', () => {
+  const connected: ChatState = { ...initialChatState, status: 'connected', username: 'Ana', onlineUsers: ['Ana'] }
+
+  it('connect limpia el estado anterior y pasa a connecting', () => {
+    const next = chatReducer({ ...connected, messages: [msg(1, '2026-10-30T10:01:00Z')], error: 'x' }, { type: 'connect', username: 'Beto' })
+
+    expect(next).toMatchObject({ status: 'connecting', username: 'Beto', messages: [], error: null })
+  })
+
+  it('joinFailed vuelve al estado inicial conservando el error', () => {
+    expect(chatReducer({ ...connected, status: 'connecting' }, { type: 'joinFailed', message: 'en uso' })).toEqual({
+      ...initialChatState,
+      error: 'en uso',
+    })
+  })
+
+  it('presence actualiza usuarios y crea avisos solo para otros usuarios', () => {
+    const join = chatReducer(connected, { type: 'presence', event: { username: 'Beto', status: 'CONNECTED', at: '2026-10-30T10:00:00Z' } })
+    expect(join.onlineUsers).toEqual(['Ana', 'Beto'])
+    expect(join.notices).toHaveLength(1)
+
+    const own = chatReducer(join, { type: 'presence', event: { username: 'Ana', status: 'CONNECTED', at: '2026-10-30T10:01:00Z' } })
+    expect(own.notices).toHaveLength(1)
+
+    const leave = chatReducer(own, { type: 'presence', event: { username: 'Beto', status: 'DISCONNECTED', at: '2026-10-30T10:02:00Z' } })
+    expect(leave.onlineUsers).toEqual(['Ana'])
+    expect(leave.notices).toHaveLength(2)
+  })
+
+  it('users reemplaza la lista local por la del servidor, siempre incluyendo al propio usuario', () => {
+    const stale: ChatState = { ...connected, onlineUsers: ['Ana', 'Zed'] }
+
+    expect(chatReducer(stale, { type: 'users', users: ['Beto'] }).onlineUsers).toEqual(['Beto', 'Ana'])
+  })
+
+  it('reconnecting no resucita una conexión ya cerrada', () => {
+    expect(chatReducer(initialChatState, { type: 'reconnecting' })).toBe(initialChatState)
+  })
+
+  it('disconnect restablece todo', () => {
+    expect(chatReducer(connected, { type: 'disconnect' })).toEqual(initialChatState)
+  })
+})

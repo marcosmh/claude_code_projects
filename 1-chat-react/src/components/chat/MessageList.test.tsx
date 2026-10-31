@@ -64,4 +64,18 @@ describe('MessageList', () => {
 
     expect(screen.getByText('Aún no hay mensajes. ¡Escribe el primero!')).toBeInTheDocument()
   })
+
+  it('intercala los avisos de conexión por hora entre los mensajes', () => {
+    render(
+      <MessageList
+        messages={messages}
+        currentUser="Anakin"
+        notices={[{ id: 'n1', username: 'Carla', status: 'CONNECTED', at: '2026-10-30T10:31:00' }]}
+      />,
+    )
+
+    const items = screen.getAllByRole('listitem').map((li) => li.textContent)
+    expect(items[1]).toBe('Carla se unió')
+    expect(items).toHaveLength(3)
+  })
 })

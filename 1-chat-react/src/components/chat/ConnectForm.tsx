@@ -10,17 +10,27 @@ const ERROR_ID = 'username-error'
 const HINT_ID = 'username-hint'
 
 interface ConnectFormProps {
-  // Punto de integración futuro con Spring Boot.
   onConnect: (username: string) => void
+  isConnecting?: boolean
+  // Error devuelto por el servidor (p. ej. nombre en uso).
+  serverError?: string | null
+  onDismissError?: () => void
 }
 
-export default function ConnectForm({ onConnect }: ConnectFormProps) {
+export default function ConnectForm({
+  onConnect,
+  isConnecting = false,
+  serverError = null,
+  onDismissError,
+}: ConnectFormProps) {
   const [draft, setDraft] = useState('')
   const [error, setError] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
+  const shownError = error || serverError
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    if (isConnecting) return
     const username = draft.trim()
     if (!username) {
       setError('Escribe un nombre de usuario para unirte al chat.')
@@ -46,18 +56,20 @@ export default function ConnectForm({ onConnect }: ConnectFormProps) {
           onChange={(event) => {
             setDraft(event.target.value)
             if (error) setError('')
+            onDismissError?.()
           }}
           placeholder="p. ej. Anakin…"
-          aria-invalid={error ? true : undefined}
-          aria-describedby={error ? ERROR_ID : HINT_ID}
+          aria-invalid={shownError ? true : undefined}
+          aria-describedby={shownError ? ERROR_ID : HINT_ID}
+          readOnly={isConnecting}
           maxLength={MAX_USERNAME_LENGTH}
           autoComplete="off"
           spellCheck={false}
         />
-        {error ? (
+        {shownError ? (
           <p id={ERROR_ID} role="alert" className="flex items-center gap-1.5 text-sm text-danger">
             <AlertIcon />
-            {error}
+            {shownError}
           </p>
         ) : (
           <p id={HINT_ID} className="text-xs text-subtle">
@@ -65,8 +77,8 @@ export default function ConnectForm({ onConnect }: ConnectFormProps) {
           </p>
         )}
       </div>
-      <Button type="submit" size="lg" className="w-full">
-        Conectar
+      <Button type="submit" size="lg" className="w-full" disabled={isConnecting}>
+        {isConnecting ? 'Conectando…' : 'Conectar'}
       </Button>
     </form>
   )

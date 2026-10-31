@@ -2,7 +2,7 @@
 
 Backend skeleton for ChatRoom (the React frontend lives in `../1-chat-react`). Spring Boot with a layered architecture.
 
-**Current scope:** a real-time messaging broker. Users connect over WebSocket/STOMP, send messages that are distributed to everyone connected and persisted in H2, and get presence updates; REST exposes the history, the connected users and the status. There is no authentication, no external broker, no AI and no connection to the frontend yet. See [docs/architecture.md](docs/architecture.md) for the design and roadmap and [docs/websocket-api.md](docs/websocket-api.md) for the contract.
+**Current scope:** a real-time messaging broker. Users connect over WebSocket/STOMP, send messages that are distributed to everyone connected and persisted in H2, and get presence updates; REST exposes the history, the connected users and the status. It is consumed by the React frontend in `../1-chat-react` (start both and open http://localhost:5173). There is no authentication, no external broker and no AI yet. See [docs/architecture.md](docs/architecture.md) for the design and roadmap and [docs/websocket-api.md](docs/websocket-api.md) for the contract.
 
 ## Requirements
 
@@ -41,7 +41,7 @@ Base package: `com.markcode.claude.springboot.chatbackend.app`. The Maven `artif
 ```
 src/main/java/.../chatbackend/app/
 ├── ChatBackendApplication.java
-├── config/         Spring and Spring Security configuration (WebSocket, properties, Clock)
+├── config/         Spring and Spring Security configuration (WebSocket, CORS, properties, Clock)
 ├── controllers/    REST endpoints and STOMP entry points
 ├── exceptions/     domain exceptions
 ├── services/       business logic

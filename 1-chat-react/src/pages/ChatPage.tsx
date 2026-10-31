@@ -8,25 +8,44 @@ import { useTheme } from '../hooks/useTheme'
 
 export default function ChatPage() {
   const { theme, toggleTheme } = useTheme()
-  const { username, messages, connect, disconnect, sendMessage } = useChat()
+  const chat = useChat()
 
-  if (username === null) {
-    return <ConnectScreen theme={theme} onToggleTheme={toggleTheme} onConnect={connect} />
+  // Hasta que el servidor confirma la unión se sigue mostrando la tarjeta de acceso.
+  if (chat.username === null || chat.status === 'connecting') {
+    return (
+      <ConnectScreen
+        status={chat.status}
+        error={chat.error}
+        onDismissError={chat.clearError}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+        onConnect={chat.connect}
+      />
+    )
   }
 
   return (
     <MainLayout
       header={
         <ChatHeader
-          username={username}
+          username={chat.username}
+          status={chat.status}
+          onlineCount={chat.onlineUsers.length}
           theme={theme}
           onToggleTheme={toggleTheme}
-          onDisconnect={disconnect}
+          onDisconnect={chat.disconnect}
         />
       }
-      footer={<ChatInput onSend={sendMessage} />}
+      footer={
+        <ChatInput
+          onSend={chat.sendMessage}
+          disabled={!chat.isConnected}
+          error={chat.error}
+          onDismissError={chat.clearError}
+        />
+      }
     >
-      <MessageList messages={messages} currentUser={username} />
+      <MessageList messages={chat.messages} notices={chat.notices} currentUser={chat.username} />
     </MainLayout>
   )
 }
