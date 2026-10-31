@@ -1,0 +1,30 @@
+### ChatRoom Backend - REST API (VS Code REST Client / IntelliJ HTTP Client)
+### El tiempo real (STOMP) va por ws://localhost:8080/ws: ver docs/websocket-api.md
+
+@baseUrl = http://localhost:8080
+
+### Historial de mensajes (límite por defecto)
+GET {{baseUrl}}/api/messages
+Accept: application/json
+
+### Historial de mensajes con límite (máx. 200)
+GET {{baseUrl}}/api/messages?limit=10
+Accept: application/json
+
+### Usuarios conectados
+GET {{baseUrl}}/api/users/connected
+Accept: application/json
+
+### Estado del servidor
+GET {{baseUrl}}/api/status
+Accept: application/json
+
+### Actuator - health
+GET {{baseUrl}}/actuator/health
+
+### Actuator - info
+GET {{baseUrl}}/actuator/info
+
+### Error esperado: limit no válido -> 400
+GET {{baseUrl}}/api/messages?limit=abc
+Accept: application/json

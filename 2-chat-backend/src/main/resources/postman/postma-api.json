@@ -1,0 +1,87 @@
+{
+  "info": {
+    "name": "ChatRoom Backend API",
+    "description": "REST API de 2-chat-backend. El tiempo real va por WebSocket/STOMP (ws://localhost:8080/ws), documentado en docs/websocket-api.md.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" }
+  ],
+  "item": [
+    {
+      "name": "Messages",
+      "item": [
+        {
+          "name": "Historial de mensajes (por defecto)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/messages", "host": ["{{baseUrl}}"], "path": ["api", "messages"] },
+            "description": "Últimos mensajes en orden cronológico (límite por defecto: app.history.default-limit=50)."
+          }
+        },
+        {
+          "name": "Historial de mensajes (limit)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/messages?limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "messages"],
+              "query": [{ "key": "limit", "value": "10", "description": "Máximo 200 (app.history.max-limit)" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Usuarios conectados",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/users/connected", "host": ["{{baseUrl}}"], "path": ["api", "users", "connected"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Status",
+      "item": [
+        {
+          "name": "Estado del servidor",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/status", "host": ["{{baseUrl}}"], "path": ["api", "status"] },
+            "description": "{status, connectedUsers, totalMessages, serverTime}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Actuator",
+      "item": [
+        {
+          "name": "Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/actuator/health", "host": ["{{baseUrl}}"], "path": ["actuator", "health"] }
+          }
+        },
+        {
+          "name": "Info",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/actuator/info", "host": ["{{baseUrl}}"], "path": ["actuator", "info"] }
+          }
+        }
+      ]
+    }
+  ]
+}
