@@ -206,6 +206,35 @@ class StompMessagingIntegrationTest {
         assertThat(typing.poll(500, TimeUnit.MILLISECONDS)).isNull();
     }
 
+    @Test
+    void typingReachesEverySubscribedClientNoMatterHowManyAreConnected() throws Exception {
+        List<String> names = List.of("multi-luke", "multi-anakin", "multi-obiwan", "multi-yoda");
+        List<StompSession> sessions = new ArrayList<>();
+        List<BlockingQueue<TypingEventDto>> inboxes = new ArrayList<>();
+        BlockingQueue<UserSessionDto> presence = null;
+        for (String name : names) {
+            StompSession session = connect();
+            sessions.add(session);
+            inboxes.add(subscribe(session, "/topic/typing", TypingEventDto.class));
+            if (presence == null) {
+                presence = subscribe(session, "/topic/presence", UserSessionDto.class);
+            }
+            session.send("/app/chat.join", new JoinRequest(name));
+            assertThat(presence.poll(5, TimeUnit.SECONDS)).isNotNull();
+        }
+
+        // Every user types in turn: all the others (and the author, who ignores it) must receive each event.
+        for (int author = 0; author < names.size(); author++) {
+            sessions.get(author).send("/app/chat.typing", new TypingRequest(MessageType.USER_TYPING));
+            for (BlockingQueue<TypingEventDto> inbox : inboxes) {
+                TypingEventDto event = inbox.poll(5, TimeUnit.SECONDS);
+                assertThat(event).as("typing event of %s", names.get(author)).isNotNull();
+                assertThat(event.username()).isEqualTo(names.get(author));
+                assertThat(event.type()).isEqualTo(MessageType.USER_TYPING);
+            }
+        }
+    }
+
     private StompSession connect() throws Exception {
         WebSocketStompClient client = new WebSocketStompClient(new StandardWebSocketClient());
         client.setMessageConverter(new JacksonJsonMessageConverter());
