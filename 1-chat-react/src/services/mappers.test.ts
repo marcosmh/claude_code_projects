@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { toMessage, toPresenceEvent } from './mappers'
+import { toMessage, toPresenceEvent, toSystemNotice } from './mappers'
 
 describe('mappers', () => {
   it('convierte el DTO del backend al modelo Message del frontend', () => {
@@ -18,5 +18,18 @@ describe('mappers', () => {
     )
 
     expect(event).toEqual({ username: 'Ana', status: 'DISCONNECTED', at: '2026-10-30T11:00:00.000Z' })
+  })
+
+  it('convierte un evento del sistema en aviso y descarta otros tipos', () => {
+    const base = { username: 'Luke', content: 'Luke se ha conectado al chat.', timestamp: '2026-10-30T10:00:00Z' }
+
+    expect(toSystemNotice({ ...base, type: 'USER_CONNECTED' })).toEqual({
+      id: 'USER_CONNECTED-Luke-2026-10-30T10:00:00Z',
+      type: 'USER_CONNECTED',
+      username: 'Luke',
+      text: 'Luke se ha conectado al chat.',
+      at: '2026-10-30T10:00:00Z',
+    })
+    expect(toSystemNotice({ ...base, type: 'CHAT' })).toBeNull()
   })
 })

@@ -115,19 +115,33 @@ describe('ChatPage', () => {
     expect(screen.getAllByText('Hola a todos')).toHaveLength(1)
   })
 
-  it('refleja cuando otros usuarios entran y salen', async () => {
+  it('refleja cuando otros usuarios entran y salen y muestra avisos del sistema', async () => {
     await connectAs('Anakin')
 
     await act(async () => {
       socket().handlers.onPresence({ username: 'Carla', status: 'CONNECTED', at: '2026-10-30T10:40:00Z' })
+      socket().handlers.onSystemEvent({
+        id: 'c1',
+        type: 'USER_CONNECTED',
+        username: 'Carla',
+        text: 'Carla se ha conectado al chat.',
+        at: '2026-10-30T10:40:00Z',
+      })
     })
-    expect(screen.getByText('Carla se unió')).toBeInTheDocument()
+    expect(screen.getByText('Carla se ha conectado al chat.')).toBeInTheDocument()
     expect(screen.getByText('3 en línea')).toBeInTheDocument()
 
     await act(async () => {
       socket().handlers.onPresence({ username: 'Carla', status: 'DISCONNECTED', at: '2026-10-30T10:41:00Z' })
+      socket().handlers.onSystemEvent({
+        id: 'd1',
+        type: 'USER_DISCONNECTED',
+        username: 'Carla',
+        text: 'Carla ha salido del chat.',
+        at: '2026-10-30T10:41:00Z',
+      })
     })
-    expect(screen.getByText('Carla salió')).toBeInTheDocument()
+    expect(screen.getByText('Carla ha salido del chat.')).toBeInTheDocument()
     expect(screen.getByText('2 en línea')).toBeInTheDocument()
   })
 

@@ -51,6 +51,7 @@ export function useChat() {
         onReconnecting: () => isCurrent() && dispatch({ type: 'reconnecting' }),
         onMessage: (message) => isCurrent() && dispatch({ type: 'message', message }),
         onPresence: (event) => isCurrent() && dispatch({ type: 'presence', event }),
+        onSystemEvent: (notice) => isCurrent() && dispatch({ type: 'system', notice }),
         onJoinFailed: failJoin,
         onError: (message) => isCurrent() && dispatch({ type: 'error', message }),
         // Sin confirmación ni error: el REST dice si el servidor sí registró al usuario.

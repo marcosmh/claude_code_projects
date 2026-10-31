@@ -32,6 +32,7 @@ Conventions: constructor injection, Jakarta Validation on DTOs, SOLID, comments 
 - **Domain:** `ChatMessage` (id, username, content, timestamp) and `UserSession` (username, sessionId, connectionTime, status CONNECTED/DISCONNECTED), both in H2.
 - **Identity without auth:** the client sends `/app/chat.join {username}`; the session id comes from Spring. A username already connected on another session is rejected. With JWT (phase 3) the username will come from the `Principal`.
 - **Flow:** `ChatWebSocketController` -> `UserSessionService` / `ChatMessageService` (rules, persistence through repositories, explicit mappers) -> result published with `@SendTo` to `/topic/messages` or `/topic/presence`. Disconnection is handled by `WebSocketEventListener`.
+- **System events:** `SystemEventService` builds `SystemEventDto` (`MessageType` USER_CONNECTED / USER_DISCONNECTED, text in Spanish); the controller and `WebSocketEventListener` only publish it on `/topic/system`. They are not persisted and stay apart from `ChatMessage`. Presence (`/topic/presence`) remains the state channel.
 - **Server-side time:** author and timestamp are never taken from the client; a `Clock` bean (`config/ClockConfig`) makes this testable.
 - **Errors:** sent only to the offending session on `/user/queue/errors`, addressed by session id.
 - **Broker:** Spring's in-memory simple broker, configured in one place (`config/WebSocketConfig`); an external broker replaces that one configuration later.

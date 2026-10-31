@@ -9,7 +9,13 @@ export interface PresenceEvent {
   at: string
 }
 
-// Aviso mostrado en la lista de mensajes ("Beto se unió").
-export interface PresenceNotice extends PresenceEvent {
+export type SystemEventType = 'USER_CONNECTED' | 'USER_DISCONNECTED'
+
+// Mensaje del sistema mostrado en la lista, distinto de los mensajes de usuarios ("Luke se ha conectado al chat.").
+export interface SystemNotice {
   id: string
+  type: SystemEventType
+  username: string
+  text: string
+  at: string
 }

@@ -4,8 +4,10 @@ import com.markcode.claude.springboot.chatbackend.app.dto.ChatMessageDto;
 import com.markcode.claude.springboot.chatbackend.app.dto.ChatMessageRequest;
 import com.markcode.claude.springboot.chatbackend.app.dto.ErrorDto;
 import com.markcode.claude.springboot.chatbackend.app.dto.JoinRequest;
+import com.markcode.claude.springboot.chatbackend.app.dto.SystemEventDto;
 import com.markcode.claude.springboot.chatbackend.app.dto.UserSessionDto;
 import com.markcode.claude.springboot.chatbackend.app.models.ConnectionStatus;
+import com.markcode.claude.springboot.chatbackend.app.models.MessageType;
 import com.markcode.claude.springboot.chatbackend.app.services.ChatMessageService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -109,6 +111,54 @@ class StompMessagingIntegrationTest {
         assertThat(left).isNotNull();
         assertThat(left.username()).isEqualTo("leaver");
         assertThat(left.status()).isEqualTo(ConnectionStatus.DISCONNECTED);
+    }
+
+    @Test
+    void joiningPublishesAUserConnectedSystemEventToEveryone() throws Exception {
+        StompSession watcher = connect();
+        StompSession luke = connect();
+        BlockingQueue<SystemEventDto> system = subscribe(watcher, "/topic/system", SystemEventDto.class);
+        BlockingQueue<ChatMessageDto> chat = subscribe(watcher, "/topic/messages", ChatMessageDto.class);
+
+        luke.send("/app/chat.join", new JoinRequest("Luke", MessageType.USER_CONNECTED));
+
+        SystemEventDto event = system.poll(5, TimeUnit.SECONDS);
+        assertThat(event).isNotNull();
+        assertThat(event.type()).isEqualTo(MessageType.USER_CONNECTED);
+        assertThat(event.username()).isEqualTo("Luke");
+        assertThat(event.content()).isEqualTo("Luke se ha conectado al chat.");
+        assertThat(chat.poll(500, TimeUnit.MILLISECONDS)).isNull();
+    }
+
+    @Test
+    void joinWithAnotherEventTypeIsRejected() throws Exception {
+        StompSession client = connect();
+        BlockingQueue<ErrorDto> errors = subscribe(client, "/user/queue/errors", ErrorDto.class);
+        BlockingQueue<SystemEventDto> system = subscribe(client, "/topic/system", SystemEventDto.class);
+
+        client.send("/app/chat.join", new JoinRequest("sneaky", MessageType.CHAT));
+
+        assertThat(errors.poll(5, TimeUnit.SECONDS)).isNotNull();
+        assertThat(system.poll(500, TimeUnit.MILLISECONDS)).isNull();
+    }
+
+    @Test
+    void disconnectingPublishesAUserDisconnectedSystemEvent() throws Exception {
+        StompSession watcher = connect();
+        StompSession leaver = connect();
+        BlockingQueue<UserSessionDto> presence = subscribe(watcher, "/topic/presence", UserSessionDto.class);
+        BlockingQueue<SystemEventDto> system = subscribe(watcher, "/topic/system", SystemEventDto.class);
+
+        leaver.send("/app/chat.join", new JoinRequest("bye-user"));
+        assertThat(presence.poll(5, TimeUnit.SECONDS)).isNotNull();
+        assertThat(system.poll(5, TimeUnit.SECONDS).type()).isEqualTo(MessageType.USER_CONNECTED);
+
+        leaver.disconnect();
+
+        SystemEventDto event = system.poll(5, TimeUnit.SECONDS);
+        assertThat(event).isNotNull();
+        assertThat(event.type()).isEqualTo(MessageType.USER_DISCONNECTED);
+        assertThat(event.content()).isEqualTo("bye-user ha salido del chat.");
     }
 
     private StompSession connect() throws Exception {

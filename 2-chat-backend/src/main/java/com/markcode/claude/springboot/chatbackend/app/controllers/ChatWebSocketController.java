@@ -7,6 +7,7 @@ import com.markcode.claude.springboot.chatbackend.app.dto.JoinRequest;
 import com.markcode.claude.springboot.chatbackend.app.dto.UserSessionDto;
 import com.markcode.claude.springboot.chatbackend.app.exceptions.BusinessRuleException;
 import com.markcode.claude.springboot.chatbackend.app.services.ChatMessageService;
+import com.markcode.claude.springboot.chatbackend.app.services.SystemEventService;
 import com.markcode.claude.springboot.chatbackend.app.services.UserSessionService;
 import jakarta.validation.Valid;
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
@@ -24,22 +25,27 @@ import org.springframework.stereotype.Controller;
 public class ChatWebSocketController {
 
     private static final String ERRORS_QUEUE = "/queue/errors";
+    private static final String SYSTEM_TOPIC = "/topic/system";
 
     private final UserSessionService userSessions;
     private final ChatMessageService messages;
+    private final SystemEventService systemEvents;
     private final SimpMessagingTemplate messaging;
 
     public ChatWebSocketController(UserSessionService userSessions, ChatMessageService messages,
-                                   SimpMessagingTemplate messaging) {
+                                   SystemEventService systemEvents, SimpMessagingTemplate messaging) {
         this.userSessions = userSessions;
         this.messages = messages;
+        this.systemEvents = systemEvents;
         this.messaging = messaging;
     }
 
     @MessageMapping("/chat.join")
     @SendTo("/topic/presence")
     public UserSessionDto join(@Valid @Payload JoinRequest request, SimpMessageHeaderAccessor headers) {
-        return userSessions.join(headers.getSessionId(), request.username());
+        UserSessionDto session = userSessions.join(headers.getSessionId(), request.username());
+        messaging.convertAndSend(SYSTEM_TOPIC, systemEvents.userConnected(session));
+        return session;
     }
 
     @MessageMapping("/chat.send")

@@ -70,12 +70,12 @@ describe('MessageList', () => {
       <MessageList
         messages={messages}
         currentUser="Anakin"
-        notices={[{ id: 'n1', username: 'Carla', status: 'CONNECTED', at: '2026-10-30T10:31:00' }]}
+        notices={[{ id: 'n1', type: 'USER_CONNECTED', username: 'Carla', text: 'Carla se ha conectado al chat.', at: '2026-10-30T10:31:00' }]}
       />,
     )
 
     const items = screen.getAllByRole('listitem').map((li) => li.textContent)
-    expect(items[1]).toBe('Carla se unió')
+    expect(items[1]).toBe('Carla se ha conectado al chat.')
     expect(items).toHaveLength(3)
   })
 })

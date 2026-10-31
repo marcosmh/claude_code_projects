@@ -32,17 +32,26 @@ describe('chatReducer', () => {
     })
   })
 
-  it('presence actualiza usuarios y crea avisos solo para otros usuarios', () => {
+  it('presence solo actualiza la lista de usuarios en línea', () => {
     const join = chatReducer(connected, { type: 'presence', event: { username: 'Beto', status: 'CONNECTED', at: '2026-10-30T10:00:00Z' } })
     expect(join.onlineUsers).toEqual(['Ana', 'Beto'])
-    expect(join.notices).toHaveLength(1)
 
-    const own = chatReducer(join, { type: 'presence', event: { username: 'Ana', status: 'CONNECTED', at: '2026-10-30T10:01:00Z' } })
-    expect(own.notices).toHaveLength(1)
-
-    const leave = chatReducer(own, { type: 'presence', event: { username: 'Beto', status: 'DISCONNECTED', at: '2026-10-30T10:02:00Z' } })
+    const leave = chatReducer(join, { type: 'presence', event: { username: 'Beto', status: 'DISCONNECTED', at: '2026-10-30T10:02:00Z' } })
     expect(leave.onlineUsers).toEqual(['Ana'])
-    expect(leave.notices).toHaveLength(2)
+    expect(leave.notices).toEqual([])
+  })
+
+  it('system agrega avisos del sistema sin duplicarlos', () => {
+    const notice = {
+      id: 'USER_CONNECTED-Beto-2026-10-30T10:00:00Z',
+      type: 'USER_CONNECTED' as const,
+      username: 'Beto',
+      text: 'Beto se ha conectado al chat.',
+      at: '2026-10-30T10:00:00Z',
+    }
+    const once = chatReducer(connected, { type: 'system', notice })
+    expect(once.notices).toEqual([notice])
+    expect(chatReducer(once, { type: 'system', notice })).toBe(once)
   })
 
   it('users reemplaza la lista local por la del servidor, siempre incluyendo al propio usuario', () => {

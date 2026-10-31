@@ -1,31 +1,27 @@
 import { useEffect, useMemo, useRef } from 'react'
-import type { PresenceNotice } from '../../types/chat'
+import type { SystemNotice } from '../../types/chat'
 import type { Message } from '../../types/message'
 import MessageItem from './MessageItem'
 
 interface MessageListProps {
   messages: Message[]
   currentUser: string
-  // Avisos de conexión/desconexión que se intercalan por hora entre los mensajes.
-  notices?: PresenceNotice[]
+  // Mensajes del sistema (conexiones/salidas) que se intercalan por hora entre los mensajes.
+  notices?: SystemNotice[]
 }
 
 // Mensajes seguidos del mismo autor dentro de esta ventana se agrupan bajo un solo encabezado.
 const GROUP_WINDOW_MS = 5 * 60 * 1000
 
-const noNotices: PresenceNotice[] = []
+const noNotices: SystemNotice[] = []
 
 type TimelineItem =
   | { kind: 'message'; key: string; at: number; message: Message }
-  | { kind: 'notice'; key: string; at: number; notice: PresenceNotice }
+  | { kind: 'notice'; key: string; at: number; notice: SystemNotice }
 
 function startsGroup(previous: TimelineItem | undefined, current: Message): boolean {
   if (previous?.kind !== 'message' || previous.message.sender !== current.sender) return true
   return new Date(current.sentAt).getTime() - new Date(previous.message.sentAt).getTime() > GROUP_WINDOW_MS
-}
-
-function noticeText({ username, status }: PresenceNotice): string {
-  return status === 'CONNECTED' ? `${username} se unió` : `${username} salió`
 }
 
 export default function MessageList({ messages, currentUser, notices = noNotices }: MessageListProps) {
@@ -77,7 +73,7 @@ export default function MessageList({ messages, currentUser, notices = noNotices
             ) : (
               <li key={item.key} className="my-3 flex justify-center">
                 <span className="rounded-full bg-surface-alt px-3 py-1 text-xs text-subtle">
-                  {noticeText(item.notice)}
+                  {item.notice.text}
                 </span>
               </li>
             ),

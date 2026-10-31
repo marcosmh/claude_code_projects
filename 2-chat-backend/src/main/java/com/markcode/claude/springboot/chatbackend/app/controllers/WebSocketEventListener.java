@@ -1,5 +1,6 @@
 package com.markcode.claude.springboot.chatbackend.app.controllers;
 
+import com.markcode.claude.springboot.chatbackend.app.services.SystemEventService;
 import com.markcode.claude.springboot.chatbackend.app.services.UserSessionService;
 import org.springframework.context.event.EventListener;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -11,16 +12,22 @@ import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 public class WebSocketEventListener {
 
     private final UserSessionService userSessions;
+    private final SystemEventService systemEvents;
     private final SimpMessagingTemplate messaging;
 
-    public WebSocketEventListener(UserSessionService userSessions, SimpMessagingTemplate messaging) {
+    public WebSocketEventListener(UserSessionService userSessions, SystemEventService systemEvents,
+                                  SimpMessagingTemplate messaging) {
         this.userSessions = userSessions;
+        this.systemEvents = systemEvents;
         this.messaging = messaging;
     }
 
     @EventListener
     public void onDisconnect(SessionDisconnectEvent event) {
         userSessions.disconnect(event.getSessionId())
-                .ifPresent(session -> messaging.convertAndSend("/topic/presence", session));
+                .ifPresent(session -> {
+                    messaging.convertAndSend("/topic/presence", session);
+                    messaging.convertAndSend("/topic/system", systemEvents.userDisconnected(session));
+                });
     }
 }

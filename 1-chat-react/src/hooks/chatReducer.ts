@@ -1,4 +1,4 @@
-import type { ConnectionState, PresenceEvent, PresenceNotice } from '../types/chat'
+import type { ConnectionState, PresenceEvent, SystemNotice } from '../types/chat'
 import type { Message } from '../types/message'
 
 const MAX_NOTICES = 50
@@ -9,7 +9,7 @@ export interface ChatState {
   username: string | null
   messages: Message[]
   onlineUsers: string[]
-  notices: PresenceNotice[]
+  notices: SystemNotice[]
   error: string | null
 }
 
@@ -32,6 +32,7 @@ export type ChatAction =
   | { type: 'message'; message: Message }
   | { type: 'users'; users: string[] }
   | { type: 'presence'; event: PresenceEvent }
+  | { type: 'system'; notice: SystemNotice }
   | { type: 'error'; message: string }
   | { type: 'clearError' }
 
@@ -78,10 +79,11 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
         event.status === 'CONNECTED'
           ? withUser(state.onlineUsers, event.username)
           : state.onlineUsers.filter((name) => name !== event.username)
-      if (event.username === state.username) return { ...state, onlineUsers }
-      const notice: PresenceNotice = { ...event, id: `${event.username}-${event.status}-${event.at}` }
-      return { ...state, onlineUsers, notices: [...state.notices, notice].slice(-MAX_NOTICES) }
+      return { ...state, onlineUsers }
     }
+    case 'system':
+      if (state.notices.some((notice) => notice.id === action.notice.id)) return state
+      return { ...state, notices: [...state.notices, action.notice].slice(-MAX_NOTICES) }
     case 'error':
       return { ...state, error: action.message }
     case 'clearError':

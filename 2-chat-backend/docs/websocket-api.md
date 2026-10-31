@@ -14,20 +14,23 @@ Contract used by the React frontend (`../1-chat-react`: `src/services/chatSocket
 ## Flow
 
 1. Open the STOMP connection to `/ws`.
-2. Subscribe to `/topic/messages`, `/topic/presence` and `/user/queue/errors`.
-3. Send `/app/chat.join` with the username. A username that is already `CONNECTED` on another session is rejected.
+2. Subscribe to `/topic/messages`, `/topic/presence`, `/topic/system` and `/user/queue/errors`.
+3. Send `/app/chat.join` with the `USER_CONNECTED` event and the username. A username that is already `CONNECTED` on another session is rejected.
 4. Send messages to `/app/chat.send`. The author and the timestamp are set by the server; a session that has not joined gets an error.
-5. Closing the connection marks the session `DISCONNECTED` and publishes it on `/topic/presence`.
+5. A successful join publishes the presence on `/topic/presence` and a `USER_CONNECTED` system event on `/topic/system`. Closing the connection marks the session `DISCONNECTED` and publishes the presence plus a `USER_DISCONNECTED` system event.
 
 ## Destinations
 
 | Direction | Destination | Payload |
 |---|---|---|
-| client -> server | `/app/chat.join` | `{"username": "ana"}` (1-24 chars, not blank) |
+| client -> server | `/app/chat.join` | `{"type": "USER_CONNECTED", "username": "ana"}` (username 1-24 chars, not blank; `type` is optional but, when sent, must be `USER_CONNECTED`) |
 | client -> server | `/app/chat.send` | `{"content": "hola"}` (1-500 chars, not blank) |
 | server -> all | `/topic/messages` | `{"id": 1, "username": "ana", "content": "hola", "timestamp": "2026-10-30T10:30:00Z"}` |
 | server -> all | `/topic/presence` | `{"username": "ana", "connectionTime": "2026-10-30T10:29:00Z", "status": "CONNECTED"}` (`CONNECTED` or `DISCONNECTED`) |
+| server -> all | `/topic/system` | `{"type": "USER_CONNECTED", "username": "Luke", "content": "Luke se ha conectado al chat.", "timestamp": "2026-10-30T10:29:00Z"}` (`type` is `USER_CONNECTED` or `USER_DISCONNECTED`) |
 | server -> the session | `/user/queue/errors` | `{"message": "El nombre de usuario 'ana' ya está en uso."}` |
+
+`MessageType` is `CHAT`, `USER_CONNECTED` or `USER_DISCONNECTED`. `CHAT` is reserved for user messages (`/topic/messages`); system events travel on their own topic, are not persisted and never appear in `GET /api/messages`. `/topic/presence` keeps the state (who is online); `/topic/system` carries the notices to display. Future events (rooms, private messages) get their own destination and a new `MessageType` value.
 
 Timestamps are UTC ISO-8601 instants. The message shape (`id`, author, text, ISO time) maps onto the frontend's `Message` (`sender` <- `username`, `text` <- `content`, `sentAt` <- `timestamp`).
 
@@ -53,8 +56,9 @@ const client = new Client({ brokerURL: 'ws://localhost:8080/ws' })
 client.onConnect = () => {
   client.subscribe('/topic/messages', (f) => console.log(JSON.parse(f.body)))
   client.subscribe('/topic/presence', (f) => console.log(JSON.parse(f.body)))
+  client.subscribe('/topic/system', (f) => console.log(JSON.parse(f.body).content))
   client.subscribe('/user/queue/errors', (f) => console.warn(JSON.parse(f.body)))
-  client.publish({ destination: '/app/chat.join', body: JSON.stringify({ username: 'ana' }) })
+  client.publish({ destination: '/app/chat.join', body: JSON.stringify({ type: 'USER_CONNECTED', username: 'ana' }) })
   client.publish({ destination: '/app/chat.send', body: JSON.stringify({ content: 'hola' }) })
 }
 client.activate()

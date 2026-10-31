@@ -1,16 +1,17 @@
 import { Client } from '@stomp/stompjs'
 import type { IMessage } from '@stomp/stompjs'
 import { env } from '../config/env'
-import type { PresenceEvent } from '../types/chat'
+import type { PresenceEvent, SystemNotice } from '../types/chat'
 import type { Message } from '../types/message'
-import type { ChatMessageDto, ErrorDto, UserSessionDto } from './dto'
-import { toMessage, toPresenceEvent } from './mappers'
+import type { ChatMessageDto, ErrorDto, SystemEventDto, UserSessionDto } from './dto'
+import { toMessage, toPresenceEvent, toSystemNotice } from './mappers'
 
 // Destinos STOMP del backend.
 const DEST_JOIN = '/app/chat.join'
 const DEST_SEND = '/app/chat.send'
 const TOPIC_MESSAGES = '/topic/messages'
 const TOPIC_PRESENCE = '/topic/presence'
+const TOPIC_SYSTEM = '/topic/system'
 const QUEUE_ERRORS = '/user/queue/errors'
 
 const RECONNECT_DELAY_MS = 3000
@@ -25,6 +26,8 @@ export interface ChatSocketHandlers {
   onReconnecting: () => void
   onMessage: (message: Message) => void
   onPresence: (event: PresenceEvent) => void
+  // Aviso del sistema (alguien se conectó o salió) para mostrarlo en el chat.
+  onSystemEvent: (notice: SystemNotice) => void
   // No se pudo entrar al chat (nombre en uso, servidor caído...). El cliente no reintenta.
   onJoinFailed: (message: string) => void
   // Error no fatal con la sesión ya iniciada (p. ej. mensaje inválido).
@@ -93,6 +96,10 @@ export class ChatSocket {
     if (client !== this.client) return
     client.subscribe(TOPIC_MESSAGES, (frame) => this.handlers.onMessage(toMessage(parse<ChatMessageDto>(frame))))
     client.subscribe(TOPIC_PRESENCE, (frame) => this.handlePresence(parse<UserSessionDto>(frame)))
+    client.subscribe(TOPIC_SYSTEM, (frame) => {
+      const notice = toSystemNotice(parse<SystemEventDto>(frame))
+      if (notice) this.handlers.onSystemEvent(notice)
+    })
     client.subscribe(QUEUE_ERRORS, (frame) => this.handleServerError(parse<ErrorDto>(frame).message))
     this.joined = false
     this.sendJoin()
@@ -100,7 +107,10 @@ export class ChatSocket {
 
   private sendJoin(): void {
     if (!this.client?.connected) return
-    this.client.publish({ destination: DEST_JOIN, body: JSON.stringify({ username: this.username }) })
+    this.client.publish({
+      destination: DEST_JOIN,
+      body: JSON.stringify({ type: 'USER_CONNECTED', username: this.username }),
+    })
     clearTimeout(this.confirmTimer)
     this.confirmTimer = setTimeout(() => this.handlers.onJoinUnconfirmed(), JOIN_CONFIRM_TIMEOUT_MS)
   }
