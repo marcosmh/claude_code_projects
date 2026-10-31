@@ -11,11 +11,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ./mvnw clean package                 # build the jar
 ```
 
+Single test method: `./mvnw -Dtest=ChatMessageServiceTest#methodName test`. Tests sit in mirrored packages under `src/test/java`: `services/` (Mockito), `repositories/` (`@DataJpaTest`), `controllers/` (`@WebMvcTest` for REST) and `StompMessagingIntegrationTest` (`RANDOM_PORT`, real STOMP clients; it waits after subscribing because the simple broker sends no SUBSCRIBE receipts, and joins sequentially because frames from different sessions are not ordered).
+
 Always use the Maven Wrapper, never a global `mvn`. Requires JDK 25.
+
+Manual API collections live in `src/main/resources/postman/postma-api.json` (Postman) and `src/main/resources/rest-cliet/rest_cliet.http` (REST Client / IntelliJ HTTP); update both when a REST endpoint changes. STOMP is not covered by them (see `docs/websocket-api.md`).
 
 ## Project
 
-Backend for ChatRoom (frontend in `../1-chat-react`): Spring Boot 4.1.x, Java 25, Maven, Web + WebSocket (STOMP) + Validation + Data JPA + H2 + DevTools + Actuator. Only `application.properties` is used for configuration (no YAML). It works as an in-memory real-time messaging broker: STOMP destinations `/app/chat.join`, `/app/chat.send`, `/topic/messages`, `/topic/presence`, `/user/queue/errors`, H2 persistence and REST `/api/messages`, `/api/users/connected`, `/api/status`. Contract: `docs/websocket-api.md`; decisions and roadmap: `docs/architecture.md`. The React frontend (`../1-chat-react`) is integrated: CORS for `/api/**` (`config/WebConfig`) and WebSocket origins both come from `app.cors.allowed-origins`. Not implemented yet: authentication, external brokers, AI. The H2 console (`/h2-console`) is enabled for development only.
+Backend for ChatRoom (frontend in `../1-chat-react`): Spring Boot 4.1.x, Java 25, Maven, Web + WebSocket (STOMP) + Validation + Data JPA + H2 + DevTools + Actuator. Only `application.properties` is used for configuration (no YAML). It works as an in-memory real-time messaging broker: STOMP destinations `/app/chat.join`, `/app/chat.send`, `/topic/messages`, `/topic/presence`, `/user/queue/errors`, H2 persistence and REST `/api/messages`, `/api/users/connected`, `/api/status`. Contract: `docs/websocket-api.md`; decisions and roadmap: `docs/architecture.md`. The React frontend (`../1-chat-react`) is integrated: CORS for `/api/**` (`config/WebConfig`) and WebSocket origins both come from `app.cors.allowed-origins`. Not implemented yet: authentication, external brokers, AI. The H2 console (`/h2-console`, JDBC `jdbc:h2:mem:chatdb`, user `sa`, empty password) is enabled for development only. The in-memory H2 has two tables, `chat_message` and `user_session`; data is lost on restart. The message time column is `sent_at` because `timestamp` is reserved in H2 (the DTO field is still `timestamp`). `sessionId` is stored in `user_session` but never exposed in DTOs.
 
 Maven `artifactId` is `2-chat-backend` (must equal the folder name); the Java base package is `com.markcode.claude.springboot.chatbackend.app` because a package cannot start with a digit.
 
