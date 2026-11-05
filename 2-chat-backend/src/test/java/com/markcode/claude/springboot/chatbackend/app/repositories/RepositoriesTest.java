@@ -5,7 +5,10 @@ import com.markcode.claude.springboot.chatbackend.app.models.ConnectionStatus;
 import com.markcode.claude.springboot.chatbackend.app.models.UserSession;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import com.markcode.claude.springboot.chatbackend.app.PostgresTestConfiguration;
+import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageRequest;
 
 import java.time.Instant;
@@ -13,6 +16,8 @@ import java.time.Instant;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@Import(PostgresTestConfiguration.class)
 class RepositoriesTest {
 
     private static final Instant NOW = Instant.parse("2026-10-30T10:00:00Z");
@@ -31,6 +36,23 @@ class RepositoriesTest {
         assertThat(messages.findAllByOrderByIdDesc(PageRequest.of(0, 2)))
                 .extracting(ChatMessage::getContent)
                 .containsExactly("tres", "dos");
+    }
+
+    @Test
+    void emojisAndLongUnicodeContentSurviveTheRoundTrip() {
+        String content = "Hola 👋😀 🔥🚀🎉 👨‍👩‍👧‍👦 🇲🇽 ñandú " + "😀".repeat(500);
+        ChatMessage saved = messages.saveAndFlush(new ChatMessage("ana", content, NOW));
+
+        assertThat(messages.findById(saved.getId())).get().extracting(ChatMessage::getContent).isEqualTo(content);
+    }
+
+    @Test
+    void staleSessionsAreThoseStillConnectedBeforeTheCutoff() {
+        sessions.save(new UserSession("old", "s-old", NOW.minusSeconds(600)));
+        sessions.save(new UserSession("new", "s-new", NOW.plusSeconds(600)));
+
+        assertThat(sessions.findByStatusAndConnectionTimeBefore(ConnectionStatus.CONNECTED, NOW))
+                .extracting(UserSession::getUsername).containsExactly("old");
     }
 
     @Test

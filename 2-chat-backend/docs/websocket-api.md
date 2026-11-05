@@ -33,7 +33,7 @@ Contract used by the React frontend (`../1-chat-react`: `src/services/chatSocket
 | server -> all | `/topic/typing` | `{"type": "USER_TYPING", "username": "Anakin", "timestamp": "2026-10-30T10:29:00Z"}` (also sent to the author: clients ignore their own) |
 | server -> the session | `/user/queue/errors` | `{"message": "El nombre de usuario 'ana' ya está en uso."}` |
 
-**Unicode and emojis:** everything is UTF-8 (`server.servlet.encoding.*`) and message content is stored and relayed exactly as received (no trimming of inner characters, normalisation or filtering). The 500-character limit counts Unicode code points, so an emoji counts as one (validated in `ChatMessageRequest`); the `chat_message.content` column is 1000 long because H2 measures length in UTF-16 units (an emoji is two). System notices contain emojis too (`Luke se ha conectado al chat 👋`).
+**Unicode and emojis:** everything is UTF-8 (`server.servlet.encoding.*`) and message content is stored and relayed exactly as received (no trimming of inner characters, normalisation or filtering). The 500-character limit counts Unicode code points, so an emoji counts as one (validated in `ChatMessageRequest`); the `chat_message.content` column is `varchar(1000)`, a safe margin for UTF-16 units (an emoji is two). System notices contain emojis too (`Luke se ha conectado al chat 👋`).
 
 `MessageType` is `CHAT`, `USER_CONNECTED` or `USER_DISCONNECTED`. `CHAT` is reserved for user messages (`/topic/messages`); system events travel on their own topic, are not persisted and never appear in `GET /api/messages`. `/topic/presence` keeps the state (who is online); `/topic/system` carries the notices to display. Future events (rooms, private messages) get their own destination and a new `MessageType` value.
 
@@ -54,7 +54,7 @@ Business rule violations on REST return `409` as `ProblemDetail`.
 
 ## Development tools
 
-- H2 console: `http://localhost:8080/h2-console`, JDBC URL `jdbc:h2:mem:chatdb`, user `sa`, empty password. Tables: `chat_message`, `user_session`. Data is lost on restart.
+- Database: PostgreSQL on Supabase, schema `chat`, tables `chat_message` and `user_session`. Data persists across restarts; sessions left `CONNECTED` by a previous run are closed on startup.
 
 ## Example (JavaScript, `@stomp/stompjs`)
 

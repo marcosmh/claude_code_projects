@@ -15,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -37,6 +38,18 @@ class UserSessionServiceTest {
     @BeforeEach
     void setUp() {
         service = new UserSessionService(repository, new UserSessionMapper(), Clock.fixed(NOW, ZoneOffset.UTC));
+    }
+
+    @Test
+    void closeStaleSessionsDisconnectsOnlyTheSessionsFoundBeforeTheCutoff() {
+        UserSession stale = new UserSession("ana", "old", NOW.minusSeconds(3600));
+        when(repository.findByStatusAndConnectionTimeBefore(ConnectionStatus.CONNECTED, NOW)).thenReturn(List.of(stale));
+
+        int closed = service.closeStaleSessions(NOW);
+
+        assertThat(closed).isEqualTo(1);
+        assertThat(stale.isConnected()).isFalse();
+        verify(repository).saveAll(List.of(stale));
     }
 
     @Test

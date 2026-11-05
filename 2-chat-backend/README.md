@@ -2,7 +2,7 @@
 
 Backend skeleton for ChatRoom (the React frontend lives in `../1-chat-react`). Spring Boot with a layered architecture.
 
-**Current scope:** a real-time messaging broker. Users connect over WebSocket/STOMP, send messages that are distributed to everyone connected and persisted in H2, and get presence updates; REST exposes the history, the connected users and the status. It is consumed by the React frontend in `../1-chat-react` (start both and open http://localhost:5173). There is no authentication, no external broker and no AI yet. See [docs/architecture.md](docs/architecture.md) for the design and roadmap and [docs/websocket-api.md](docs/websocket-api.md) for the contract.
+**Current scope:** a real-time messaging broker. Users connect over WebSocket/STOMP, send messages that are distributed to everyone connected and persisted in PostgreSQL (Supabase), and get presence updates; REST exposes the history, the connected users and the status. It is consumed by the React frontend in `../1-chat-react` (start both and open http://localhost:5173). There is no authentication, no external broker and no AI yet. See [docs/architecture.md](docs/architecture.md) for the design and roadmap and [docs/websocket-api.md](docs/websocket-api.md) for the contract.
 
 ## Requirements
 
@@ -17,6 +17,10 @@ Backend skeleton for ChatRoom (the React frontend lives in `../1-chat-react`). S
 ./mvnw clean package
 ```
 
+## Database (Supabase PostgreSQL)
+
+The app needs a PostgreSQL database. Copy `.env.example` to `.env` (ignored by git) and fill in `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` and `DB_SCHEMA` from Supabase (Project Settings > Database > Connection string, session pooler, in JDBC format with `?sslmode=require`). Real environment variables override `.env`. Tables are created in the `DB_SCHEMA` schema (`chat`) on first start (`ddl-auto=update`). `./mvnw test` needs Docker (Testcontainers starts a throwaway PostgreSQL) and never touches Supabase. See [docs/database-migration.md](docs/database-migration.md) for the H2 -> PostgreSQL migration.
+
 ## Try it
 
 ```bash
@@ -27,12 +31,12 @@ curl 'localhost:8080/api/messages?limit=10'
 ```
 
 - WebSocket endpoint: `ws://localhost:8080/ws` (destinations and payloads in `docs/websocket-api.md`).
-- H2 console: `http://localhost:8080/h2-console` (JDBC URL `jdbc:h2:mem:chatdb`, user `sa`, empty password).
+- Data: Supabase dashboard (Table Editor, schema `chat`) or `psql` with the same credentials.
 - `./mvnw test` includes an integration test that connects real STOMP clients.
 
 ## Stack
 
-Java 25, Spring Boot 4.1.2, Maven (jar), Spring Web (MVC), WebSocket (STOMP), Validation, Data JPA, H2 (in memory), DevTools, Actuator. Configuration lives only in `src/main/resources/application.properties`.
+Java 25, Spring Boot 4.1.2, Maven (jar), Spring Web (MVC), WebSocket (STOMP), Validation, Data JPA, PostgreSQL (Supabase, driver `org.postgresql:postgresql`), DevTools, Actuator. Configuration lives only in `src/main/resources/application.properties`.
 
 ## Layout
 

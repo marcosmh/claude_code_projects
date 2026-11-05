@@ -51,6 +51,16 @@ public class UserSessionService {
                 });
     }
 
+    // The database now outlives the process: sessions left CONNECTED by a previous run (crash, restart) belong to
+    // sockets that no longer exist and would block their usernames. Only sessions older than the cutoff are closed.
+    @Transactional
+    public int closeStaleSessions(Instant cutoff) {
+        List<UserSession> stale = repository.findByStatusAndConnectionTimeBefore(ConnectionStatus.CONNECTED, cutoff);
+        stale.forEach(UserSession::disconnect);
+        repository.saveAll(stale);
+        return stale.size();
+    }
+
     @Transactional(readOnly = true)
     public String requireConnectedUsername(String sessionId) {
         return repository.findBySessionId(sessionId)
