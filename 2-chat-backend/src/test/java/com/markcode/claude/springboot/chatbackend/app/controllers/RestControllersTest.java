@@ -57,6 +57,16 @@ class RestControllersTest {
     }
 
     @Test
+    void historyKeepsEmojisIntactOverUtf8() throws Exception {
+        String content = "Hola 👋😀 🔥🚀🎉 👨‍👩‍👧‍👦";
+        when(messages.history(null)).thenReturn(List.of(new ChatMessageDto(1L, "ana", content, NOW)));
+
+        mvc.perform(get("/api/messages"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].content").value(content));
+    }
+
+    @Test
     void connectedUsersDoNotExposeSessionIds() throws Exception {
         when(userSessions.findConnected()).thenReturn(List.of(new UserSessionDto("ana", NOW, ConnectionStatus.CONNECTED)));
 

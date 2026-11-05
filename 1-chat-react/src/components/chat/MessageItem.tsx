@@ -1,4 +1,5 @@
 import type { Message } from '../../types/message'
+import { isEmojiOnly } from '../../utils/emoji'
 import Avatar from '../common/Avatar'
 
 interface MessageItemProps {
@@ -12,6 +13,7 @@ const timeFormatter = new Intl.DateTimeFormat('es', { hour: '2-digit', minute: '
 
 export default function MessageItem({ message, isOwn, isGroupStart }: MessageItemProps) {
   const { sender, sentAt, text } = message
+  const emojiOnly = isEmojiOnly(text)
 
   return (
     <li
@@ -38,11 +40,15 @@ export default function MessageItem({ message, isOwn, isGroupStart }: MessageIte
         )}
         <p
           title={isGroupStart ? undefined : timeFormatter.format(new Date(sentAt))}
-          className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed wrap-break-word shadow-sm ${
-            isOwn
-              ? 'rounded-tr-md bg-linear-to-br from-primary to-primary-alt text-white shadow-md shadow-primary/20'
-              : 'rounded-tl-md border border-line bg-surface-alt text-fg'
-          }`}
+          className={
+            emojiOnly
+              ? 'px-1 py-0.5 text-4xl leading-tight wrap-break-word'
+              : `rounded-2xl px-4 py-2.5 text-sm leading-relaxed wrap-break-word shadow-sm ${
+                  isOwn
+                    ? 'rounded-tr-md bg-linear-to-br from-primary to-primary-alt text-white shadow-md shadow-primary/20'
+                    : 'rounded-tl-md border border-line bg-surface-alt text-fg'
+                }`
+          }
         >
           {text}
         </p>

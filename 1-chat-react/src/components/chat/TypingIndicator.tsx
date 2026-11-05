@@ -26,6 +26,7 @@ export default function TypingIndicator({ users }: TypingIndicatorProps) {
               />
             ))}
           </span>
+          <span aria-hidden="true">✍️</span>
         </>
       )}
     </div>

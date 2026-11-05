@@ -25,13 +25,15 @@ Contract used by the React frontend (`../1-chat-react`: `src/services/chatSocket
 | Direction | Destination | Payload |
 |---|---|---|
 | client -> server | `/app/chat.join` | `{"type": "USER_CONNECTED", "username": "ana"}` (username 1-24 chars, not blank; `type` is optional but, when sent, must be `USER_CONNECTED`) |
-| client -> server | `/app/chat.send` | `{"content": "hola"}` (1-500 chars, not blank) |
+| client -> server | `/app/chat.send` | `{"content": "Hola 👋"}` (1-500 characters, not blank; emojis allowed) |
 | server -> all | `/topic/messages` | `{"id": 1, "username": "ana", "content": "hola", "timestamp": "2026-10-30T10:30:00Z"}` |
 | server -> all | `/topic/presence` | `{"username": "ana", "connectionTime": "2026-10-30T10:29:00Z", "status": "CONNECTED"}` (`CONNECTED` or `DISCONNECTED`) |
-| server -> all | `/topic/system` | `{"type": "USER_CONNECTED", "username": "Luke", "content": "Luke se ha conectado al chat.", "timestamp": "2026-10-30T10:29:00Z"}` (`type` is `USER_CONNECTED` or `USER_DISCONNECTED`) |
+| server -> all | `/topic/system` | `{"type": "USER_CONNECTED", "username": "Luke", "content": "Luke se ha conectado al chat 👋", "timestamp": "2026-10-30T10:29:00Z"}` (`type` is `USER_CONNECTED` or `USER_DISCONNECTED`) |
 | client -> server | `/app/chat.typing` | `{"type": "USER_TYPING"}` or `{"type": "USER_STOPPED_TYPING"}` (anything else is rejected; the session must have joined) |
 | server -> all | `/topic/typing` | `{"type": "USER_TYPING", "username": "Anakin", "timestamp": "2026-10-30T10:29:00Z"}` (also sent to the author: clients ignore their own) |
 | server -> the session | `/user/queue/errors` | `{"message": "El nombre de usuario 'ana' ya está en uso."}` |
+
+**Unicode and emojis:** everything is UTF-8 (`server.servlet.encoding.*`) and message content is stored and relayed exactly as received (no trimming of inner characters, normalisation or filtering). The 500-character limit counts Unicode code points, so an emoji counts as one (validated in `ChatMessageRequest`); the `chat_message.content` column is 1000 long because H2 measures length in UTF-16 units (an emoji is two). System notices contain emojis too (`Luke se ha conectado al chat 👋`).
 
 `MessageType` is `CHAT`, `USER_CONNECTED` or `USER_DISCONNECTED`. `CHAT` is reserved for user messages (`/topic/messages`); system events travel on their own topic, are not persisted and never appear in `GET /api/messages`. `/topic/presence` keeps the state (who is online); `/topic/system` carries the notices to display. Future events (rooms, private messages) get their own destination and a new `MessageType` value.
 

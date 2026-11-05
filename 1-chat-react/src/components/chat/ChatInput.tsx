@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import Button from '../common/Button'
 import { SendIcon } from '../common/icons'
 import { useTypingNotifier } from '../../hooks/useTypingNotifier'
+import EmojiPickerButton from '../emoji/EmojiPickerButton'
+import { insertAtCursor } from '../emoji/insertAtCursor'
 import TypingIndicator from './TypingIndicator'
 
 interface ChatInputProps {
@@ -30,6 +32,28 @@ export default function ChatInput({
 }: ChatInputProps) {
   const [value, setValue] = useState('')
   const { notifyInput, stop: stopTyping } = useTypingNotifier(onTypingChange)
+  const inputRef = useRef<HTMLInputElement>(null)
+  // Posición del cursor tras insertar un emoji: se aplica cuando React ya pintó el nuevo valor.
+  const pendingCaretRef = useRef<number | null>(null)
+
+  useLayoutEffect(() => {
+    const input = inputRef.current
+    const caret = pendingCaretRef.current
+    if (!input || caret === null) return
+    pendingCaretRef.current = null
+    input.setSelectionRange(caret, caret)
+    // En móvil enfocar abriría el teclado y taparía el selector.
+    if (window.matchMedia?.('(pointer: fine)').matches) input.focus()
+  }, [value])
+
+  const handleEmoji = (emoji: string) => {
+    const input = inputRef.current
+    const next = insertAtCursor(value, emoji, input?.selectionStart ?? value.length, input?.selectionEnd ?? value.length)
+    pendingCaretRef.current = next.caret
+    setValue(next.value)
+    notifyInput(next.value)
+    onDismissError?.()
+  }
   // Sin conexión no se puede avisar: se cierra el estado de escritura local.
   useEffect(() => {
     if (disabled) stopTyping()
@@ -50,11 +74,12 @@ export default function ChatInput({
   return (
     <form
       onSubmit={handleSubmit}
-      className="border-t border-line bg-surface px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6 sm:pt-4 sm:pb-[max(1rem,env(safe-area-inset-bottom))]"
+      className="relative border-t border-line bg-surface px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6 sm:pt-4 sm:pb-[max(1rem,env(safe-area-inset-bottom))]"
     >
       <TypingIndicator users={typingUsers} />
       <div className="flex items-center gap-2 rounded-2xl border border-edge bg-field p-1.5 pl-4 transition duration-200 hover:border-primary/50 focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/20">
         <input
+          ref={inputRef}
           type="text"
           name="message"
           value={value}
@@ -68,6 +93,7 @@ export default function ChatInput({
           autoComplete="off"
           className="min-w-0 flex-1 bg-transparent py-2 text-sm text-fg placeholder:text-subtle focus:outline-none"
         />
+        <EmojiPickerButton onSelect={handleEmoji} disabled={disabled} />
         <Button type="submit" size="md" disabled={!canSend} className="max-sm:size-10 max-sm:p-0">
           <SendIcon />
           <span className="max-sm:sr-only">Enviar</span>

@@ -20,7 +20,7 @@ public class SystemEventService {
     }
 
     public SystemEventDto userConnected(UserSessionDto session) {
-        return event(MessageType.USER_CONNECTED, session.username(), session.username() + " se ha conectado al chat.");
+        return event(MessageType.USER_CONNECTED, session.username(), session.username() + " se ha conectado al chat 👋");
     }
 
     public SystemEventDto userDisconnected(UserSessionDto session) {

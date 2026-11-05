@@ -270,4 +270,33 @@ describe('ChatPage', () => {
       vi.useRealTimers()
     }
   })
+
+  it('inserta el emoji elegido en la posición del cursor y lo envía junto con el texto', async () => {
+    const user = await connectAs('Anakin')
+    const input = screen.getByRole('textbox', { name: 'Mensaje' }) as HTMLInputElement
+
+    await user.type(input, 'Hola a todos')
+    input.setSelectionRange(4, 4)
+    await user.click(screen.getByRole('button', { name: 'Emojis' }))
+    await user.click(screen.getByRole('button', { name: '😀' }))
+
+    expect(input.value).toBe('Hola😀 a todos')
+    expect(input.selectionStart).toBe(6)
+
+    await user.click(screen.getByRole('button', { name: 'Enviar' }))
+    expect(socket().sent).toEqual(['Hola😀 a todos'])
+  })
+
+  it('muestra los emojis de los mensajes recibidos, también los que son solo emojis', async () => {
+    await connectAs('Anakin')
+
+    await act(async () => {
+      socket().handlers.onMessage({ id: 20, sender: 'Beto', sentAt: '2026-10-30T10:50:00Z', text: 'Hola a todos 👋😀' })
+      socket().handlers.onMessage({ id: 21, sender: 'Beto', sentAt: '2026-10-30T10:51:00Z', text: '🔥🚀🎉' })
+    })
+
+    expect(screen.getByText('Hola a todos 👋😀')).toBeInTheDocument()
+    expect(screen.getByText('🔥🚀🎉')).toHaveClass('text-4xl')
+    expect(screen.getByText('Hola a todos 👋😀')).not.toHaveClass('text-4xl')
+  })
 })

@@ -26,7 +26,7 @@ class SystemEventServiceTest {
 
         assertThat(event.type()).isEqualTo(MessageType.USER_CONNECTED);
         assertThat(event.username()).isEqualTo("Luke");
-        assertThat(event.content()).isEqualTo("Luke se ha conectado al chat.");
+        assertThat(event.content()).isEqualTo("Luke se ha conectado al chat 👋");
         assertThat(event.timestamp()).isEqualTo(NOW);
     }
 

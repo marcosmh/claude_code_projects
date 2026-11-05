@@ -20,7 +20,8 @@ public class ChatMessage {
     @Column(nullable = false, length = 24)
     private String username;
 
-    @Column(nullable = false, length = 500)
+    // The API accepts 500 characters (code points); H2 measures length in UTF-16 units, so emojis need up to 2x.
+    @Column(nullable = false, length = 1000)
     private String content;
 
     // "timestamp" is a reserved word in H2, hence the explicit column name.

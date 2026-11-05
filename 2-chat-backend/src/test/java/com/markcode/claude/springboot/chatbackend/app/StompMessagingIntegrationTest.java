@@ -128,7 +128,7 @@ class StompMessagingIntegrationTest {
         assertThat(event).isNotNull();
         assertThat(event.type()).isEqualTo(MessageType.USER_CONNECTED);
         assertThat(event.username()).isEqualTo("Luke");
-        assertThat(event.content()).isEqualTo("Luke se ha conectado al chat.");
+        assertThat(event.content()).isEqualTo("Luke se ha conectado al chat 👋");
         assertThat(chat.poll(500, TimeUnit.MILLISECONDS)).isNull();
     }
 
@@ -233,6 +233,48 @@ class StompMessagingIntegrationTest {
                 assertThat(event.type()).isEqualTo(MessageType.USER_TYPING);
             }
         }
+    }
+
+    @Test
+    void emojisTravelThroughStompAndAreStoredWithoutLoss() throws Exception {
+        StompSession ana = connect();
+        StompSession beto = connect();
+        BlockingQueue<UserSessionDto> presence = subscribe(ana, "/topic/presence", UserSessionDto.class);
+        BlockingQueue<ChatMessageDto> betoInbox = subscribe(beto, "/topic/messages", ChatMessageDto.class);
+        ana.send("/app/chat.join", new JoinRequest("emoji-ana"));
+        assertThat(presence.poll(5, TimeUnit.SECONDS)).isNotNull();
+
+        // Mixed text, emoji only, ZWJ sequence, skin tone, flag and keycap: nothing may be altered.
+        List<String> contents = List.of("Hola a todos 👋😀", "🔥🚀🎉", "👨‍👩‍👧‍👦 👍🏽 🇲🇽 1️⃣ ✍️");
+        for (String content : contents) {
+            ana.send("/app/chat.send", new ChatMessageRequest(content));
+            ChatMessageDto received = betoInbox.poll(5, TimeUnit.SECONDS);
+            assertThat(received).isNotNull();
+            assertThat(received.content()).isEqualTo(content);
+        }
+        assertThat(messageService.history(200)).extracting(ChatMessageDto::content).containsSubsequence(contents);
+    }
+
+    @Test
+    void messageLimitCountsCharactersNotUtf16Units() throws Exception {
+        StompSession client = connect();
+        BlockingQueue<UserSessionDto> presence = subscribe(client, "/topic/presence", UserSessionDto.class);
+        BlockingQueue<ChatMessageDto> inbox = subscribe(client, "/topic/messages", ChatMessageDto.class);
+        BlockingQueue<ErrorDto> errors = subscribe(client, "/user/queue/errors", ErrorDto.class);
+        client.send("/app/chat.join", new JoinRequest("emoji-limit"));
+        assertThat(presence.poll(5, TimeUnit.SECONDS)).isNotNull();
+
+        String atLimit = "😀".repeat(500);
+        client.send("/app/chat.send", new ChatMessageRequest(atLimit));
+        ChatMessageDto accepted = inbox.poll(5, TimeUnit.SECONDS);
+        assertThat(accepted).isNotNull();
+        assertThat(accepted.content()).isEqualTo(atLimit);
+
+        client.send("/app/chat.send", new ChatMessageRequest("😀".repeat(501)));
+        ErrorDto error = errors.poll(5, TimeUnit.SECONDS);
+        assertThat(error).isNotNull();
+        assertThat(error.message()).contains("500");
+        assertThat(inbox.poll(500, TimeUnit.MILLISECONDS)).isNull();
     }
 
     private StompSession connect() throws Exception {
