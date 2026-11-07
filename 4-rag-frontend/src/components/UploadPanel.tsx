@@ -2,6 +2,7 @@ import { useId, useState, type ChangeEvent } from 'react'
 import { uploadDocument } from '../api'
 import type { DocumentResponse } from '../types'
 
+const MAX_BYTES = 20 * 1024 * 1024
 const fmtKb = new Intl.NumberFormat('es', { maximumFractionDigits: 1 })
 
 export default function UploadPanel({ documents, onUploaded }: {
@@ -16,6 +17,17 @@ export default function UploadPanel({ documents, onUploaded }: {
     const input = e.currentTarget
     const file = input.files?.[0]
     if (!file) return
+    // Validación en el cliente: evita subir al backend lo que de todos modos rechazaría.
+    if (!/\.pdf$/i.test(file.name) && file.type !== 'application/pdf') {
+      setError('El archivo debe ser un PDF')
+      input.value = ''
+      return
+    }
+    if (file.size > MAX_BYTES) {
+      setError('El PDF supera el máximo de 20 MB')
+      input.value = ''
+      return
+    }
     setBusy(true)
     setError(null)
     try {
@@ -29,7 +41,7 @@ export default function UploadPanel({ documents, onUploaded }: {
   }
 
   return (
-    <aside aria-labelledby="docs-title" className="hidden min-h-0 flex-col border-r border-line bg-rail md:flex">
+    <aside aria-labelledby="docs-title" className="flex max-h-44 min-h-0 flex-col border-b border-line bg-rail md:max-h-none md:border-r md:border-b-0">
       <div className="flex items-center justify-between px-4 py-4">
         <h2 id="docs-title" className="text-base font-semibold">Documentos</h2>
         <label

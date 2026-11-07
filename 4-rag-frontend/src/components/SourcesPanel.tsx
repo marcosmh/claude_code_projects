@@ -1,9 +1,19 @@
+import { useEffect } from 'react'
 import type { Source } from '../types'
 
 export default function SourcesPanel({ data, onClose }: {
   data: { question: string; items: Source[] } | null
   onClose: () => void
 }) {
+  // Escape cierra el panel de fuentes.
+  const open = data !== null
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    window.addEventListener('keydown', onKey, { passive: true })
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open, onClose])
+
   if (!data) {
     return (
       <aside aria-labelledby="src-title" className="hidden min-h-0 border-l border-line bg-rail p-4 xl:block">

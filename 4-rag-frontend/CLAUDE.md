@@ -8,7 +8,7 @@ Frontend React 19 + Vite + TypeScript + Tailwind 4 para el backend Spring Boot R
 
 ```
 src/                             # App.tsx (layout 3 paneles), api.ts (fetch a /api/*), types.ts (espejo de los DTOs)
-└── components/                  # UploadPanel (documentos + upload), ChatPanel (ask + copiar respuesta vía navigator.clipboard), SourcesPanel (fuentes de una respuesta)
+└── components/                  # UploadPanel (documentos + upload), ChatPanel (ask + copiar vía navigator.clipboard), SourcesPanel (fuentes de una respuesta)
 src/main/resources/
 ├── postman/postman-api.json     # colección Postman v2.1 (variable baseUrl, tests por request)
 ├── rest-client/rest-client.http # mismas peticiones para IntelliJ HTTP Client / VS Code REST Client
