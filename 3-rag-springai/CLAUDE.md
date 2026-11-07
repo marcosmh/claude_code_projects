@@ -22,7 +22,7 @@ docker compose up -d postgres                         # solo PostgreSQL+pgvector
 ./mvnw clean package
 ```
 
-Swagger UI: `http://localhost:8080/swagger-ui.html`. Ejemplos:
+Swagger UI: `http://localhost:8080/swagger-ui.html`. Colección Postman (`src/main/resources/postman/postman-api.json`) y HTTP Client (`src/main/resources/rest-client/rest-client.http`): **mantener ambos sincronizados** al añadir/cambiar endpoints. Ejemplos:
 
 ```bash
 curl -F "file=@doc.pdf" localhost:8080/api/documents/upload
