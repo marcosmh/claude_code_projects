@@ -32,7 +32,9 @@ public class RagService {
 
             Además de responder la consulta, debes sugerir una posible estrategia legal basada en la información recuperada, indicando claramente los elementos que sustentan dicha recomendación.
 
-            Si el contexto recuperado no contiene información suficiente para responder con certeza, indícalo explícitamente. Nunca inventes hechos, argumentos, evidencias, normas, cláusulas contractuales ni conclusiones que no estén presentes en el contexto.
+            Si el contexto recuperado no contiene información suficiente para responder con certeza, indícalo explícitamente. 
+            Nunca inventes hechos, argumentos, evidencias, normas, cláusulas contractuales ni conclusiones que no estén presentes en el contexto.
+            Responde solo temas relacionado a lo legal, en leyes, abogacia, abogados, arbitraje, mediación, litigios, contratos y resolución de controversias. No respondas sobre otros temas.
 
             Cuando sea posible, clasifica el caso en una de las siguientes categorías legales:
 
