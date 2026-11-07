@@ -1,0 +1,675 @@
+{
+  "info": {
+    "name": "RAG Spring AI API",
+    "description": "Colección para probar el backend rag-springai (proyecto 3-rag-springai, ejecutándose en :8080) (Spring Boot + Spring AI + Ollama + pgvector).\n\nÚnico ajuste necesario: variable `baseUrl` (por defecto http://localhost:8080). Las peticiones de upload apuntan a los PDFs de src/main/resources/archives (ruta absoluta; si Postman no encuentra el archivo, reseleccionarlo en el campo `file`).\n\nMantener sincronizada con src/main/resources/rest-client/rest-client.http.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "documentId",
+      "value": "",
+      "type": "string",
+      "description": "Se rellena automáticamente tras un upload exitoso"
+    },
+    {
+      "key": "question",
+      "value": "¿Qué información contiene el contrato respecto al incumplimiento contractual?",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Documents",
+      "item": [
+        {
+          "name": "1.1 Subir PDF - rag-legal-arbitraje",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/documents/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "documents",
+                "upload"
+              ]
+            },
+            "description": "multipart/form-data con el campo `file`. Archivo: /home/imarkdev/DevTraining/claude_code_projects/4-rag-frontend/src/main/resources/archives/rag-legal-arbitraje.pdf (ajusta la ruta si el proyecto está en otro lugar). Respuesta 201 con id, fileName, uploadedAt, pageCount, sizeBytes y chunkCount.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "/home/imarkdev/DevTraining/claude_code_projects/4-rag-frontend/src/main/resources/archives/rag-legal-arbitraje.pdf"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                  "const b = pm.response.json();",
+                  "pm.test('Incluye metadatos', () => { pm.expect(b.id).to.be.a('string'); pm.expect(b.pageCount).to.be.above(0); pm.expect(b.chunkCount).to.be.above(0); });",
+                  "pm.collectionVariables.set('documentId', b.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.1b Subir PDF - legal-japon-alemania-maquinaria",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/documents/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "documents",
+                "upload"
+              ]
+            },
+            "description": "multipart/form-data con el campo `file`. Archivo: /home/imarkdev/DevTraining/claude_code_projects/4-rag-frontend/src/main/resources/archives/legal-japon-alemania-maquinaria.pdf (ajusta la ruta si el proyecto está en otro lugar). Respuesta 201 con id, fileName, uploadedAt, pageCount, sizeBytes y chunkCount.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "/home/imarkdev/DevTraining/claude_code_projects/4-rag-frontend/src/main/resources/archives/legal-japon-alemania-maquinaria.pdf"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                  "const b = pm.response.json();",
+                  "pm.test('Incluye metadatos', () => { pm.expect(b.id).to.be.a('string'); pm.expect(b.pageCount).to.be.above(0); pm.expect(b.chunkCount).to.be.above(0); });",
+                  "pm.collectionVariables.set('documentId', b.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.2 Error: archivo que no es PDF",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/documents/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "documents",
+                "upload"
+              ]
+            },
+            "description": "Selecciona en `file` cualquier archivo que NO sea PDF (p. ej. un .txt). Esperado: 400 ProblemDetail 'Documento inválido'.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+                  "pm.test('ProblemDetail', () => pm.expect(pm.response.json().title).to.eql('Documento inválido'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.3 Error: sin la parte file",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/documents/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "documents",
+                "upload"
+              ]
+            },
+            "description": "Petición multipart sin la parte `file` (solo `otro=valor`). Esperado: 400.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "otro",
+                  "value": "valor",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "RAG",
+      "item": [
+        {
+          "name": "2.1a Consulta: diferencia entre arbitraje y mediación",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('Tiene answer y sources', () => { pm.expect(b.answer).to.be.a('string').and.not.empty; pm.expect(b.sources).to.be.an('array'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "Respuesta: { answer, sources:[{documentId,fileName,page,score,snippet}] }. Si no hay fragmentos relevantes, sources=[] y answer es un mensaje fijo.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question\": \"que diferencia hay entre arbitraje y mediación?\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/rag/ask",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rag",
+                "ask"
+              ]
+            }
+          }
+        },
+        {
+          "name": "2.1b Consulta: incumplimiento con cláusula de arbitraje",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('Tiene answer y sources', () => { pm.expect(b.answer).to.be.a('string').and.not.empty; pm.expect(b.sources).to.be.an('array'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question\": \"dos empresas tiene un conflicto por incumplimiento de contrato y existe una clausula de arbitraje en el acuerdo.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/rag/ask",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rag",
+                "ask"
+              ]
+            }
+          }
+        },
+        {
+          "name": "2.1c Consulta: incumplimiento comercial internacional con cláusula arbitral",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('Tiene answer y sources', () => { pm.expect(b.answer).to.be.a('string').and.not.empty; pm.expect(b.sources).to.be.an('array'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question\": \"una empresa y otra empresa extranjera discuten por incumplimiento de contrato comercial internacional y existe una clausula  arbitral.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/rag/ask",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rag",
+                "ask"
+              ]
+            }
+          }
+        },
+        {
+          "name": "2.1d Consulta: empresas del conflicto Japón-Alemania",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('Tiene answer y sources', () => { pm.expect(b.answer).to.be.a('string').and.not.empty; pm.expect(b.sources).to.be.an('array'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question\": \"busca en legal-japon-alemania-maquinaria.pdf, que empresas participan en el conflicto internacional\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/rag/ask",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rag",
+                "ask"
+              ]
+            }
+          }
+        },
+        {
+          "name": "2.1e Consulta: ubicación de Bergmann",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('Tiene answer y sources', () => { pm.expect(b.answer).to.be.a('string').and.not.empty; pm.expect(b.sources).to.be.an('array'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question\": \"donde esta ubicada la empresa bergmann?\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/rag/ask",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rag",
+                "ask"
+              ]
+            }
+          }
+        },
+        {
+          "name": "2.2 Consulta sobre arbitraje comercial",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question\": \"¿Qué información contiene el documento sobre arbitraje comercial?\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/rag/ask",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rag",
+                "ask"
+              ]
+            }
+          }
+        },
+        {
+          "name": "2.3 Tema sin información",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/rag/ask",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rag",
+                "ask"
+              ]
+            },
+            "description": "Pregunta ajena a los documentos: esperado mensaje 'No encontré información relevante…' y sources vacío.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question\": \"¿Cuál es la capital de Japón?\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Sin fuentes', () => pm.expect(pm.response.json().sources).to.be.empty);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.4 Error: pregunta en blanco",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/rag/ask",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rag",
+                "ask"
+              ]
+            },
+            "description": "question en blanco -> 400 con propiedad `errors`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question\": \"   \"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+                  "pm.test('Lista errores', () => pm.expect(pm.response.json().errors).to.be.an('array').and.not.empty);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.5 Error: cuerpo sin el campo question",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "Cuerpo `{}` sin question -> 400.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/rag/ask",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rag",
+                "ask"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Operación y documentación",
+      "item": [
+        {
+          "name": "3.1 Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/actuator/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "actuator",
+                "health"
+              ]
+            },
+            "description": "Estado de la aplicación."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('UP', () => pm.expect(pm.response.json().status).to.eql('UP'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.2 OpenAPI JSON",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v3/api-docs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v3",
+                "api-docs"
+              ]
+            },
+            "description": "Definición OpenAPI generada por springdoc. Swagger UI: {{baseUrl}}/swagger-ui.html"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

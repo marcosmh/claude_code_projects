@@ -1,0 +1,182 @@
+### =====================================================================
+### rag-springai - pruebas de API
+### Compatible con IntelliJ IDEA / JetBrains HTTP Client y VS Code REST Client.
+### Mantener sincronizado con src/main/resources/postman/postman-api.json
+### =====================================================================
+
+@host = http://localhost:8080
+@contentTypeJson = application/json
+
+# Pregunta reutilizable
+@question = ¿Qué información contiene el contrato respecto al incumplimiento contractual?
+
+# NOTA: las rutas de archivo ("< ./...") son relativas a ESTE archivo.
+# Los PDFs de prueba están en ../archives/ (src/main/resources/archives).
+
+
+### =====================================================================
+### 1. DOCUMENTOS
+### =====================================================================
+
+### 1.1 Subir documento PDF: rag-legal-arbitraje.pdf (éxito esperado: 201 + id, fileName, pageCount, sizeBytes, chunkCount)
+# @name uploadArbitraje
+POST {{host}}/api/documents/upload
+Content-Type: multipart/form-data; boundary=RagBoundary
+
+--RagBoundary
+Content-Disposition: form-data; name="file"; filename="rag-legal-arbitraje.pdf"
+Content-Type: application/pdf
+
+< ../archives/rag-legal-arbitraje.pdf
+--RagBoundary--
+
+###
+POST {{host}}/api/documents/upload
+Content-Type: multipart/form-data; boundary=RagBoundary
+
+--RagBoundary
+Content-Disposition: form-data; name="file"; filename="legal-japon-alemania-maquinaria.pdf"
+Content-Type: application/pdf
+
+< ../archives/legal-japon-alemania-maquinaria.pdf
+--RagBoundary--
+
+
+### 1.1b Subir documento PDF: legal-japon-alemania-maquinaria.pdf (éxito esperado: 201)
+# @name uploadJaponAlemania
+POST {{host}}/api/documents/upload
+Content-Type: multipart/form-data; boundary=RagBoundary
+
+--RagBoundary
+Content-Disposition: form-data; name="file"; filename="legal-japon-alemania-maquinaria.pdf"
+Content-Type: application/pdf
+
+< ../archives/legal-japon-alemania-maquinaria.pdf
+--RagBoundary--
+
+
+### 1.2 Error: archivo que no es PDF (esperado: 400 "Documento inválido")
+POST {{host}}/api/documents/upload
+Content-Type: multipart/form-data; boundary=RagBoundary
+
+--RagBoundary
+Content-Disposition: form-data; name="file"; filename="falso.pdf"
+Content-Type: application/pdf
+
+Esto no es un PDF
+--RagBoundary--
+
+
+### 1.3 Error: petición sin la parte "file" (esperado: 400)
+POST {{host}}/api/documents/upload
+Content-Type: multipart/form-data; boundary=RagBoundary
+
+--RagBoundary
+Content-Disposition: form-data; name="otro"
+
+valor
+--RagBoundary--
+
+
+### =====================================================================
+### 2. CONSULTAS RAG
+### =====================================================================
+
+### 2.1 Consulta (éxito esperado: 200 + answer y sources[documentId,fileName,page,score,snippet])
+POST {{host}}/api/rag/ask
+Content-Type: {{contentTypeJson}}
+
+{
+  "question": "que diferencia hay entre arbitraje y mediación?"
+}
+
+###
+POST {{host}}/api/rag/ask
+Content-Type: {{contentTypeJson}}
+
+{
+  "question": "dos empresas tiene un conflicto por incumplimiento de contrato y existe una clausula de arbitraje en el acuerdo."
+}
+
+###
+POST {{host}}/api/rag/ask
+Content-Type: {{contentTypeJson}}
+
+{
+  "question": "una empresa y otra empresa extranjera discuten por incumplimiento de contrato comercial internacional y existe una clausula  arbitral."
+}
+
+
+###
+POST {{host}}/api/rag/ask
+Content-Type: {{contentTypeJson}}
+
+{
+  "question": "busca en legal-japon-alemania-maquinaria.pdf, que empresas participan en el conflicto internacional"
+}
+
+###
+POST {{host}}/api/rag/ask
+Content-Type: {{contentTypeJson}}
+
+{
+  "question": "donde esta ubicada la empresa bergmann?"
+
+}
+
+
+
+
+
+
+### 2.2 Consulta sobre arbitraje comercial
+POST {{host}}/api/rag/ask
+Content-Type: {{contentTypeJson}}
+
+{
+  "question": "¿Qué información contiene el documento sobre arbitraje comercial?"
+}
+
+
+### 2.3 Tema sin información (esperado: 200, sources vacío y mensaje "No encontré información relevante...")
+POST {{host}}/api/rag/ask
+Content-Type: {{contentTypeJson}}
+
+{
+  "question": "¿Cuál es la capital de Japón?"
+}
+
+
+### 2.4 Error: pregunta en blanco (esperado: 400 con lista "errors")
+POST {{host}}/api/rag/ask
+Content-Type: {{contentTypeJson}}
+
+{
+  "question": "   "
+}
+
+
+### 2.5 Error: cuerpo sin el campo question (esperado: 400)
+POST {{host}}/api/rag/ask
+Content-Type: {{contentTypeJson}}
+
+{}
+
+
+### =====================================================================
+### 3. OPERACIÓN Y DOCUMENTACIÓN
+### =====================================================================
+
+### 3.1 Health (esperado: {"status":"UP"})
+GET {{host}}/actuator/health
+
+
+### 3.2 Definición OpenAPI (Swagger UI: {{host}}/swagger-ui.html)
+GET {{host}}/v3/api-docs
+
+
+### =====================================================================
+### 4. FUTURAS AMPLIACIONES
+### Añadir aquí nuevos endpoints (listar/borrar documentos, múltiples fuentes, etc.)
+### y replicarlos en la colección de Postman.
+### =====================================================================
