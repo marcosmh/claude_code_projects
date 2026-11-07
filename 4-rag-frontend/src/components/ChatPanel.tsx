@@ -14,6 +14,36 @@ interface Turn {
 const MAX = 2000
 const fmtTime = new Intl.DateTimeFormat('es', { hour: '2-digit', minute: '2-digit' })
 
+function CopyButton({ text }: { text: string }) {
+  const [state, setState] = useState<'idle' | 'copied' | 'failed'>('idle')
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
+  useEffect(() => () => clearTimeout(timer.current), [])
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(text)
+      setState('copied')
+    } catch {
+      setState('failed')
+    }
+    clearTimeout(timer.current)
+    timer.current = setTimeout(() => setState('idle'), 2000)
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={copy}
+      className="text-sm text-muted hover:text-fg focus-visible:outline-2 focus-visible:outline-brand"
+    >
+      {state === 'copied' ? '✓ Copiado' : state === 'failed' ? 'No se pudo copiar' : 'Copiar'}
+      <span role="status" aria-live="polite" className="sr-only">
+        {state === 'copied' ? 'Respuesta copiada al portapapeles' : ''}
+      </span>
+    </button>
+  )
+}
+
 export default function ChatPanel({ onShowSources }: {
   onShowSources: (d: { question: string; items: Source[] }) => void
 }) {
@@ -72,15 +102,18 @@ export default function ChatPanel({ onShowSources }: {
             ) : (
               <div className="max-w-[85%] rounded-xl bg-bubble px-3 py-2">
                 <p className="whitespace-pre-wrap break-words">{t.answer}</p>
-                {t.sources && t.sources.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => onShowSources({ question: t.question, items: t.sources! })}
-                    className="mt-2 text-sm text-brand underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-brand"
-                  >
-                    Ver fuentes ({t.sources.length})
-                  </button>
-                )}
+                <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
+                  <CopyButton text={t.answer} />
+                  {t.sources && t.sources.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => onShowSources({ question: t.question, items: t.sources! })}
+                      className="text-sm text-brand underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-brand"
+                    >
+                      Ver fuentes ({t.sources.length})
+                    </button>
+                  )}
+                </div>
               </div>
             )}
           </article>

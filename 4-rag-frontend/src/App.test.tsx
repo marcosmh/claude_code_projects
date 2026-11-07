@@ -25,3 +25,17 @@ it('muestra el error ProblemDetail del backend', async () => {
   await userEvent.click(screen.getByRole('button', { name: 'Preguntar' }))
   expect(await screen.findByRole('alert')).toHaveTextContent('Servicio no disponible')
 })
+
+it('copia la respuesta al portapapeles', async () => {
+  vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+    new Response(JSON.stringify({ answer: 'Respuesta X', sources: [] }), { status: 200 }),
+  )
+  const user = userEvent.setup()
+  const writeText = vi.spyOn(navigator.clipboard, 'writeText')
+  render(<App />)
+  await user.type(screen.getByLabelText('Pregunta'), 'hola')
+  await user.click(screen.getByRole('button', { name: 'Preguntar' }))
+  await user.click(await screen.findByRole('button', { name: /Copiar/ }))
+  expect(writeText).toHaveBeenCalledWith('Respuesta X')
+  expect(await screen.findByText('✓ Copiado')).toBeInTheDocument()
+})
