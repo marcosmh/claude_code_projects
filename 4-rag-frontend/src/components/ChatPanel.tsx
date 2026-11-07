@@ -1,6 +1,8 @@
 import { memo, useCallback, useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { ask } from '../api'
 import type { Source } from '../types'
+import ThemeToggle from './ThemeToggle'
+import type { Theme } from '../hooks/useTheme'
 
 interface Turn {
   id: number
@@ -14,6 +16,11 @@ interface Turn {
 type ShowSources = (d: { question: string; items: Source[] }) => void
 
 const MAX = 2000
+const SUGGESTIONS = [
+  '¿Qué diferencia hay entre arbitraje y mediación?',
+  '¿Qué información contiene el documento sobre arbitraje comercial?',
+  '¿Qué empresas participan en el conflicto internacional?',
+]
 // Hoisted: crear Intl.* es caro y se usa en cada burbuja.
 const fmtTime = new Intl.DateTimeFormat('es', { hour: '2-digit', minute: '2-digit' })
 
@@ -61,7 +68,7 @@ const TurnItem = memo(function TurnItem({ turn: t, onShowSources }: { turn: Turn
       {t.error ? (
         <p role="alert" className="max-w-[85%] rounded-xl bg-bubble px-3 py-2 text-err">{t.error}</p>
       ) : t.answer === undefined ? (
-        <p className="w-fit rounded-xl bg-bubble px-3 py-2 text-muted">Pensando…</p>
+        <p role="status" className="w-fit rounded-xl bg-bubble px-3 py-2 text-muted" aria-label="Pensando"><span className="dot" /><span className="dot" /><span className="dot" /></p>
       ) : (
         <div className="max-w-[85%] rounded-xl bg-bubble px-3 py-2">
           <p className="whitespace-pre-wrap break-words">{t.answer}</p>
@@ -122,7 +129,7 @@ function Composer({ busy, onSubmit }: { busy: boolean; onSubmit: (q: string) => 
   )
 }
 
-export default function ChatPanel({ onShowSources }: { onShowSources: ShowSources }) {
+export default function ChatPanel({ onShowSources, theme, onToggleTheme }: { onShowSources: ShowSources; theme: Theme; onToggleTheme: () => void }) {
   const [turns, setTurns] = useState<Turn[]>([])
   const [busy, setBusy] = useState(false)
   const nextId = useRef(0)
@@ -135,6 +142,12 @@ export default function ChatPanel({ onShowSources }: { onShowSources: ShowSource
 
   // Cancela la petición en vuelo si el componente se desmonta.
   useEffect(() => () => abortRef.current?.abort(), [])
+
+  const reset = useCallback(() => {
+    abortRef.current?.abort()
+    setTurns([])
+    setBusy(false)
+  }, [])
 
   const update = useCallback((id: number, patch: Partial<Turn>) => {
     setTurns((t) => t.map((x) => (x.id === id ? { ...x, ...patch } : x)))
@@ -164,11 +177,37 @@ export default function ChatPanel({ onShowSources }: { onShowSources: ShowSource
     <section aria-labelledby="chat-title" className="flex min-h-0 min-w-0 flex-col">
       <header className="flex items-baseline gap-3 border-b border-line px-5 py-4">
         <h1 id="chat-title" className="text-base font-semibold text-balance">Asistente RAG Legal</h1>
-        <span className="truncate text-xs text-muted">Spring AI · Ollama · pgvector</span>
+        <span className="min-w-0 flex-1 truncate text-xs text-muted">Spring AI · Ollama · pgvector</span>
+        {turns.length > 0 && (
+          <button
+            type="button"
+            onClick={reset}
+            className="shrink-0 rounded-lg border border-line px-3 py-1 text-xs hover:bg-bubble focus-visible:outline-2 focus-visible:outline-brand"
+          >
+            Nueva conversación
+          </button>
+        )}
+        <ThemeToggle theme={theme} onToggle={onToggleTheme} />
       </header>
       <div role="log" aria-live="polite" aria-label="Conversación" className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-5 py-4">
         {turns.length === 0 && (
-          <p className="text-muted text-pretty">Sube un PDF y pregunta sobre su contenido. Las respuestas usan solo el contexto recuperado.</p>
+          <div className="space-y-3">
+            <p className="text-muted text-pretty">Sube un PDF y pregunta sobre su contenido. Las respuestas usan solo el contexto recuperado.</p>
+            <ul className="flex flex-wrap gap-2" aria-label="Preguntas de ejemplo">
+              {SUGGESTIONS.map((q) => (
+                <li key={q}>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => submit(q)}
+                    className="rounded-full border border-line bg-bubble px-3 py-1.5 text-left text-sm hover:border-brand focus-visible:outline-2 focus-visible:outline-brand disabled:opacity-50"
+                  >
+                    {q}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
         {turns.map((t) => (
           <TurnItem key={t.id} turn={t} onShowSources={onShowSources} />

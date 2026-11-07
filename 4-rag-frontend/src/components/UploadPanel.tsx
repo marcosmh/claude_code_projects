@@ -1,4 +1,4 @@
-import { useId, useState, type ChangeEvent } from 'react'
+import { useId, useState, type ChangeEvent, type DragEvent } from 'react'
 import { uploadDocument } from '../api'
 import type { DocumentResponse } from '../types'
 
@@ -11,21 +11,17 @@ export default function UploadPanel({ documents, onUploaded }: {
 }) {
   const inputId = useId()
   const [busy, setBusy] = useState(false)
+  const [dragging, setDragging] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  async function handleChange(e: ChangeEvent<HTMLInputElement>) {
-    const input = e.currentTarget
-    const file = input.files?.[0]
-    if (!file) return
+  async function upload(file: File) {
     // Validación en el cliente: evita subir al backend lo que de todos modos rechazaría.
     if (!/\.pdf$/i.test(file.name) && file.type !== 'application/pdf') {
       setError('El archivo debe ser un PDF')
-      input.value = ''
       return
     }
     if (file.size > MAX_BYTES) {
       setError('El PDF supera el máximo de 20 MB')
-      input.value = ''
       return
     }
     setBusy(true)
@@ -36,12 +32,31 @@ export default function UploadPanel({ documents, onUploaded }: {
       setError(err instanceof Error ? err.message : 'No se pudo subir el documento')
     } finally {
       setBusy(false)
-      input.value = ''
     }
   }
 
+  async function handleChange(e: ChangeEvent<HTMLInputElement>) {
+    const input = e.currentTarget
+    const file = input.files?.[0]
+    input.value = ''
+    if (file) await upload(file)
+  }
+
+  function handleDrop(e: DragEvent) {
+    e.preventDefault()
+    setDragging(false)
+    const file = e.dataTransfer.files[0]
+    if (file && !busy) void upload(file)
+  }
+
   return (
-    <aside aria-labelledby="docs-title" className="flex max-h-44 min-h-0 flex-col border-b border-line bg-rail md:max-h-none md:border-r md:border-b-0">
+    <aside
+      aria-labelledby="docs-title"
+      onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
+      onDragLeave={() => setDragging(false)}
+      onDrop={handleDrop}
+      data-dragging={dragging}
+      className="data-[dragging=true]:outline-2 data-[dragging=true]:-outline-offset-4 data-[dragging=true]:outline-dashed data-[dragging=true]:outline-brand flex max-h-44 min-h-0 flex-col border-b border-line bg-rail md:max-h-none md:border-r md:border-b-0">
       <div className="flex items-center justify-between px-4 py-4">
         <h2 id="docs-title" className="text-base font-semibold">Documentos</h2>
         <label
@@ -59,7 +74,7 @@ export default function UploadPanel({ documents, onUploaded }: {
       {error && <p role="alert" className="px-4 pb-2 text-sm text-err">{error}</p>}
       <ul className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
         {documents.length === 0 && !busy && (
-          <li className="px-2 text-sm text-muted">Aún no hay documentos. Usa + para subir un PDF.</li>
+          <li className="px-2 text-sm text-muted">Aún no hay documentos. Usa + o arrastra un PDF aquí.</li>
         )}
         {documents.map((d) => (
           <li key={d.id} className="flex items-center gap-3 rounded-xl px-2 py-2.5 hover:bg-bubble">

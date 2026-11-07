@@ -39,3 +39,12 @@ it('copia la respuesta al portapapeles', async () => {
   expect(writeText).toHaveBeenCalledWith('Respuesta X')
   expect(await screen.findByText('✓ Copiado')).toBeInTheDocument()
 })
+
+it('alterna entre tema oscuro y claro y lo recuerda', async () => {
+  document.documentElement.dataset.theme = 'dark'
+  render(<App />)
+  await userEvent.click(screen.getByRole('button', { name: 'Cambiar a tema claro' }))
+  expect(document.documentElement.dataset.theme).toBe('light')
+  expect(localStorage.getItem('rag:theme:v1')).toBe('light')
+  expect(screen.getByRole('button', { name: 'Cambiar a tema oscuro' })).toBeInTheDocument()
+})

@@ -8,7 +8,7 @@ Frontend React 19 + Vite + TypeScript + Tailwind 4 para el backend Spring Boot R
 
 ```
 src/                             # App.tsx (layout 3 paneles), api.ts (fetch a /api/*), types.ts (espejo de los DTOs)
-└── components/                  # UploadPanel (documentos + upload), ChatPanel (ask + copiar vía navigator.clipboard), SourcesPanel (fuentes de una respuesta)
+└── components/                  # UploadPanel (documentos + upload), ChatPanel (ask, copiar respuesta, sugerencias), SourcesPanel (fuentes), ThemeToggle; hooks/useTheme.ts
 src/main/resources/
 ├── postman/postman-api.json     # colección Postman v2.1 (variable baseUrl, tests por request)
 ├── rest-client/rest-client.http # mismas peticiones para IntelliJ HTTP Client / VS Code REST Client
@@ -53,3 +53,4 @@ Luego: importar `postman-api.json` en Postman (variable `baseUrl`; `documentId` 
 - Estos archivos son una copia de los equivalentes en `../3-rag-springai/src/main/resources/{postman,rest-client}` (ajustando rutas de PDFs); si el contrato del backend cambia (DTOs `AskRequest`, `AskResponse`, `SourceDto`, `DocumentResponse`), actualizar aquí también.
 - Las preguntas de ejemplo dependen de los PDFs de `archives/` (`rag-legal-arbitraje.pdf`, `legal-japon-alemania-maquinaria.pdf`) y deben subirse antes de consultar.
 - Los errores del backend llegan como `ProblemDetail` (`title`, `detail`, `errors[]`); `api.ts` los convierte en mensajes mostrados con `role="alert"`.
+- Tema oscuro (por defecto) y claro: tokens CSS en `src/index.css` bajo `:root[data-theme]`; la preferencia se guarda en `localStorage` (`rag:theme:v1`) y un script inline en `index.html` la aplica antes del primer pintado. Los componentes usan tokens (`bg-surface`, `text-muted`…), nunca colores fijos.
