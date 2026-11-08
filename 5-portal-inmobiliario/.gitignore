@@ -37,3 +37,6 @@ Thumbs.db
 
 # Prisma Client generado
 /src/generated/
+
+# Playwright MCP
+.playwright-mcp/

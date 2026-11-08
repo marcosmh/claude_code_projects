@@ -44,7 +44,7 @@
   - Mostrar públicamente solo propiedades publicadas.
   - Separar API, servicios y persistencia.
 
-- [ ] **Paso 7 — Landing page**
+- [x] **Paso 7 — Landing page**
   - Hero.
   - Buscador.
   - Propiedades destacadas.

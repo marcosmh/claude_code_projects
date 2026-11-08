@@ -115,8 +115,30 @@ describe("listPublishedProperties", () => {
 
     const result = await service.listPublishedProperties({ page: 3, pageSize: 10 });
 
-    expect(findPublishedPage).toHaveBeenCalledWith({ skip: 20, take: 10 });
+    expect(findPublishedPage).toHaveBeenCalledWith({ skip: 20, take: 10, filters: {} });
     expect(result).toMatchObject({ page: 3, pageSize: 10, total: 25, totalPages: 3 });
+  });
+});
+
+describe("listPublishedProperties con filtros", () => {
+  it("traduce operation y featured a filtros del repositorio", async () => {
+    const findPublishedPage = vi.fn().mockResolvedValue([]);
+    const countPublished = vi.fn().mockResolvedValue(0);
+    const service = createPropertyService(
+      buildRepository({ findPublishedPage, countPublished }),
+    );
+
+    await service.listPublishedProperties({
+      page: 1,
+      pageSize: 3,
+      search: "querétaro",
+      operation: "RENT",
+      featured: true,
+    });
+
+    const expectedFilters = { searchText: "querétaro", operation: "RENT", isFeatured: true };
+    expect(findPublishedPage).toHaveBeenCalledWith({ skip: 0, take: 3, filters: expectedFilters });
+    expect(countPublished).toHaveBeenCalledWith(expectedFilters);
   });
 });
 

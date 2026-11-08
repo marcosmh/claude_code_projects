@@ -1,6 +1,7 @@
 import { NotFoundError } from "@/lib/errors";
 import type {
   PropertyDetailRecord,
+  PropertyFilters,
   PropertyRepository,
   PropertySummaryRecord,
 } from "@/repositories/property-repository";
@@ -76,12 +77,18 @@ export function createPropertyService(repository: PropertyRepository) {
     async listPublishedProperties(
       query: PropertyListQuery,
     ): Promise<PaginatedResponse<PropertySummaryDto>> {
+      const filters: PropertyFilters = {
+        searchText: query.search,
+        operation: query.operation,
+        isFeatured: query.featured,
+      };
       const [records, total] = await Promise.all([
         repository.findPublishedPage({
           skip: (query.page - 1) * query.pageSize,
           take: query.pageSize,
+          filters,
         }),
-        repository.countPublished(),
+        repository.countPublished(filters),
       ]);
 
       return {

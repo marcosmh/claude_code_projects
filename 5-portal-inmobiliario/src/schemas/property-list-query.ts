@@ -11,6 +11,17 @@ export const propertyListQuerySchema = z.object({
     .min(1)
     .max(MAXIMUM_PAGE_SIZE)
     .default(DEFAULT_PAGE_SIZE),
+  search: z
+    .string()
+    .trim()
+    .max(100)
+    .transform((value) => (value === "" ? undefined : value))
+    .optional(),
+  operation: z.enum(["SALE", "RENT"]).optional(),
+  featured: z
+    .enum(["true", "false"])
+    .transform((value) => value === "true")
+    .optional(),
 });
 
 export type PropertyListQuery = z.infer<typeof propertyListQuerySchema>;

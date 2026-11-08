@@ -28,6 +28,38 @@ Accept: application/json
 GET {{baseUrl}}/api/properties?page=2&pageSize=5
 Accept: application/json
 
+### Solo propiedades en venta
+GET {{baseUrl}}/api/properties?operation=SALE&pageSize=50
+Accept: application/json
+
+### Solo propiedades en arriendo
+GET {{baseUrl}}/api/properties?operation=RENT&pageSize=50
+Accept: application/json
+
+### Solo propiedades destacadas
+GET {{baseUrl}}/api/properties?featured=true&pageSize=6
+Accept: application/json
+
+### Búsqueda de texto (ignora acentos y mayúsculas): estas 3 dan el mismo resultado
+GET {{baseUrl}}/api/properties?search=querétaro
+Accept: application/json
+
+###
+GET {{baseUrl}}/api/properties?search=queretaro
+Accept: application/json
+
+###
+GET {{baseUrl}}/api/properties?search=QUERETARO
+Accept: application/json
+
+### Búsqueda con varios términos (todos deben coincidir en título, descripción, colonia, ciudad o estado)
+GET {{baseUrl}}/api/properties?search=tulum%20alberca
+Accept: application/json
+
+### Búsqueda combinada con operación
+GET {{baseUrl}}/api/properties?search=mexico&operation=RENT
+Accept: application/json
+
 ### Detalle de una propiedad (usa el id de listProperties)
 GET {{baseUrl}}/api/properties/{{propertyId}}
 Accept: application/json
@@ -46,6 +78,10 @@ Accept: application/json
 
 ### 400 — page no numérica
 GET {{baseUrl}}/api/properties?page=abc
+Accept: application/json
+
+### 400 — operation inválida (SALE o RENT)
+GET {{baseUrl}}/api/properties?operation=LEASE
 Accept: application/json
 
 ### 404 — id inexistente

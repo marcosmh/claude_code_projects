@@ -1,0 +1,39 @@
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { ApiRequestError, buildPropertiesUrl, fetchPropertyPage } from "./properties-client";
+
+describe("buildPropertiesUrl", () => {
+  it("devuelve la ruta base sin parámetros", () => {
+    expect(buildPropertiesUrl()).toBe("/api/properties");
+  });
+
+  it("serializa solo los parámetros definidos", () => {
+    expect(buildPropertiesUrl({ operation: "SALE", pageSize: 3 })).toBe(
+      "/api/properties?pageSize=3&operation=SALE",
+    );
+    expect(buildPropertiesUrl({ featured: true, pageSize: 6 })).toBe(
+      "/api/properties?pageSize=6&featured=true",
+    );
+  });
+});
+
+describe("fetchPropertyPage", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("devuelve el JSON cuando la respuesta es correcta", async () => {
+    const body = { items: [], page: 1, pageSize: 3, total: 0, totalPages: 0 };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify(body))));
+    await expect(fetchPropertyPage("/api/properties")).resolves.toEqual(body);
+  });
+
+  it("lanza ApiRequestError con el estado HTTP cuando falla", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response("{}", { status: 500 })),
+    );
+    await expect(fetchPropertyPage("/api/properties")).rejects.toMatchObject({
+      name: "ApiRequestError",
+      status: 500,
+    });
+    await expect(fetchPropertyPage("/api/properties")).rejects.toBeInstanceOf(ApiRequestError);
+  });
+});

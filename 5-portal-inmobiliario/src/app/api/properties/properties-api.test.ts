@@ -9,7 +9,13 @@ const databaseUrl = process.env.DATABASE_URL;
 const testRunIdentifier = `api-test-${Date.now()}`;
 
 type ListBody = {
-  items: { id: string; title: string; primaryImageUrl: string | null }[];
+  items: {
+    id: string;
+    title: string;
+    operation: string;
+    isFeatured: boolean;
+    primaryImageUrl: string | null;
+  }[];
   page: number;
   pageSize: number;
   total: number;
@@ -77,6 +83,100 @@ describe.skipIf(!databaseUrl)("API REST pública de propiedades", () => {
     expect(titles).not.toContain(`${testRunIdentifier} borrador`);
     const published = body.items.find((item) => item.id === publishedId);
     expect(published?.primaryImageUrl).toBe("https://example.com/a.jpg");
+  });
+
+  it("GET /api/properties filtra por operation y featured en la base", async () => {
+    const rentResponse = await listProperties(buildListRequest("?operation=RENT&pageSize=50"));
+    const rentBody = (await rentResponse.json()) as ListBody;
+    expect(rentResponse.status).toBe(200);
+    expect(rentBody.items.length).toBeGreaterThan(0);
+    expect(rentBody.items.every((item) => item.operation === "RENT")).toBe(true);
+
+    const featuredResponse = await listProperties(buildListRequest("?featured=true&pageSize=50"));
+    const featuredBody = (await featuredResponse.json()) as ListBody;
+    expect(featuredBody.items.every((item) => item.isFeatured)).toBe(true);
+  });
+
+  it("GET /api/properties responde 400 con operation inválida", async () => {
+    const response = await listProperties(buildListRequest("?operation=LEASE"));
+    expect(response.status).toBe(400);
+  });
+
+  describe("búsqueda de texto sin acentos ni mayúsculas", () => {
+    // Ciudad con acento y ñ, y colonia con diéresis, únicas de esta ejecución.
+    const city = `Zapópan${testRunIdentifier}`;
+    let accentedId: string;
+
+    const searchTitles = async (searchText: string): Promise<string[]> => {
+      const response = await listProperties(
+        buildListRequest(`?pageSize=50&search=${encodeURIComponent(searchText)}`),
+      );
+      expect(response.status).toBe(200);
+      return ((await response.json()) as ListBody).items.map((item) => item.id);
+    };
+
+    beforeAll(async () => {
+      const created = await client.property.create({
+        data: {
+          ...propertyData("con acentos", true),
+          title: `${testRunIdentifier} Casa Nuñez en Peña`,
+          city,
+          commune: "Colonia Güemes",
+          region: "Jalisco",
+          description: "Cerca del parque Méxicó",
+        },
+      });
+      accentedId = created.id;
+    });
+
+    it("encuentra la ciudad escribiéndola sin acento", async () => {
+      expect(await searchTitles(city.replace("ó", "o"))).toContain(accentedId);
+    });
+
+    it("encuentra la ciudad escribiéndola con acento", async () => {
+      expect(await searchTitles(city)).toContain(accentedId);
+    });
+
+    it("ignora mayúsculas y minúsculas", async () => {
+      expect(await searchTitles(city.toUpperCase())).toContain(accentedId);
+      expect(await searchTitles(city.toLowerCase())).toContain(accentedId);
+    });
+
+    it("ignora acentos en cualquier campo: título, colonia y descripción", async () => {
+      expect(await searchTitles("nunez pena")).toContain(accentedId);
+      expect(await searchTitles("GÜEMES")).toContain(accentedId);
+      expect(await searchTitles("guemes")).toContain(accentedId);
+      expect(await searchTitles("mexico")).toContain(accentedId);
+    });
+
+    it("exige que todos los términos coincidan", async () => {
+      expect(await searchTitles(`${city.replace("ó", "o")} jalisco`)).toContain(accentedId);
+      expect(await searchTitles(`${city} inexistente`)).not.toContain(accentedId);
+    });
+
+    it("no trata % ni _ como comodines", async () => {
+      expect(await searchTitles("%")).toEqual([]);
+      expect(await searchTitles("_")).toEqual([]);
+    });
+
+    it("no devuelve propiedades no publicadas aunque coincidan", async () => {
+      expect(await searchTitles(`${testRunIdentifier} borrador`)).not.toContain(draftId);
+    });
+
+    it("se combina con otros filtros", async () => {
+      const response = await listProperties(
+        buildListRequest(`?search=${encodeURIComponent(city)}&operation=SALE`),
+      );
+      // La propiedad de prueba es de arriendo (RENT): con operation=SALE no aparece.
+      expect(((await response.json()) as ListBody).items.map((item) => item.id)).not.toContain(accentedId);
+    });
+
+    it("devuelve el total correcto de coincidencias", async () => {
+      const response = await listProperties(buildListRequest(`?search=${encodeURIComponent(city)}`));
+      const body = (await response.json()) as ListBody;
+      expect(body.total).toBe(1);
+      expect(body.items).toHaveLength(1);
+    });
   });
 
   it("GET /api/properties pagina los resultados", async () => {
