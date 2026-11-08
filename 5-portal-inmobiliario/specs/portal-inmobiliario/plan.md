@@ -353,3 +353,29 @@ Implementación con Tailwind CSS 4 y variables CSS:
 - Selector accesible (botón desplegable con menú de opciones) en el header y en el menú móvil, en el orden Claro, Oscuro y Smallville.
 - Pruebas: store, selector y contraste WCAG calculado sobre los valores reales de `globals.css`.
 
+## 19. Arquitectura monorepo (extensión)
+
+> Sustituye la estructura de una sola aplicación de las secciones 1 y 4. La separación en capas (Route Handlers → servicios → repositorios → PostgreSQL) y las restricciones de la sección 3 no cambian.
+
+Un único repositorio Git con pnpm Workspaces y Turborepo:
+
+```text
+apps/
+  frontend/   Next.js: interfaz, estado, formularios, consumo de la API REST. Sin acceso a PostgreSQL.
+  backend/    Next.js: solo Route Handlers /api/**, servicios, repositorios, Prisma, integraciones.
+packages/
+  shared-types/   DTOs y contratos de la API (tipos + esquemas Zod de entrada).
+  api-client/     Cliente REST tipado usado por el frontend.
+  eslint-config/  Configuración ESLint compartida.
+docs/  .github/  docker/  resources/  specs/
+```
+
+Decisiones:
+
+- Cada aplicación tiene sus propias dependencias, scripts, configuración Next.js, variables (`apps/*/.env.local`) y despliegue.
+- El frontend llama siempre a `/api/**` de su propio origen y `rewrites` de Next.js lo reenvía al backend (`BACKEND_URL`). Mismo origen: sin CORS y con cookies de sesión sin configuración cross-site.
+- El código compartido se consume como paquetes internos TypeScript (`@portal/*`) con `transpilePackages`.
+- Las pruebas se mantienen con Vitest en cada app y paquete; Playwright para E2E.
+- Turborepo orquesta `dev`, `build`, `lint`, `test` y `typecheck`. Prettier, Husky y lint-staged aplican calidad en cada commit.
+- Fuera de alcance: IA/RAG, Ollama y pgvector no forman parte de esta especificación.
+

@@ -4,15 +4,59 @@ Proyecto base para desarrollar un portal inmobiliario utilizando **Spec-Driven D
 
 ## Estructura
 
+Monorepo con **pnpm Workspaces** y **Turborepo**. Más detalle en [docs/architecture.md](docs/architecture.md).
+
 ```text
 .
-├── CLAUDE.md
-└── specs/
-    └── portal-inmobiliario/
-        ├── spec.md
-        ├── plan.md
-        └── tasks.md
+├── apps/
+│   ├── frontend/        Next.js: interfaz (puerto 3000)
+│   └── backend/         Next.js: API REST + Prisma + PostgreSQL (puerto 4000)
+├── packages/
+│   ├── shared-types/    DTOs y contratos de la API
+│   ├── api-client/      Cliente REST tipado
+│   └── eslint-config/   Configuración ESLint compartida
+├── docs/                Documentación técnica
+├── specs/               Especificación SDD (spec, plan, tasks)
+├── resources/           Colecciones Postman y REST Client
+├── docker-compose.yml   pgAdmin para desarrollo
+└── CLAUDE.md
 ```
+
+## Puesta en marcha
+
+Requisitos: Node.js 20+, pnpm 10 (`corepack enable`) y PostgreSQL.
+
+```bash
+pnpm install
+```
+
+Copia las variables de entorno y complétalas:
+
+```bash
+cp apps/backend/.env.example apps/backend/.env.local
+cp apps/frontend/.env.example apps/frontend/.env.local
+cp .env.example .env
+```
+
+Migraciones y datos de ejemplo:
+
+```bash
+pnpm db:migrate
+pnpm db:seed
+```
+
+| Comando              | Acción                                      |
+| -------------------- | ------------------------------------------- |
+| `pnpm dev`           | Levanta frontend (:3000) y backend (:4000)  |
+| `pnpm dev:frontend`  | Solo el frontend                            |
+| `pnpm dev:backend`   | Solo el backend                             |
+| `pnpm build`         | Construye todas las aplicaciones            |
+| `pnpm test`          | Pruebas de todos los paquetes (Vitest)      |
+| `pnpm lint`          | ESLint en todo el monorepo                  |
+| `pnpm typecheck`     | TypeScript en todo el monorepo              |
+
+El frontend llama a `/api/**` de su propio origen y Next.js lo reenvía al backend
+(`BACKEND_URL`), por lo que abriendo `http://localhost:3000/api/properties` se llega a la API.
 
 ## Documentos
 

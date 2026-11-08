@@ -1,0 +1,12 @@
+node_modules
+.next
+.turbo
+pnpm-lock.yaml
+**/src/generated
+**/prisma/migrations
+.agents
+.claude
+.windsurf
+skills-lock.json
+specs
+resources

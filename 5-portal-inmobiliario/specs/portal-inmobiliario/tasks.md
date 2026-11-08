@@ -261,3 +261,11 @@
   - Selector desplegable de tema en el header (escritorio y móvil), con preferencia persistente y sin parpadeo; primera visita según el sistema.
   - Contraste WCAG AA verificado por pruebas.
 
+- [x] **Extra B — Migración a monorepo (apps/frontend, apps/backend, packages/*)**
+  - pnpm Workspaces + Turborepo.
+  - Frontend y backend como apps Next.js independientes, con proxy `rewrites` hacia la API.
+  - Paquetes compartidos: shared-types, api-client y eslint-config.
+  - Prettier, Husky, lint-staged y CI en GitHub Actions.
+  - `pnpm dev`, `pnpm dev:frontend`, `pnpm dev:backend` y `pnpm build`.
+  - Todas las pruebas, lint y build siguen pasando.
+

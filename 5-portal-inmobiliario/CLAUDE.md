@@ -65,10 +65,15 @@ Una tarea solo está terminada cuando:
 3. Sigue tu progreso línea por línea en `specs/portal-inmobiliario/tasks.md`. Marca las tareas como [x] solo después de que las pruebas (tests) hayan pasado con éxito.
 
 ## Comandos de Construcción y Pruebas
-- Instalar dependencias: `npm install`
-- Ejecutar pruebas: `npm test`
-- Ejecutar linter: `npm run lint`
-- Servidor de desarrollo: `npm run dev`
+El proyecto es un monorepo (pnpm Workspaces + Turborepo): `apps/frontend`, `apps/backend` y `packages/*` (ver `docs/architecture.md`).
+
+- Instalar dependencias: `pnpm install`
+- Ejecutar pruebas: `pnpm test`
+- Ejecutar linter: `pnpm lint`
+- Verificar tipos: `pnpm typecheck`
+- Construir todo: `pnpm build`
+- Servidores de desarrollo: `pnpm dev` (frontend :3000 y backend :4000), `pnpm dev:frontend`, `pnpm dev:backend`
+- Base de datos (backend): `pnpm db:migrate`, `pnpm db:seed`, `pnpm db:studio`
 
 ## Estilo de Código y Arquitectura
 - Seguir los principios de Arquitectura Limpia (Clean Architecture).

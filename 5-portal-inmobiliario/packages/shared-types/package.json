@@ -1,0 +1,19 @@
+{
+  "name": "@portal/shared-types",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": { "zod": "^4.0.0" },
+  "devDependencies": {
+    "@portal/eslint-config": "workspace:*",
+    "eslint": "^9.0.0",
+    "typescript": "^5.9.0",
+    "vitest": "^5.1.0"
+  }
+}
