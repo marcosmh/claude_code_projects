@@ -56,12 +56,12 @@
   - Imagen, título, precio, operación, ubicación, dormitorios, baños y superficie.
   - Crear grid responsive.
 
-- [ ] **Paso 9 — Catálogo**
+- [x] **Paso 9 — Catálogo**
   - Crear `/properties`.
   - Consumir API REST.
   - Mostrar propiedades publicadas.
 
-- [ ] **Paso 10 — Búsqueda**
+- [x] **Paso 10 — Búsqueda**
   - Búsqueda textual.
   - Título, comuna, ciudad, región y descripción.
   - Reflejar búsqueda en query parameters.

@@ -16,6 +16,15 @@ describe("buildPropertiesUrl", () => {
   });
 });
 
+describe("buildPropertiesUrl con búsqueda", () => {
+  it("codifica el texto y omite búsquedas vacías", () => {
+    expect(buildPropertiesUrl({ search: "Mérida centro", page: 2 })).toBe(
+      "/api/properties?page=2&search=M%C3%A9rida+centro",
+    );
+    expect(buildPropertiesUrl({ search: "" })).toBe("/api/properties");
+  });
+});
+
 describe("fetchPropertyPage", () => {
   afterEach(() => vi.unstubAllGlobals());
 
@@ -26,10 +35,7 @@ describe("fetchPropertyPage", () => {
   });
 
   it("lanza ApiRequestError con el estado HTTP cuando falla", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(new Response("{}", { status: 500 })),
-    );
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("{}", { status: 500 })));
     await expect(fetchPropertyPage("/api/properties")).rejects.toMatchObject({
       name: "ApiRequestError",
       status: 500,

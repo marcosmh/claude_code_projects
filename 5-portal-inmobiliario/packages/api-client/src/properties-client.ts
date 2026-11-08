@@ -7,6 +7,7 @@ import type {
 export type PropertyListParams = {
   page?: number;
   pageSize?: number;
+  search?: string;
   operation?: PropertyOperation;
   featured?: boolean;
 };
@@ -15,6 +16,7 @@ export function buildPropertiesUrl(params: PropertyListParams = {}): string {
   const searchParams = new URLSearchParams();
   if (params.page !== undefined) searchParams.set("page", String(params.page));
   if (params.pageSize !== undefined) searchParams.set("pageSize", String(params.pageSize));
+  if (params.search) searchParams.set("search", params.search);
   if (params.operation !== undefined) searchParams.set("operation", params.operation);
   if (params.featured !== undefined) searchParams.set("featured", String(params.featured));
   const queryString = searchParams.toString();
