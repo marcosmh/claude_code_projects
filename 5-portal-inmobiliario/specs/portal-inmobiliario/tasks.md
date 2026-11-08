@@ -38,7 +38,7 @@
 
 ## Fase 2 — Portal público
 
-- [ ] **Paso 6 — API REST pública de propiedades**
+- [x] **Paso 6 — API REST pública de propiedades**
   - `GET /api/properties`.
   - `GET /api/properties/{id}`.
   - Mostrar públicamente solo propiedades publicadas.

@@ -1,0 +1,53 @@
+### ============================================================
+### Portal Inmobiliario — API REST (extensión "REST Client" de VS Code)
+### Requisitos: npm run dev  (http://localhost:3000)
+### Ejecuta cada petición con "Send Request" sobre la línea ###.
+### Las peticiones están en orden; "listProperties" guarda un id
+### que reutilizan las de detalle.
+### ============================================================
+
+@baseUrl = http://localhost:3000
+
+### ------------------------------------------------------------
+### Propiedades públicas — solo se devuelven propiedades publicadas
+### ------------------------------------------------------------
+
+### Listar propiedades (página 1, 12 por página por defecto)
+# @name listProperties
+GET {{baseUrl}}/api/properties
+Accept: application/json
+
+###
+@propertyId = {{listProperties.response.body.$.items[0].id}}
+
+### Listar con paginación explícita
+GET {{baseUrl}}/api/properties?page=1&pageSize=5
+Accept: application/json
+
+### Segunda página
+GET {{baseUrl}}/api/properties?page=2&pageSize=5
+Accept: application/json
+
+### Detalle de una propiedad (usa el id de listProperties)
+GET {{baseUrl}}/api/properties/{{propertyId}}
+Accept: application/json
+
+### ------------------------------------------------------------
+### Casos de error esperados
+### ------------------------------------------------------------
+
+### 400 — page inválida (debe ser >= 1)
+GET {{baseUrl}}/api/properties?page=0
+Accept: application/json
+
+### 400 — pageSize fuera de rango (máximo 50)
+GET {{baseUrl}}/api/properties?pageSize=500
+Accept: application/json
+
+### 400 — page no numérica
+GET {{baseUrl}}/api/properties?page=abc
+Accept: application/json
+
+### 404 — id inexistente
+GET {{baseUrl}}/api/properties/no-existe
+Accept: application/json

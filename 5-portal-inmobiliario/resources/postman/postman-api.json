@@ -1,0 +1,375 @@
+{
+  "info": {
+    "name": "Portal Inmobiliario API",
+    "description": "Colección para probar la API REST del Portal Inmobiliario.\n\nRequisitos: `npm run dev` (http://localhost:3000) y la base con el seed cargado (`npm run db:seed`).\n\nEjecuta primero «Listar propiedades»: guarda `propertyId` para las peticiones de detalle.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "propertyId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Propiedades públicas",
+      "description": "Solo devuelven propiedades publicadas.",
+      "item": [
+        {
+          "name": "Listar propiedades",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/properties",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "properties"
+              ]
+            },
+            "description": "Lista paginada. Parámetros: page (>=1, por defecto 1), pageSize (1-50, por defecto 12)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Tiene paginación\", function () {",
+                  "  pm.expect(body).to.have.keys(\"items\", \"page\", \"pageSize\", \"total\", \"totalPages\");",
+                  "});",
+                  "pm.test(\"Cada propiedad trae los campos de la tarjeta\", function () {",
+                  "  body.items.forEach(function (p) {",
+                  "    pm.expect(p).to.include.keys(\"id\", \"title\", \"price\", \"currency\", \"operation\", \"type\", \"commune\", \"primaryImageUrl\");",
+                  "    pm.expect(p).to.not.have.property(\"isPublished\");",
+                  "  });",
+                  "});",
+                  "if (body.items.length > 0) { pm.collectionVariables.set(\"propertyId\", body.items[0].id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar con paginación",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/properties?page=1&pageSize=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "properties"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "5"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Máximo 5 elementos\", function () { pm.expect(pm.response.json().items.length).to.be.at.most(5); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Segunda página",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/properties?page=2&pageSize=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "properties"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "2"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "5"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Es la página 2\", function () { pm.expect(pm.response.json().page).to.eql(2); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Detalle de propiedad",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/properties/{{propertyId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "properties",
+                "{{propertyId}}"
+              ]
+            },
+            "description": "Usa el id guardado por «Listar propiedades»."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Devuelve el detalle completo\", function () {",
+                  "  pm.expect(body).to.include.keys(\"id\", \"description\", \"address\", \"totalArea\", \"parkingSpots\", \"age\", \"images\", \"features\");",
+                  "  pm.expect(body.id).to.eql(pm.collectionVariables.get(\"propertyId\"));",
+                  "});",
+                  "pm.test(\"No expone publicId de Cloudinary\", function () { pm.expect(pm.response.text()).to.not.include(\"publicId\"); });",
+                  "pm.test(\"Imágenes ordenadas por posición\", function () {",
+                  "  const positions = body.images.map(function (i) { return i.position; });",
+                  "  pm.expect(positions).to.eql(positions.slice().sort(function (a, b) { return a - b; }));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Errores esperados",
+      "item": [
+        {
+          "name": "400 — page inválida",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/properties?page=0",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "properties"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400\", function () { pm.response.to.have.status(400); });",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Cuerpo de error estándar\", function () { pm.expect(body.status).to.eql(400); pm.expect(body.message).to.eql(\"Parámetros de consulta inválidos\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "400 — pageSize fuera de rango",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/properties?pageSize=500",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "properties"
+              ],
+              "query": [
+                {
+                  "key": "pageSize",
+                  "value": "500"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400\", function () { pm.response.to.have.status(400); });",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Cuerpo de error estándar\", function () { pm.expect(body.status).to.eql(400); pm.expect(body.message).to.eql(\"Parámetros de consulta inválidos\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "400 — page no numérica",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/properties?page=abc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "properties"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "abc"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400\", function () { pm.response.to.have.status(400); });",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Cuerpo de error estándar\", function () { pm.expect(body.status).to.eql(400); pm.expect(body.message).to.eql(\"Parámetros de consulta inválidos\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "404 — id inexistente",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/properties/no-existe",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "properties",
+                "no-existe"
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", function () { pm.response.to.have.status(404); });",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Cuerpo de error estándar\", function () { pm.expect(body.status).to.eql(404); pm.expect(body.message).to.eql(\"Propiedad no encontrada\"); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

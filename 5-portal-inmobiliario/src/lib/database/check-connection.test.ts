@@ -1,12 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { checkDatabaseConnection } from "./check-connection";
 
-try {
-  process.loadEnvFile(".env");
-} catch {
-  // sin .env: la prueba de integración se omite
-}
-
 const databaseUrl = process.env.DATABASE_URL;
 
 describe("checkDatabaseConnection", () => {

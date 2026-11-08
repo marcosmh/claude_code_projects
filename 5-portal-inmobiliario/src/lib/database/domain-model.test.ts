@@ -2,12 +2,6 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PrismaClient } from "@/generated/prisma/client";
 
-try {
-  process.loadEnvFile(".env");
-} catch {
-  // sin .env: las pruebas de integración se omiten
-}
-
 const databaseUrl = process.env.DATABASE_URL;
 const testRunIdentifier = `test-${Date.now()}`;
 
