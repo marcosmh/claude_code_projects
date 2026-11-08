@@ -21,7 +21,7 @@
   - Configurar migraciones.
   - Validar conexión.
 
-- [ ] **Paso 4 — Crear modelo de dominio**
+- [x] **Paso 4 — Crear modelo de dominio**
   - User.
   - Property.
   - PropertyImage.
@@ -31,7 +31,7 @@
   - Crear relaciones y constraints.
   - Ejecutar migraciones.
 
-- [ ] **Paso 5 — Crear seed**
+- [x] **Paso 5 — Crear seed**
   - Propiedades realistas de venta y arriendo.
   - Casas, departamentos, terrenos y oficinas.
   - Diferentes comunas, precios y características.
