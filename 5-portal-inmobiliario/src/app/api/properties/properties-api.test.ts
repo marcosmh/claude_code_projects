@@ -99,7 +99,7 @@ describe.skipIf(!databaseUrl)("API REST pública de propiedades", () => {
   it("GET /api/properties/{id} devuelve el detalle con imágenes ordenadas y características", async () => {
     const response = await getPropertyById(
       new NextRequest(`http://localhost/api/properties/${publishedId}`),
-      { params: Promise.resolve({ id: publishedId }) } as RouteContext<"/api/properties/[id]">,
+      { params: Promise.resolve({ id: publishedId }) },
     );
     const body = (await response.json()) as {
       id: string;
@@ -119,7 +119,7 @@ describe.skipIf(!databaseUrl)("API REST pública de propiedades", () => {
   it("GET /api/properties/{id} responde 404 para una propiedad no publicada", async () => {
     const response = await getPropertyById(
       new NextRequest(`http://localhost/api/properties/${draftId}`),
-      { params: Promise.resolve({ id: draftId }) } as RouteContext<"/api/properties/[id]">,
+      { params: Promise.resolve({ id: draftId }) },
     );
     expect(response.status).toBe(404);
     expect(await response.json()).toEqual({ message: "Propiedad no encontrada", status: 404 });
@@ -128,7 +128,7 @@ describe.skipIf(!databaseUrl)("API REST pública de propiedades", () => {
   it("GET /api/properties/{id} responde 404 para un id inexistente", async () => {
     const response = await getPropertyById(
       new NextRequest("http://localhost/api/properties/no-existe"),
-      { params: Promise.resolve({ id: "no-existe" }) } as RouteContext<"/api/properties/[id]">,
+      { params: Promise.resolve({ id: "no-existe" }) },
     );
     expect(response.status).toBe(404);
   });

@@ -3,10 +3,9 @@ import { NotFoundError } from "@/lib/errors";
 import { errorResponse } from "@/lib/http/api-response";
 import { propertyService } from "@/services/services";
 
-export async function GET(
-  _request: NextRequest,
-  context: RouteContext<"/api/properties/[id]">,
-) {
+type PropertyRouteContext = { params: Promise<{ id: string }> };
+
+export async function GET(_request: NextRequest, context: PropertyRouteContext) {
   const { id } = await context.params;
 
   try {
