@@ -1,0 +1,14 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "Portal Inmobiliario (docker postgres)",
+      "Group": "Servers",
+      "Host": "host.docker.internal",
+      "Port": 5433,
+      "MaintenanceDB": "portal_inmobiliario",
+      "Username": "postgres",
+      "PassFile": "/var/lib/pgadmin/pgpass",
+      "SSLMode": "prefer"
+    }
+  }
+}

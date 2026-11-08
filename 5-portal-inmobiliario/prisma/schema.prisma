@@ -1,0 +1,10 @@
+// Los modelos del dominio (User, Property, PropertyImage, Feature, Favorite,
+// Inquiry) se definen en el Paso 4.
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}

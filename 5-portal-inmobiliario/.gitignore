@@ -34,3 +34,6 @@ Thumbs.db
 # env files (can opt-in for committing if needed)
 .env*
 !.env.example
+
+# Prisma Client generado
+/src/generated/

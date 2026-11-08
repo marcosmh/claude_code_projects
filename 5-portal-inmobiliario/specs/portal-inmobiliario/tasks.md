@@ -15,7 +15,7 @@
   - Agregar diseño responsive base.
   - Navegación: Inicio, Propiedades, Comprar, Arrendar, Ingresar.
 
-- [ ] **Paso 3 — Configurar PostgreSQL**
+- [x] **Paso 3 — Configurar PostgreSQL**
   - Configurar PostgreSQL.
   - Seleccionar y configurar ORM.
   - Configurar migraciones.
