@@ -3,13 +3,14 @@ import { propertyListQuerySchema } from "./property-list-query";
 
 describe("propertyListQuerySchema", () => {
   it("aplica valores por defecto", () => {
-    expect(propertyListQuerySchema.parse({})).toEqual({ page: 1, pageSize: 12 });
+    expect(propertyListQuerySchema.parse({})).toEqual({ page: 1, pageSize: 12, sort: "newest" });
   });
 
   it("convierte strings de la URL a números", () => {
     expect(propertyListQuerySchema.parse({ page: "2", pageSize: "24" })).toEqual({
       page: 2,
       pageSize: 24,
+      sort: "newest",
     });
   });
 
@@ -87,5 +88,10 @@ describe("propertyListQuerySchema", () => {
     expect(propertyListQuerySchema.safeParse({ minPrice: "10", maxPrice: "5" }).success).toBe(
       false,
     );
+  });
+
+  it("valida el orden", () => {
+    expect(propertyListQuerySchema.parse({ sort: "price_asc" }).sort).toBe("price_asc");
+    expect(propertyListQuerySchema.safeParse({ sort: "random" }).success).toBe(false);
   });
 });

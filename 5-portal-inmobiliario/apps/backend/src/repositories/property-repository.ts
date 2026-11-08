@@ -43,10 +43,13 @@ export type PropertyFilters = {
   isFeatured?: boolean;
 };
 
+export type PropertySortOption = "newest" | "price_asc" | "price_desc" | "area_asc" | "area_desc";
+
 export type PaginationOptions = {
   skip: number;
   take: number;
   filters: PropertyFilters;
+  sort: PropertySortOption;
 };
 
 export type PropertyRepository = {
@@ -121,12 +124,28 @@ async function buildPublishedWhere(filters: PropertyFilters): Promise<Prisma.Pro
   };
 }
 
+/** Orden en PostgreSQL; la superficie nula va siempre al final y `id` desempata para paginar de forma estable. */
+function buildOrderBy(sort: PropertySortOption): Prisma.PropertyOrderByWithRelationInput[] {
+  switch (sort) {
+    case "price_asc":
+      return [{ price: "asc" }, { id: "asc" }];
+    case "price_desc":
+      return [{ price: "desc" }, { id: "asc" }];
+    case "area_asc":
+      return [{ usableArea: { sort: "asc", nulls: "last" } }, { id: "asc" }];
+    case "area_desc":
+      return [{ usableArea: { sort: "desc", nulls: "last" } }, { id: "asc" }];
+    case "newest":
+      return [{ createdAt: "desc" }, { id: "asc" }];
+  }
+}
+
 export const propertyRepository: PropertyRepository = {
-  async findPublishedPage({ skip, take, filters }) {
+  async findPublishedPage({ skip, take, filters, sort }) {
     return database.property.findMany({
       where: await buildPublishedWhere(filters),
       include: summaryInclude,
-      orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+      orderBy: buildOrderBy(sort),
       skip,
       take,
     });

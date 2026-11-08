@@ -23,6 +23,15 @@ export const propertyTypeValues = [
   "OTHER",
 ] as const;
 
+export const propertySortValues = [
+  "newest",
+  "price_asc",
+  "price_desc",
+  "area_asc",
+  "area_desc",
+] as const;
+export type PropertySort = (typeof propertySortValues)[number];
+
 export const propertyListQuerySchema = z
   .object({
     page: z.coerce.number().int().min(1).default(1),
@@ -45,6 +54,7 @@ export const propertyListQuerySchema = z
     commune: optionalText,
     city: optionalText,
     region: optionalText,
+    sort: z.enum(propertySortValues).default("newest"),
     featured: z
       .enum(["true", "false"])
       .transform((value) => value === "true")

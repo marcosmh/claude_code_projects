@@ -84,3 +84,21 @@ describe("parseCatalogParams con filtros", () => {
     ).toEqual({ page: 1 });
   });
 });
+
+describe("orden en la URL", () => {
+  it("lee un orden válido y omite el predeterminado o inválido", () => {
+    expect(parseCatalogParams(new URLSearchParams("sort=area_desc"))).toEqual({
+      page: 1,
+      sort: "area_desc",
+    });
+    expect(parseCatalogParams(new URLSearchParams("sort=newest"))).toEqual({ page: 1 });
+    expect(parseCatalogParams(new URLSearchParams("sort=random"))).toEqual({ page: 1 });
+  });
+
+  it("conserva el orden al construir la URL", () => {
+    expect(buildCatalogHref({ page: 2, sort: "price_asc" })).toBe(
+      "/properties?sort=price_asc&page=2",
+    );
+    expect(buildCatalogHref({ page: 1, sort: "newest" })).toBe("/properties");
+  });
+});

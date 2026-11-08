@@ -8,6 +8,7 @@ import { CatalogSearchForm } from "./CatalogSearchForm";
 import { Pagination } from "./Pagination";
 import { PropertyCard } from "./PropertyCard";
 import { PropertyGrid } from "./PropertyGrid";
+import { SortSelect } from "./SortSelect";
 
 const headingByOperation = {
   SALE: "Propiedades en venta",
@@ -35,9 +36,12 @@ export function PropertyCatalog() {
       </h1>
       <CatalogSearchForm key={JSON.stringify(filters)} filters={filters} />
       {!isLoading && !hasError && total > 0 && (
-        <p className="mt-1 text-foreground/70">
-          {total} {total === 1 ? "propiedad disponible" : "propiedades disponibles"}
-        </p>
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-foreground/70">
+            {total} {total === 1 ? "propiedad disponible" : "propiedades disponibles"}
+          </p>
+          <SortSelect filters={filters} />
+        </div>
       )}
 
       {isLoading && (

@@ -80,7 +80,7 @@ describe("listPublishedProperties", () => {
       }),
     );
 
-    const result = await service.listPublishedProperties({ page: 1, pageSize: 12 });
+    const result = await service.listPublishedProperties({ page: 1, pageSize: 12, sort: "newest" });
 
     expect(result.items[0]).toMatchObject({
       id: "prop-1",
@@ -102,7 +102,7 @@ describe("listPublishedProperties", () => {
         countPublished: vi.fn().mockResolvedValue(1),
       }),
     );
-    const result = await service.listPublishedProperties({ page: 1, pageSize: 12 });
+    const result = await service.listPublishedProperties({ page: 1, pageSize: 12, sort: "newest" });
     expect(result.items[0].primaryImageUrl).toBeNull();
     expect(result.items[0].usableArea).toBeNull();
   });
@@ -113,9 +113,9 @@ describe("listPublishedProperties", () => {
       buildRepository({ findPublishedPage, countPublished: vi.fn().mockResolvedValue(25) }),
     );
 
-    const result = await service.listPublishedProperties({ page: 3, pageSize: 10 });
+    const result = await service.listPublishedProperties({ page: 3, pageSize: 10, sort: "newest" });
 
-    expect(findPublishedPage).toHaveBeenCalledWith({ skip: 20, take: 10, filters: {} });
+    expect(findPublishedPage).toHaveBeenCalledWith({ skip: 20, take: 10, filters: {}, sort: "newest" });
     expect(result).toMatchObject({ page: 3, pageSize: 10, total: 25, totalPages: 3 });
   });
 });
@@ -134,10 +134,16 @@ describe("listPublishedProperties con filtros", () => {
       search: "querétaro",
       operation: "RENT",
       featured: true,
+      sort: "price_desc",
     });
 
     const expectedFilters = { searchText: "querétaro", operation: "RENT", isFeatured: true };
-    expect(findPublishedPage).toHaveBeenCalledWith({ skip: 0, take: 3, filters: expectedFilters });
+    expect(findPublishedPage).toHaveBeenCalledWith({
+      skip: 0,
+      take: 3,
+      filters: expectedFilters,
+      sort: "price_desc",
+    });
     expect(countPublished).toHaveBeenCalledWith(expectedFilters);
   });
 });

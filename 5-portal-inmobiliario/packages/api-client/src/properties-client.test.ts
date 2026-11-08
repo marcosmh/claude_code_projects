@@ -45,6 +45,13 @@ describe("buildPropertiesUrl con filtros", () => {
   });
 });
 
+describe("buildPropertiesUrl con orden", () => {
+  it("omite el orden predeterminado y serializa los demás", () => {
+    expect(buildPropertiesUrl({ sort: "newest" })).toBe("/api/properties");
+    expect(buildPropertiesUrl({ sort: "price_desc" })).toBe("/api/properties?sort=price_desc");
+  });
+});
+
 describe("fetchPropertyPage", () => {
   afterEach(() => vi.unstubAllGlobals());
 

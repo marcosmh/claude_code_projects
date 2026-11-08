@@ -1,5 +1,5 @@
-import type { PropertyOperation, PropertyType } from "@portal/shared-types";
-import { propertyTypeValues } from "@portal/shared-types";
+import type { PropertyOperation, PropertySort, PropertyType } from "@portal/shared-types";
+import { propertySortValues, propertyTypeValues } from "@portal/shared-types";
 
 export const catalogPageSize = 12;
 
@@ -26,6 +26,8 @@ export type CatalogFilters = {
   commune?: string;
   city?: string;
   region?: string;
+  /** Orden de resultados; se omite cuando es el predeterminado (más recientes). */
+  sort?: PropertySort;
 };
 
 export type CatalogParams = CatalogFilters & { page: number };
@@ -55,6 +57,8 @@ export function parseCatalogParams(searchParams: URLSearchParams): CatalogParams
   const rawType = searchParams.get("type");
   const type = propertyTypeValues.find((candidate) => candidate === rawType);
   if (type) parsed.type = type;
+  const sort = propertySortValues.find((candidate) => candidate === searchParams.get("sort"));
+  if (sort && sort !== "newest") parsed.sort = sort;
   for (const key of numericFilterKeys) {
     const value = readNonNegativeNumber(searchParams, key);
     if (value !== undefined) parsed[key] = value;
@@ -72,6 +76,7 @@ export function buildCatalogHref(params: CatalogParams): string {
   if (params.search) searchParams.set("search", params.search);
   if (params.operation) searchParams.set("operation", params.operation);
   if (params.type) searchParams.set("type", params.type);
+  if (params.sort && params.sort !== "newest") searchParams.set("sort", params.sort);
   for (const key of numericFilterKeys) {
     const value = params[key];
     if (value !== undefined) searchParams.set(key, String(value));

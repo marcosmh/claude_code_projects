@@ -76,7 +76,7 @@
   - Comuna/ciudad/región.
   - Permitir filtros combinados.
 
-- [ ] **Paso 12 — Ordenamiento y estados**
+- [x] **Paso 12 — Ordenamiento y estados**
   - Más recientes.
   - Precio ascendente/descendente.
   - Superficie ascendente/descendente.

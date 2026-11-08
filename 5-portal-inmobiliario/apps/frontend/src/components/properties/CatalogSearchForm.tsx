@@ -33,7 +33,8 @@ export function CatalogSearchForm({ filters }: CatalogSearchFormProps) {
     defaultValues: toFormValues(filters),
   });
   const hasAdvancedFilters = Object.entries(filters).some(
-    ([name, value]) => name !== "search" && name !== "operation" && value !== undefined,
+    ([name, value]) =>
+      name !== "search" && name !== "operation" && name !== "sort" && value !== undefined,
   );
 
   const field = (
@@ -85,7 +86,9 @@ export function CatalogSearchForm({ filters }: CatalogSearchFormProps) {
       role="search"
       aria-label="Buscar propiedades"
       noValidate
-      onSubmit={handleSubmit((values) => router.push(buildCatalogFiltersHref(values)))}
+      onSubmit={handleSubmit((values) =>
+        router.push(buildCatalogFiltersHref(values, filters.sort)),
+      )}
       className="mt-6 space-y-4"
     >
       <div className="grid gap-3 sm:grid-cols-[1fr_12rem_auto]">

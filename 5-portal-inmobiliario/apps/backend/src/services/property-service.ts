@@ -96,6 +96,7 @@ export function createPropertyService(repository: PropertyRepository) {
           skip: (query.page - 1) * query.pageSize,
           take: query.pageSize,
           filters,
+          sort: query.sort,
         }),
         repository.countPublished(filters),
       ]);

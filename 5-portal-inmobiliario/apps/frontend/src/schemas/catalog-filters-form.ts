@@ -49,8 +49,11 @@ export function toFormValues(filters: CatalogFilters): CatalogFiltersFormValues 
 }
 
 /** URL del catálogo para los valores del formulario: omite vacíos y reinicia a la página 1. */
-export function buildCatalogFiltersHref(values: CatalogFiltersFormValues): string {
-  const filters: CatalogFilters = {};
+export function buildCatalogFiltersHref(
+  values: CatalogFiltersFormValues,
+  sort?: CatalogFilters["sort"],
+): string {
+  const filters: CatalogFilters = sort ? { sort } : {};
   if (values.search) filters.search = values.search;
   if (values.operation !== "ALL") filters.operation = values.operation;
   if (values.type !== "ALL") filters.type = values.type;

@@ -260,6 +260,53 @@ describe.skipIf(!databaseUrl)("API REST pública de propiedades", () => {
     });
   });
 
+  describe("ordenamiento", () => {
+    const region = `${testRunIdentifier} Región Orden`;
+    const titles = ["A", "B", "C"].map((letter) => `${testRunIdentifier} Orden ${letter}`);
+
+    beforeAll(async () => {
+      const rows = [
+        { price: 2000000, usableArea: 100 },
+        { price: 1000000, usableArea: null },
+        { price: 3000000, usableArea: 50 },
+      ];
+      for (const [index, row] of rows.entries()) {
+        await client.property.create({
+          data: { ...propertyData("orden", true), title: titles[index] as string, region, ...row },
+        });
+        // createdAt distinto y creciente: A < B < C
+        await new Promise((resolve) => setTimeout(resolve, 15));
+      }
+    });
+
+    const orderedTitles = async (sort: string): Promise<string[]> => {
+      const response = await listProperties(
+        buildListRequest(`?pageSize=50&region=${encodeURIComponent(region)}&sort=${sort}`),
+      );
+      expect(response.status).toBe(200);
+      return ((await response.json()) as ListBody).items.map((item) => item.title);
+    };
+
+    it("ordena por más recientes por defecto", async () => {
+      expect(await orderedTitles("newest")).toEqual([titles[2], titles[1], titles[0]]);
+    });
+
+    it("ordena por precio ascendente y descendente", async () => {
+      expect(await orderedTitles("price_asc")).toEqual([titles[1], titles[0], titles[2]]);
+      expect(await orderedTitles("price_desc")).toEqual([titles[2], titles[0], titles[1]]);
+    });
+
+    it("ordena por superficie dejando las propiedades sin superficie al final", async () => {
+      expect(await orderedTitles("area_asc")).toEqual([titles[2], titles[0], titles[1]]);
+      expect(await orderedTitles("area_desc")).toEqual([titles[0], titles[2], titles[1]]);
+    });
+
+    it("responde 400 con un orden inválido", async () => {
+      const response = await listProperties(buildListRequest("?sort=random"));
+      expect(response.status).toBe(400);
+    });
+  });
+
   it("GET /api/properties pagina los resultados", async () => {
     const response = await listProperties(buildListRequest("?page=1&pageSize=2"));
     const body = (await response.json()) as ListBody;

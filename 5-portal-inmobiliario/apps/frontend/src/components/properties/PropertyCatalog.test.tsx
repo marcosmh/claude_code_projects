@@ -6,13 +6,14 @@ import type { PropertySummaryDto } from "@portal/shared-types";
 import { PropertyCatalog } from "./PropertyCatalog";
 
 const usePropertyListMock = vi.fn();
+const pushMock = vi.hoisted(() => vi.fn());
 let currentQuery = "";
 vi.mock("@/hooks/usePropertyList", () => ({
   usePropertyList: (params: unknown) => usePropertyListMock(params),
 }));
 vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(currentQuery),
-  useRouter: () => ({ push: vi.fn() }),
+  useRouter: () => ({ push: pushMock }),
 }));
 vi.mock("next/image", () => ({
   // eslint-disable-next-line @next/next/no-img-element
@@ -22,6 +23,7 @@ vi.mock("next/image", () => ({
 afterEach(() => {
   cleanup();
   usePropertyListMock.mockReset();
+  pushMock.mockReset();
   currentQuery = "";
 });
 
@@ -102,6 +104,22 @@ describe("PropertyCatalog", () => {
     expect(screen.getByRole("link", { name: /Siguiente/ }).getAttribute("href")).toBe(
       "/properties?type=HOUSE&minPrice=100&bedrooms=3&city=M%C3%A9rida&page=2",
     );
+  });
+
+  it("envía el orden a la API y permite cambiarlo conservando los filtros", async () => {
+    currentQuery = "operation=SALE&sort=price_asc";
+    mockList({ properties: [property], total: 1, totalPages: 1 });
+    render(<PropertyCatalog />);
+    expect(usePropertyListMock).toHaveBeenCalledWith({
+      page: 1,
+      pageSize: 12,
+      operation: "SALE",
+      sort: "price_asc",
+    });
+    const select = screen.getByLabelText("Ordenar por") as HTMLSelectElement;
+    expect(select.value).toBe("price_asc");
+    await userEvent.setup().selectOptions(select, "area_desc");
+    expect(pushMock).toHaveBeenCalledWith("/properties?operation=SALE&sort=area_desc");
   });
 
   it("muestra estado de carga", () => {

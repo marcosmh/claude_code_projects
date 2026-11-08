@@ -1,6 +1,7 @@
 import type {
   PaginatedResponse,
   PropertyOperation,
+  PropertySort,
   PropertyType,
   PropertySummaryDto,
 } from "@portal/shared-types";
@@ -19,6 +20,7 @@ export type PropertyListParams = {
   commune?: string;
   city?: string;
   region?: string;
+  sort?: PropertySort;
   featured?: boolean;
 };
 
@@ -46,6 +48,7 @@ export function buildPropertiesUrl(params: PropertyListParams = {}): string {
     const value = params[key];
     if (value) searchParams.set(key, value);
   }
+  if (params.sort !== undefined && params.sort !== "newest") searchParams.set("sort", params.sort);
   if (params.featured !== undefined) searchParams.set("featured", String(params.featured));
   const queryString = searchParams.toString();
   return queryString ? `/api/properties?${queryString}` : "/api/properties";
