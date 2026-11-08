@@ -108,7 +108,7 @@ export function Header() {
           })}
         </ul>
         <div className="border-t border-foreground/10 px-4 py-3 sm:px-6">
-          <ThemeSwitcher showLabels className="flex-wrap" />
+          <ThemeSwitcher showLabels align="left" />
         </div>
       </nav>
     </header>

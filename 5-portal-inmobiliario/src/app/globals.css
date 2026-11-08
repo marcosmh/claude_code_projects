@@ -2,14 +2,15 @@
 
 /*
  * Temas visuales. El tema se elige con el atributo data-theme de <html>:
- *   - sin atributo / "default" → tema "Actual": sigue el modo claro/oscuro del sistema.
- *   - "light"                  → claro fijo (usa los valores base de :root).
- *   - "smallville"             → oscuro, rojo y azul.
- * Para añadir un tema basta con agregar un bloque con las mismas variables.
+ *   - "light"      → claro (valores base de :root).
+ *   - "dark"       → oscuro.
+ *   - "smallville" → oscuro, rojo y azul.
+ * Un script inicial aplica el tema guardado o, en la primera visita, Claro u Oscuro
+ * según el sistema. Para añadir un tema basta con agregar un bloque con las mismas variables.
  * Los valores deben ser hexadecimales: las pruebas de contraste los leen de aquí.
  */
 
-/* Base: tema Claro y tema Actual en modo claro. */
+/* Base: tema Claro. */
 :root {
   color-scheme: light;
   --background: #ffffff;
@@ -26,9 +27,26 @@
   --hero-tint: #155dfc;
 }
 
-/* Tema Actual en modo oscuro (sistema). */
+/* Tema Oscuro. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  --surface: #0a0a0a;
+  --primary: #155dfc;
+  --primary-hover: #1447e6;
+  --primary-foreground: #ffffff;
+  --link: #5b9bff;
+  --ring: #5b9bff;
+  --danger: #ff6467;
+  --badge: #0a0a0a;
+  --badge-foreground: #ededed;
+  --hero-tint: #155dfc;
+}
+
+/* Respaldo sin JavaScript: mientras no haya data-theme, se sigue al sistema. */
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]):not([data-theme="smallville"]) {
+  :root:not([data-theme]) {
     color-scheme: dark;
     --background: #0a0a0a;
     --foreground: #ededed;

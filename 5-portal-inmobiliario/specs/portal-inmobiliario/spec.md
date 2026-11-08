@@ -567,9 +567,11 @@ El producto está funcionalmente terminado cuando:
 
 El usuario puede elegir el tema de color de la interfaz desde un selector visible en el header:
 
-- **Actual**: el tema original. Sigue el modo claro u oscuro del sistema del usuario, con acento azul.
+- **Claro**: tema claro, con acento azul.
+- **Oscuro**: tema oscuro, con acento azul.
 - **Smallville**: tema oscuro inspirado en Superman. Fondo azul marino, acciones principales en rojo y detalles en azul y amarillo.
-- **Claro**: tema claro fijo, independiente del sistema.
+
+El selector los muestra en ese orden (Claro, Oscuro, Smallville). En la primera visita, sin elección guardada, se aplica Claro u Oscuro según la preferencia del sistema del usuario.
 
 Requisitos:
 

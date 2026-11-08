@@ -6,14 +6,14 @@ import { useThemeStore } from "./themeStore";
 beforeEach(() => {
   localStorage.clear();
   delete document.documentElement.dataset.theme;
-  useThemeStore.setState({ theme: "default" });
+  useThemeStore.setState({ theme: "light" });
 });
 
 afterEach(() => vi.restoreAllMocks());
 
 describe("useThemeStore", () => {
-  it("empieza con el tema Actual", () => {
-    expect(useThemeStore.getState().theme).toBe("default");
+  it("empieza con el tema Claro", () => {
+    expect(useThemeStore.getState().theme).toBe("light");
   });
 
   it("setTheme actualiza el estado, el documento y el almacenamiento", () => {
@@ -42,12 +42,13 @@ describe("useThemeStore", () => {
 
   it("syncFromDocument ignora valores inválidos o ausentes", () => {
     document.documentElement.dataset.theme = "inventado";
+    useThemeStore.setState({ theme: "dark" });
     useThemeStore.getState().syncFromDocument();
-    expect(useThemeStore.getState().theme).toBe("default");
+    expect(useThemeStore.getState().theme).toBe("light");
 
     delete document.documentElement.dataset.theme;
-    useThemeStore.setState({ theme: "light" });
+    useThemeStore.setState({ theme: "smallville" });
     useThemeStore.getState().syncFromDocument();
-    expect(useThemeStore.getState().theme).toBe("default");
+    expect(useThemeStore.getState().theme).toBe("light");
   });
 });

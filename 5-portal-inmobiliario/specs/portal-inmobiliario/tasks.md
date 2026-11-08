@@ -255,9 +255,9 @@
 
 ## Extra — Extensiones fuera de la secuencia 1-37
 
-- [x] **Extra A — Temas visuales (Actual, Smallville, Claro)**
+- [x] **Extra A — Temas visuales (Claro, Oscuro, Smallville)**
   - Tokens de color semánticos con Tailwind CSS 4.
-  - Tema Smallville oscuro (rojo y azul), conservando el tema Actual.
-  - Selector de tema en el header (escritorio y móvil), con preferencia persistente y sin parpadeo.
+  - Temas Claro y Oscuro (el original) y tema Smallville oscuro (rojo y azul).
+  - Selector desplegable de tema en el header (escritorio y móvil), con preferencia persistente y sin parpadeo; primera visita según el sistema.
   - Contraste WCAG AA verificado por pruebas.
 

@@ -23,9 +23,7 @@ function extractTokens(selector: string): Tokens {
 
 const themes: Record<string, Tokens> = {
   "Claro": extractTokens(":root"),
-  "Actual (oscuro del sistema)": extractTokens(
-    ':root:not([data-theme="light"]):not([data-theme="smallville"])',
-  ),
+  "Oscuro": extractTokens(':root[data-theme="dark"]'),
   "Smallville": extractTokens(':root[data-theme="smallville"]'),
 };
 
@@ -55,6 +53,13 @@ function contrastRatio(first: Rgb, second: Rgb): number {
   const [lighter, darker] = [luminance(first), luminance(second)].sort((a, b) => b - a);
   return (lighter + 0.05) / (darker + 0.05);
 }
+
+describe("respaldo sin JavaScript", () => {
+  it("replica exactamente los tokens del tema Oscuro", () => {
+    const fallbackTokens = extractTokens(":root:not([data-theme])");
+    expect(fallbackTokens).toEqual(themes["Oscuro"]);
+  });
+});
 
 const TEXT_MINIMUM = 4.5;
 const INTERFACE_MINIMUM = 3;

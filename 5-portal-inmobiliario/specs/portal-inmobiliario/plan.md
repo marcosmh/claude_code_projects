@@ -346,10 +346,10 @@ Una tarea está terminada cuando:
 Implementación con Tailwind CSS 4 y variables CSS:
 
 - Tokens de color semánticos en `globals.css` (`background`, `foreground`, `surface`, `primary`, `primary-hover`, `primary-foreground`, `link`, `ring`, `danger`, `badge`, `badge-foreground`, `hero-tint`), expuestos a Tailwind mediante `@theme inline`.
-- El tema se selecciona con el atributo `data-theme` de `<html>`: sin atributo o `default` (tema Actual, sigue `prefers-color-scheme`), `light` y `smallville`.
+- El tema se selecciona con el atributo `data-theme` de `<html>`: `light`, `dark` y `smallville`. El script inicial aplica el tema guardado o, sin elección guardada, `dark`/`light` según `prefers-color-scheme`; sin JavaScript, un bloque de respaldo sigue al sistema.
 - Los componentes usan solo tokens (`bg-primary`, `text-link`, ...), nunca colores fijos, de modo que un tema nuevo solo añade un bloque de variables.
 - Estado del tema en un store de Zustand; la preferencia se guarda en `localStorage` (no es información sensible).
 - Un script en línea en `<head>` aplica el tema guardado antes del primer pintado para evitar parpadeo.
-- Selector accesible (grupo de radios nativos) en el header y en el menú móvil.
+- Selector accesible (botón desplegable con menú de opciones) en el header y en el menú móvil, en el orden Claro, Oscuro y Smallville.
 - Pruebas: store, selector y contraste WCAG calculado sobre los valores reales de `globals.css`.
 
