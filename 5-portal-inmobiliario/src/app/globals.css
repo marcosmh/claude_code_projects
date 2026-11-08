@@ -1,22 +1,82 @@
 @import "tailwindcss";
 
+/*
+ * Temas visuales. El tema se elige con el atributo data-theme de <html>:
+ *   - sin atributo / "default" → tema "Actual": sigue el modo claro/oscuro del sistema.
+ *   - "light"                  → claro fijo (usa los valores base de :root).
+ *   - "smallville"             → oscuro, rojo y azul.
+ * Para añadir un tema basta con agregar un bloque con las mismas variables.
+ * Los valores deben ser hexadecimales: las pruebas de contraste los leen de aquí.
+ */
+
+/* Base: tema Claro y tema Actual en modo claro. */
 :root {
+  color-scheme: light;
   --background: #ffffff;
   --foreground: #171717;
+  --surface: #ffffff;
+  --primary: #155dfc;
+  --primary-hover: #1447e6;
+  --primary-foreground: #ffffff;
+  --link: #155dfc;
+  --ring: #155dfc;
+  --danger: #e7000b;
+  --badge: #ffffff;
+  --badge-foreground: #171717;
+  --hero-tint: #155dfc;
+}
+
+/* Tema Actual en modo oscuro (sistema). */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not([data-theme="smallville"]) {
+    color-scheme: dark;
+    --background: #0a0a0a;
+    --foreground: #ededed;
+    --surface: #0a0a0a;
+    --primary: #155dfc;
+    --primary-hover: #1447e6;
+    --primary-foreground: #ffffff;
+    --link: #5b9bff;
+    --ring: #5b9bff;
+    --danger: #ff6467;
+    --badge: #0a0a0a;
+    --badge-foreground: #ededed;
+    --hero-tint: #155dfc;
+  }
+}
+
+/* Tema Smallville: azul marino, rojo Superman y detalles amarillos. */
+:root[data-theme="smallville"] {
+  color-scheme: dark;
+  --background: #0a1a3a;
+  --foreground: #f4f7ff;
+  --surface: #12264f;
+  --primary: #d7263d;
+  --primary-hover: #b81e33;
+  --primary-foreground: #ffffff;
+  --link: #8db8ff;
+  --ring: #ffc300;
+  --danger: #ff8a96;
+  --badge: #ffc300;
+  --badge-foreground: #0a1a3a;
+  --hero-tint: #2f6fed;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-link: var(--link);
+  --color-ring: var(--ring);
+  --color-danger: var(--danger);
+  --color-badge: var(--badge);
+  --color-badge-foreground: var(--badge-foreground);
+  --color-hero-tint: var(--hero-tint);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {

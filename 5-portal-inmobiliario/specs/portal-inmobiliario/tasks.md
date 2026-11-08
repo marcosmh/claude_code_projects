@@ -252,3 +252,12 @@
   - Corregir faltantes o inconsistencias.
   - Ejecutar build y validaciones finales.
   - Confirmar ausencia de errores bloqueantes.
+
+## Extra — Extensiones fuera de la secuencia 1-37
+
+- [x] **Extra A — Temas visuales (Actual, Smallville, Claro)**
+  - Tokens de color semánticos con Tailwind CSS 4.
+  - Tema Smallville oscuro (rojo y azul), conservando el tema Actual.
+  - Selector de tema en el header (escritorio y móvil), con preferencia persistente y sin parpadeo.
+  - Contraste WCAG AA verificado por pruebas.
+

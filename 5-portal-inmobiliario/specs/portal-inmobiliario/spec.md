@@ -558,3 +558,22 @@ El producto está funcionalmente terminado cuando:
 - la autorización se aplica en backend;
 - la aplicación es responsive;
 - no existen errores bloqueantes conocidos.
+
+---
+
+## 27. Temas visuales (extensión)
+
+> Extensión solicitada después de la especificación inicial. No altera los criterios de la sección 26.
+
+El usuario puede elegir el tema de color de la interfaz desde un selector visible en el header:
+
+- **Actual**: el tema original. Sigue el modo claro u oscuro del sistema del usuario, con acento azul.
+- **Smallville**: tema oscuro inspirado en Superman. Fondo azul marino, acciones principales en rojo y detalles en azul y amarillo.
+- **Claro**: tema claro fijo, independiente del sistema.
+
+Requisitos:
+
+- La elección se recuerda entre visitas y se aplica sin parpadeo al cargar.
+- El selector es accesible (teclado, etiquetas, foco visible) y funciona en escritorio y móvil.
+- Todos los temas cumplen contraste WCAG AA para texto (4.5:1) y elementos de interfaz (3:1).
+- Los temas no deben requerir cambios en los componentes al añadir uno nuevo.

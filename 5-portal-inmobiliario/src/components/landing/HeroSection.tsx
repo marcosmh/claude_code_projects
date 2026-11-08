@@ -10,7 +10,7 @@ import {
 } from "@/schemas/property-search-form";
 
 const fieldClassName =
-  "h-12 w-full rounded-md border border-foreground/20 bg-background px-3 text-base focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600";
+  "h-12 w-full rounded-md border border-foreground/20 bg-surface px-3 text-base focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
 
 export function HeroSection() {
   const router = useRouter();
@@ -30,7 +30,7 @@ export function HeroSection() {
   return (
     <section
       aria-labelledby="hero-title"
-      className="bg-gradient-to-b from-blue-600/10 to-transparent"
+      className="bg-gradient-to-b from-hero-tint/10 to-transparent"
     >
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
         <h1
@@ -49,7 +49,7 @@ export function HeroSection() {
           aria-label="Buscar propiedades"
           onSubmit={handleSubmit(submitSearch)}
           noValidate
-          className="mt-8 grid gap-3 rounded-xl border border-foreground/10 bg-background p-4 shadow-sm sm:grid-cols-[1fr_12rem_auto]"
+          className="mt-8 grid gap-3 rounded-xl border border-foreground/10 bg-surface p-4 shadow-sm sm:grid-cols-[1fr_12rem_auto]"
         >
           <div>
             <label htmlFor="hero-search" className="mb-1 block text-sm font-medium">
@@ -65,7 +65,7 @@ export function HeroSection() {
               {...register("search")}
             />
             {errors.search && (
-              <p id="hero-search-error" role="alert" className="mt-1 text-sm text-red-600">
+              <p id="hero-search-error" role="alert" className="mt-1 text-sm text-danger">
                 {errors.search.message}
               </p>
             )}
@@ -84,7 +84,7 @@ export function HeroSection() {
 
           <button
             type="submit"
-            className="h-12 self-end rounded-md bg-blue-600 px-6 text-base font-semibold text-white hover:bg-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+            className="h-12 self-end rounded-md bg-primary px-6 text-base font-semibold text-primary-foreground hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           >
             Buscar
           </button>

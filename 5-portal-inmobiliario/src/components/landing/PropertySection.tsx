@@ -39,7 +39,7 @@ export function PropertySection({
         </div>
         <Link
           href={viewAllHref}
-          className="text-sm font-semibold text-blue-600 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+          className="text-sm font-semibold text-link hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
           {viewAllLabel} →
         </Link>
@@ -58,12 +58,12 @@ export function PropertySection({
       )}
 
       {hasError && (
-        <div role="alert" className="mt-6 rounded-lg border border-red-600/30 bg-red-600/5 p-6 text-center">
+        <div role="alert" className="mt-6 rounded-lg border border-danger/30 bg-danger/5 p-6 text-center">
           <p className="font-medium">No pudimos cargar las propiedades.</p>
           <button
             type="button"
             onClick={retry}
-            className="mt-3 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+            className="mt-3 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           >
             Reintentar
           </button>

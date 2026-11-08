@@ -14,10 +14,10 @@ export function LandingPropertyCard({ property }: { property: PropertySummaryDto
   ].filter(Boolean);
 
   return (
-    <article className="overflow-hidden rounded-xl border border-foreground/10 bg-background shadow-sm transition-shadow focus-within:shadow-md hover:shadow-md">
+    <article className="overflow-hidden rounded-xl border border-foreground/10 bg-surface shadow-sm transition-shadow focus-within:shadow-md hover:shadow-md">
       <Link
         href={`/properties/${property.id}`}
-        className="block focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+        className="block focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
       >
         <div className="relative aspect-[3/2] bg-foreground/5">
           {property.primaryImageUrl && (
@@ -29,7 +29,7 @@ export function LandingPropertyCard({ property }: { property: PropertySummaryDto
               className="object-cover"
             />
           )}
-          <span className="absolute left-3 top-3 rounded-full bg-background/90 px-3 py-1 text-xs font-semibold">
+          <span className="absolute left-3 top-3 rounded-full bg-badge px-3 py-1 text-xs font-semibold text-badge-foreground">
             {operationLabel[property.operation]}
           </span>
         </div>

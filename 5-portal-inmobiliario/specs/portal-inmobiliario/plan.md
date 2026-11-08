@@ -340,3 +340,16 @@ Una tarea está terminada cuando:
 - las validaciones correspondientes pasan;
 - no quedan errores bloqueantes;
 - su checkbox se actualiza en `tasks.md`.
+
+## 18. Temas visuales (extensión)
+
+Implementación con Tailwind CSS 4 y variables CSS:
+
+- Tokens de color semánticos en `globals.css` (`background`, `foreground`, `surface`, `primary`, `primary-hover`, `primary-foreground`, `link`, `ring`, `danger`, `badge`, `badge-foreground`, `hero-tint`), expuestos a Tailwind mediante `@theme inline`.
+- El tema se selecciona con el atributo `data-theme` de `<html>`: sin atributo o `default` (tema Actual, sigue `prefers-color-scheme`), `light` y `smallville`.
+- Los componentes usan solo tokens (`bg-primary`, `text-link`, ...), nunca colores fijos, de modo que un tema nuevo solo añade un bloque de variables.
+- Estado del tema en un store de Zustand; la preferencia se guarda en `localStorage` (no es información sensible).
+- Un script en línea en `<head>` aplica el tema guardado antes del primer pintado para evitar parpadeo.
+- Selector accesible (grupo de radios nativos) en el header y en el menú móvil.
+- Pruebas: store, selector y contraste WCAG calculado sobre los valores reales de `globals.css`.
+
