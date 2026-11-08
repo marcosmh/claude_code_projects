@@ -41,7 +41,7 @@ export const seedFeatures: SeedFeature[] = [
 export const seedProperties: SeedProperty[] = [
   // ───────────── VENTA ─────────────
   {
-    title: "Casa moderna en Villas Las Joya con jardín",
+    title: "Casa moderna en Las Joya con jardín",
     description:
       "Amplia casa de dos niveles en privada con vigilancia las 24 horas. Cocina integral, sala y comedor a doble altura, recámara principal con vestidor y jardín trasero ideal para convivir.",
     operation: "SALE",
@@ -54,8 +54,8 @@ export const seedProperties: SeedProperty[] = [
     bathrooms: 3,
     parkingSpots: 2,
     age: 3,
-    address: "Av. Paseo Villas Las Joya 1011",
-    commune: "Villas Las Joya",
+    address: "Av. Pedro Infante 1011",
+    commune: "Las Joya",
     city: "Querétaro",
     region: "Querétaro",
     isPublished: true,
