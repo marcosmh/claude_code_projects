@@ -16,12 +16,12 @@ const headingByOperation = {
 
 export function PropertyCatalog() {
   const catalogParams = parseCatalogParams(useSearchParams());
-  const { page, search, operation } = catalogParams;
+  const { page, ...filters } = catalogParams;
+  const { search, operation } = filters;
   const { properties, total, totalPages, isLoading, hasError, retry } = usePropertyList({
     page,
     pageSize: catalogPageSize,
-    ...(search ? { search } : {}),
-    ...(operation ? { operation } : {}),
+    ...filters,
   });
   const heading = operation ? headingByOperation[operation] : "Propiedades";
 
@@ -33,11 +33,7 @@ export function PropertyCatalog() {
       <h1 id="catalog-title" className="text-3xl font-bold tracking-tight">
         {heading}
       </h1>
-      <CatalogSearchForm
-        key={`${search ?? ""}|${operation ?? ""}`}
-        search={search}
-        operation={operation}
-      />
+      <CatalogSearchForm key={JSON.stringify(filters)} filters={filters} />
       {!isLoading && !hasError && total > 0 && (
         <p className="mt-1 text-foreground/70">
           {total} {total === 1 ? "propiedad disponible" : "propiedades disponibles"}
@@ -90,7 +86,7 @@ export function PropertyCatalog() {
           <Pagination
             page={page}
             totalPages={totalPages}
-            buildHref={(targetPage) => buildCatalogHref({ page: targetPage, search, operation })}
+            buildHref={(targetPage) => buildCatalogHref({ page: targetPage, ...filters })}
           />
         </>
       )}

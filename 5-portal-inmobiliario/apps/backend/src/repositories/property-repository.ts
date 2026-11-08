@@ -1,5 +1,6 @@
 import "server-only";
 import { Prisma } from "@/generated/prisma/client";
+import type { PropertyType } from "@/generated/prisma/client";
 import { database } from "@/lib/database/client";
 import { escapeLikePattern, splitSearchTerms } from "@/lib/search";
 
@@ -27,6 +28,18 @@ export type PropertyFilters = {
   /** Texto libre: título, descripción, colonia, ciudad y estado (sin acentos ni mayúsculas). */
   searchText?: string;
   operation?: "SALE" | "RENT";
+  type?: PropertyType;
+  minPrice?: number;
+  maxPrice?: number;
+  /** Mínimo de dormitorios. */
+  minBedrooms?: number;
+  /** Mínimo de baños. */
+  minBathrooms?: number;
+  minUsableArea?: number;
+  /** Ubicación: coincidencia parcial sin acentos ni mayúsculas. */
+  commune?: string;
+  city?: string;
+  region?: string;
   isFeatured?: boolean;
 };
 
@@ -42,13 +55,17 @@ export type PropertyRepository = {
   findPublishedById(propertyId: string): Promise<PropertyDetailRecord | null>;
 };
 
+function containsPattern(text: string): string {
+  return `%${escapeLikePattern(text)}%`;
+}
+
 /**
- * Ids de propiedades publicadas que coinciden con el texto. Cada término debe aparecer
- * en algún campo. unaccent + ILIKE ignoran acentos y mayúsculas.
+ * Condiciones de texto (búsqueda libre y ubicación) que requieren unaccent + ILIKE,
+ * que Prisma no expresa de forma nativa. Todas deben cumplirse.
  */
-async function findPublishedIdsMatchingSearch(searchText: string): Promise<string[]> {
-  const termConditions = splitSearchTerms(searchText).map((term) => {
-    const pattern = `%${escapeLikePattern(term)}%`;
+function buildTextConditions(filters: PropertyFilters): Prisma.Sql[] {
+  const searchConditions = splitSearchTerms(filters.searchText ?? "").map((term) => {
+    const pattern = containsPattern(term);
     return Prisma.sql`(
       unaccent("title") ILIKE unaccent(${pattern})
       OR unaccent("description") ILIKE unaccent(${pattern})
@@ -57,26 +74,49 @@ async function findPublishedIdsMatchingSearch(searchText: string): Promise<strin
       OR unaccent("region") ILIKE unaccent(${pattern})
     )`;
   });
-  if (termConditions.length === 0) return [];
+  const locationConditions = (
+    [
+      ["commune", filters.commune],
+      ["city", filters.city],
+      ["region", filters.region],
+    ] as const
+  )
+    .filter(([, value]) => value !== undefined && value.trim() !== "")
+    .map(([column, value]) => {
+      const pattern = containsPattern(value as string);
+      return Prisma.sql`unaccent(${Prisma.raw(`"${column}"`)}) ILIKE unaccent(${pattern})`;
+    });
+  return [...searchConditions, ...locationConditions];
+}
 
+/** Ids de propiedades publicadas que cumplen todas las condiciones de texto. */
+async function findPublishedIdsMatching(conditions: Prisma.Sql[]): Promise<string[]> {
   const rows = await database.$queryRaw<{ id: string }[]>`
     SELECT "id" FROM "properties"
-    WHERE "isPublished" = true AND ${Prisma.join(termConditions, " AND ")}`;
+    WHERE "isPublished" = true AND ${Prisma.join(conditions, " AND ")}`;
   return rows.map((row) => row.id);
 }
 
-async function buildPublishedWhere(
-  filters: PropertyFilters,
-): Promise<Prisma.PropertyWhereInput> {
+async function buildPublishedWhere(filters: PropertyFilters): Promise<Prisma.PropertyWhereInput> {
+  const textConditions = buildTextConditions(filters);
   const matchingIds =
-    filters.searchText !== undefined
-      ? await findPublishedIdsMatchingSearch(filters.searchText)
-      : undefined;
+    textConditions.length > 0 ? await findPublishedIdsMatching(textConditions) : undefined;
+  const hasPriceRange = filters.minPrice !== undefined || filters.maxPrice !== undefined;
 
   return {
     isPublished: true,
     ...(matchingIds !== undefined && { id: { in: matchingIds } }),
     ...(filters.operation !== undefined && { operation: filters.operation }),
+    ...(filters.type !== undefined && { type: filters.type }),
+    ...(hasPriceRange && {
+      price: {
+        ...(filters.minPrice !== undefined && { gte: filters.minPrice }),
+        ...(filters.maxPrice !== undefined && { lte: filters.maxPrice }),
+      },
+    }),
+    ...(filters.minBedrooms !== undefined && { bedrooms: { gte: filters.minBedrooms } }),
+    ...(filters.minBathrooms !== undefined && { bathrooms: { gte: filters.minBathrooms } }),
+    ...(filters.minUsableArea !== undefined && { usableArea: { gte: filters.minUsableArea } }),
     ...(filters.isFeatured !== undefined && { isFeatured: filters.isFeatured }),
   };
 }

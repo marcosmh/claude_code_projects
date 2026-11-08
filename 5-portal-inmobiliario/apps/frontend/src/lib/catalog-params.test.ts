@@ -39,4 +39,48 @@ describe("buildCatalogHref", () => {
       "/properties?search=M%C3%A9rida+centro&page=2",
     );
   });
+
+  it("serializa todos los filtros y la página", () => {
+    expect(
+      buildCatalogHref({
+        page: 3,
+        operation: "SALE",
+        type: "HOUSE",
+        minPrice: 100,
+        bedrooms: 3,
+        commune: "las-condes",
+      }),
+    ).toBe(
+      "/properties?operation=SALE&type=HOUSE&minPrice=100&bedrooms=3&commune=las-condes&page=3",
+    );
+  });
+});
+
+describe("parseCatalogParams con filtros", () => {
+  it("lee tipo, números y ubicación", () => {
+    expect(
+      parseCatalogParams(
+        new URLSearchParams(
+          "type=LAND&minPrice=1000&maxPrice=2500.5&bedrooms=3&bathrooms=2&minUsableArea=80&commune=Álamos&city=Mérida&region=Yucatán",
+        ),
+      ),
+    ).toEqual({
+      page: 1,
+      type: "LAND",
+      minPrice: 1000,
+      maxPrice: 2500.5,
+      bedrooms: 3,
+      bathrooms: 2,
+      minUsableArea: 80,
+      commune: "Álamos",
+      city: "Mérida",
+      region: "Yucatán",
+    });
+  });
+
+  it("ignora tipo inválido y números negativos o no numéricos", () => {
+    expect(
+      parseCatalogParams(new URLSearchParams("type=CASTLE&minPrice=-5&bedrooms=abc&city=%20%20")),
+    ).toEqual({ page: 1 });
+  });
 });

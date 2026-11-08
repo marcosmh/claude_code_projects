@@ -25,6 +25,26 @@ describe("buildPropertiesUrl con búsqueda", () => {
   });
 });
 
+describe("buildPropertiesUrl con filtros", () => {
+  it("serializa todos los filtros definidos y omite los vacíos", () => {
+    expect(
+      buildPropertiesUrl({
+        type: "HOUSE",
+        minPrice: 1000,
+        maxPrice: 5000,
+        bedrooms: 3,
+        bathrooms: 0,
+        minUsableArea: 80,
+        commune: "Álamos",
+        city: "",
+        region: "Jalisco",
+      }),
+    ).toBe(
+      "/api/properties?type=HOUSE&minPrice=1000&maxPrice=5000&bedrooms=3&bathrooms=0&minUsableArea=80&commune=%C3%81lamos&region=Jalisco",
+    );
+  });
+});
+
 describe("fetchPropertyPage", () => {
   afterEach(() => vi.unstubAllGlobals());
 

@@ -80,6 +80,15 @@ export function createPropertyService(repository: PropertyRepository) {
       const filters: PropertyFilters = {
         searchText: query.search,
         operation: query.operation,
+        type: query.type,
+        minPrice: query.minPrice,
+        maxPrice: query.maxPrice,
+        minBedrooms: query.bedrooms,
+        minBathrooms: query.bathrooms,
+        minUsableArea: query.minUsableArea,
+        commune: query.commune,
+        city: query.city,
+        region: query.region,
         isFeatured: query.featured,
       };
       const [records, total] = await Promise.all([

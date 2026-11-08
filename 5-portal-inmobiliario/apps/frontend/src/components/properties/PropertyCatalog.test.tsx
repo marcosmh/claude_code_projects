@@ -87,6 +87,23 @@ describe("PropertyCatalog", () => {
     expect(screen.getByText(/No encontramos propiedades para “zzz”/)).toBeTruthy();
   });
 
+  it("envía todos los filtros de la URL a la API y los conserva en la paginación", () => {
+    currentQuery = "type=HOUSE&minPrice=100&bedrooms=3&city=Mérida";
+    mockList({ properties: [property], total: 25, totalPages: 3 });
+    render(<PropertyCatalog />);
+    expect(usePropertyListMock).toHaveBeenCalledWith({
+      page: 1,
+      pageSize: 12,
+      type: "HOUSE",
+      minPrice: 100,
+      bedrooms: 3,
+      city: "Mérida",
+    });
+    expect(screen.getByRole("link", { name: /Siguiente/ }).getAttribute("href")).toBe(
+      "/properties?type=HOUSE&minPrice=100&bedrooms=3&city=M%C3%A9rida&page=2",
+    );
+  });
+
   it("muestra estado de carga", () => {
     mockList({ isLoading: true });
     render(<PropertyCatalog />);

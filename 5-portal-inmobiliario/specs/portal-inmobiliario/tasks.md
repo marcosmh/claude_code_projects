@@ -66,7 +66,7 @@
   - Título, comuna, ciudad, región y descripción.
   - Reflejar búsqueda en query parameters.
 
-- [ ] **Paso 11 — Filtros**
+- [x] **Paso 11 — Filtros**
   - Venta/arriendo.
   - Tipo.
   - Rango de precio.

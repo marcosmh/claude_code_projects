@@ -48,4 +48,44 @@ describe("propertyListQuerySchema", () => {
   ])("rechaza %j", (input) => {
     expect(propertyListQuerySchema.safeParse(input).success).toBe(false);
   });
+
+  it("convierte los filtros numéricos y de texto", () => {
+    expect(
+      propertyListQuerySchema.parse({
+        type: "HOUSE",
+        minPrice: "1000",
+        maxPrice: "5000",
+        bedrooms: "3",
+        bathrooms: "2",
+        minUsableArea: "80.5",
+        commune: " Álamos ",
+        city: "",
+      }),
+    ).toMatchObject({
+      type: "HOUSE",
+      minPrice: 1000,
+      maxPrice: 5000,
+      bedrooms: 3,
+      bathrooms: 2,
+      minUsableArea: 80.5,
+      commune: "Álamos",
+      city: undefined,
+    });
+  });
+
+  it("trata filtros numéricos vacíos como ausentes", () => {
+    const parsed = propertyListQuerySchema.parse({ minPrice: "", bedrooms: "" });
+    expect(parsed.minPrice).toBeUndefined();
+    expect(parsed.bedrooms).toBeUndefined();
+  });
+
+  it("rechaza tipo inválido, números negativos o no numéricos y rangos invertidos", () => {
+    expect(propertyListQuerySchema.safeParse({ type: "CASTLE" }).success).toBe(false);
+    expect(propertyListQuerySchema.safeParse({ minPrice: "-1" }).success).toBe(false);
+    expect(propertyListQuerySchema.safeParse({ bedrooms: "abc" }).success).toBe(false);
+    expect(propertyListQuerySchema.safeParse({ bedrooms: "1.5" }).success).toBe(false);
+    expect(propertyListQuerySchema.safeParse({ minPrice: "10", maxPrice: "5" }).success).toBe(
+      false,
+    );
+  });
 });

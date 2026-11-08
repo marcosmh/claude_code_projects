@@ -1,6 +1,7 @@
 import type {
   PaginatedResponse,
   PropertyOperation,
+  PropertyType,
   PropertySummaryDto,
 } from "@portal/shared-types";
 
@@ -9,8 +10,26 @@ export type PropertyListParams = {
   pageSize?: number;
   search?: string;
   operation?: PropertyOperation;
+  type?: PropertyType;
+  minPrice?: number;
+  maxPrice?: number;
+  bedrooms?: number;
+  bathrooms?: number;
+  minUsableArea?: number;
+  commune?: string;
+  city?: string;
+  region?: string;
   featured?: boolean;
 };
+
+const numericFilterKeys = [
+  "minPrice",
+  "maxPrice",
+  "bedrooms",
+  "bathrooms",
+  "minUsableArea",
+] as const;
+const locationFilterKeys = ["commune", "city", "region"] as const;
 
 export function buildPropertiesUrl(params: PropertyListParams = {}): string {
   const searchParams = new URLSearchParams();
@@ -18,6 +37,15 @@ export function buildPropertiesUrl(params: PropertyListParams = {}): string {
   if (params.pageSize !== undefined) searchParams.set("pageSize", String(params.pageSize));
   if (params.search) searchParams.set("search", params.search);
   if (params.operation !== undefined) searchParams.set("operation", params.operation);
+  if (params.type !== undefined) searchParams.set("type", params.type);
+  for (const key of numericFilterKeys) {
+    const value = params[key];
+    if (value !== undefined) searchParams.set(key, String(value));
+  }
+  for (const key of locationFilterKeys) {
+    const value = params[key];
+    if (value) searchParams.set(key, value);
+  }
   if (params.featured !== undefined) searchParams.set("featured", String(params.featured));
   const queryString = searchParams.toString();
   return queryString ? `/api/properties?${queryString}` : "/api/properties";

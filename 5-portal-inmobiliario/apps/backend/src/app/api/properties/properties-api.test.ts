@@ -179,6 +179,87 @@ describe.skipIf(!databaseUrl)("API REST pública de propiedades", () => {
     });
   });
 
+  describe("filtros combinables", () => {
+    const region = `${testRunIdentifier} Región Ñandú`;
+    let matchingId: string;
+
+    const filterIds = async (query: string): Promise<string[]> => {
+      const response = await listProperties(
+        buildListRequest(`?pageSize=50&region=${encodeURIComponent(region)}${query}`),
+      );
+      expect(response.status).toBe(200);
+      return ((await response.json()) as ListBody).items.map((item) => item.id);
+    };
+
+    beforeAll(async () => {
+      const created = await client.property.create({
+        data: {
+          ...propertyData("filtros", true),
+          operation: "SALE",
+          type: "HOUSE",
+          price: 3000000,
+          bedrooms: 3,
+          bathrooms: 2,
+          usableArea: 150,
+          commune: "Colonia Álamos",
+          city: "Querétaro",
+          region,
+        },
+      });
+      matchingId = created.id;
+    });
+
+    it("filtra por tipo y operación", async () => {
+      expect(await filterIds("&type=HOUSE&operation=SALE")).toEqual([matchingId]);
+      expect(await filterIds("&type=APARTMENT")).toEqual([]);
+      expect(await filterIds("&operation=RENT")).toEqual([]);
+    });
+
+    it("filtra por rango de precio (límites incluidos)", async () => {
+      expect(await filterIds("&minPrice=3000000&maxPrice=3000000")).toEqual([matchingId]);
+      expect(await filterIds("&minPrice=3000001")).toEqual([]);
+      expect(await filterIds("&maxPrice=2999999")).toEqual([]);
+    });
+
+    it("filtra por dormitorios, baños y superficie mínimos", async () => {
+      expect(await filterIds("&bedrooms=3&bathrooms=2&minUsableArea=150")).toEqual([matchingId]);
+      expect(await filterIds("&bedrooms=2")).toEqual([matchingId]);
+      expect(await filterIds("&bedrooms=4")).toEqual([]);
+      expect(await filterIds("&bathrooms=3")).toEqual([]);
+      expect(await filterIds("&minUsableArea=151")).toEqual([]);
+    });
+
+    it("filtra por comuna, ciudad y región sin importar acentos ni mayúsculas", async () => {
+      expect(await filterIds("&commune=ALAMOS&city=queretaro")).toEqual([matchingId]);
+      expect(await filterIds("&city=Guadalajara")).toEqual([]);
+      const regionVariant = region.replace("Ñ", "N").replace("ó", "o").toUpperCase();
+      const response = await listProperties(
+        buildListRequest(`?region=${encodeURIComponent(regionVariant)}`),
+      );
+      const ids = ((await response.json()) as ListBody).items.map((item) => item.id);
+      expect(ids).toEqual([matchingId]);
+    });
+
+    it("combina todos los filtros y la búsqueda de texto", async () => {
+      const query = "&operation=SALE&type=HOUSE&minPrice=1000000&maxPrice=5000000&bedrooms=3&bathrooms=1&minUsableArea=100&commune=alamos&city=Querétaro&search=filtros";
+      expect(await filterIds(query)).toEqual([matchingId]);
+      expect(await filterIds(`${query}&bedrooms=5`)).toEqual([]);
+    });
+
+    it("ignora filtros numéricos vacíos", async () => {
+      expect(await filterIds("&minPrice=&maxPrice=&bedrooms=&bathrooms=&minUsableArea=")).toEqual([
+        matchingId,
+      ]);
+    });
+
+    it("responde 400 con filtros inválidos", async () => {
+      for (const query of ["?type=CASTLE", "?minPrice=-1", "?bedrooms=abc", "?minPrice=10&maxPrice=5"]) {
+        const response = await listProperties(buildListRequest(query));
+        expect(response.status).toBe(400);
+      }
+    });
+  });
+
   it("GET /api/properties pagina los resultados", async () => {
     const response = await listProperties(buildListRequest("?page=1&pageSize=2"));
     const body = (await response.json()) as ListBody;
