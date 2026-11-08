@@ -51,7 +51,7 @@
   - Secciones comprar y arrendar.
   - Llamadas a la acción.
 
-- [ ] **Paso 8 — PropertyCard y grid responsive**
+- [x] **Paso 8 — PropertyCard y grid responsive**
   - Crear componente reutilizable.
   - Imagen, título, precio, operación, ubicación, dormitorios, baños y superficie.
   - Crear grid responsive.

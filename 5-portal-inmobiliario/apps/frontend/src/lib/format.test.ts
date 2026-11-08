@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { formatArea, formatBathrooms, formatPrice } from "./format";
+import {
+  formatArea,
+  formatBathrooms,
+  formatOperation,
+  formatPrice,
+  formatPropertyType,
+} from "./format";
 
 describe("formatPrice", () => {
   it("formatea ventas en pesos mexicanos sin decimales", () => {
@@ -27,5 +33,14 @@ describe("formatBathrooms", () => {
   it("usa singular y plural", () => {
     expect(formatBathrooms(1)).toBe("1 baño");
     expect(formatBathrooms(2)).toBe("2 baños");
+  });
+});
+
+describe("etiquetas de propiedad", () => {
+  it("traduce tipo y operación", () => {
+    expect(formatPropertyType("HOUSE")).toBe("Casa");
+    expect(formatPropertyType("COMMERCIAL")).toBe("Local comercial");
+    expect(formatOperation("SALE")).toBe("Venta");
+    expect(formatOperation("RENT")).toBe("Arriendo");
   });
 });

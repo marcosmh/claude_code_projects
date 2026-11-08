@@ -1,4 +1,4 @@
-import type { Currency, PropertyOperation } from "@portal/shared-types";
+import type { Currency, PropertyOperation, PropertyType } from "@portal/shared-types";
 
 export function formatPrice(
   price: number,
@@ -19,4 +19,21 @@ export function formatArea(squareMeters: number): string {
 
 export function formatBathrooms(count: number): string {
   return `${count} ${count === 1 ? "baño" : "baños"}`;
+}
+
+const propertyTypeLabels: Record<PropertyType, string> = {
+  HOUSE: "Casa",
+  APARTMENT: "Departamento",
+  LAND: "Terreno",
+  OFFICE: "Oficina",
+  COMMERCIAL: "Local comercial",
+  OTHER: "Otro",
+};
+
+export function formatPropertyType(type: PropertyType): string {
+  return propertyTypeLabels[type];
+}
+
+export function formatOperation(operation: PropertyOperation): string {
+  return operation === "SALE" ? "Venta" : "Arriendo";
 }

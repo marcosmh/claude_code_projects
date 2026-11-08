@@ -4,7 +4,8 @@ import Link from "next/link";
 import { usePropertyList } from "@/hooks/usePropertyList";
 import type { PropertyListParams } from "@portal/api-client";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { LandingPropertyCard } from "./LandingPropertyCard";
+import { PropertyCard } from "@/components/properties/PropertyCard";
+import { PropertyGrid } from "@/components/properties/PropertyGrid";
 
 type PropertySectionProps = {
   id: string;
@@ -14,8 +15,6 @@ type PropertySectionProps = {
   viewAllHref: string;
   viewAllLabel: string;
 };
-
-const gridClassName = "mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3";
 
 export function PropertySection({
   id,
@@ -29,7 +28,10 @@ export function PropertySection({
   const skeletonCount = params.pageSize ?? 3;
 
   return (
-    <section aria-labelledby={`${id}-title`} className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+    <section
+      aria-labelledby={`${id}-title`}
+      className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8"
+    >
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
           <h2 id={`${id}-title`} className="text-2xl font-bold tracking-tight">
@@ -46,7 +48,7 @@ export function PropertySection({
       </div>
 
       {isLoading && (
-        <div className={gridClassName} role="status" aria-label={`Cargando ${title.toLowerCase()}`}>
+        <PropertyGrid className="mt-6" role="status" aria-label={`Cargando ${title.toLowerCase()}`}>
           {Array.from({ length: skeletonCount }, (_, index) => (
             <div key={index} className="space-y-3">
               <Skeleton className="aspect-[3/2] w-full" />
@@ -54,11 +56,14 @@ export function PropertySection({
               <Skeleton className="h-4 w-3/4" />
             </div>
           ))}
-        </div>
+        </PropertyGrid>
       )}
 
       {hasError && (
-        <div role="alert" className="mt-6 rounded-lg border border-danger/30 bg-danger/5 p-6 text-center">
+        <div
+          role="alert"
+          className="mt-6 rounded-lg border border-danger/30 bg-danger/5 p-6 text-center"
+        >
           <p className="font-medium">No pudimos cargar las propiedades.</p>
           <button
             type="button"
@@ -77,11 +82,11 @@ export function PropertySection({
       )}
 
       {!isLoading && !hasError && properties.length > 0 && (
-        <div className={gridClassName}>
+        <PropertyGrid className="mt-6">
           {properties.map((property) => (
-            <LandingPropertyCard key={property.id} property={property} />
+            <PropertyCard key={property.id} property={property} />
           ))}
-        </div>
+        </PropertyGrid>
       )}
     </section>
   );
