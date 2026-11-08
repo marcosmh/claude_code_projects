@@ -1,5 +1,6 @@
 import type {
   PaginatedResponse,
+  PropertyDetailDto,
   PropertyOperation,
   PropertySort,
   PropertyType,
@@ -72,4 +73,20 @@ export async function fetchPropertyPage(
     throw new ApiRequestError("No se pudieron cargar las propiedades", response.status);
   }
   return (await response.json()) as PaginatedResponse<PropertySummaryDto>;
+}
+
+export function buildPropertyUrl(propertyId: string): string {
+  return `/api/properties/${encodeURIComponent(propertyId)}`;
+}
+
+/** Obtiene el detalle de una propiedad; un 404 se propaga como ApiRequestError con status 404. */
+export async function fetchPropertyDetail(url: string): Promise<PropertyDetailDto> {
+  const response = await fetch(url, { headers: { Accept: "application/json" } });
+  if (!response.ok) {
+    throw new ApiRequestError(
+      response.status === 404 ? "Propiedad no encontrada" : "No se pudo cargar la propiedad",
+      response.status,
+    );
+  }
+  return (await response.json()) as PropertyDetailDto;
 }

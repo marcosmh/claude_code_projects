@@ -83,7 +83,7 @@
   - Loading, vacío y error.
   - Skeletons cuando aporten valor.
 
-- [ ] **Paso 13 — Detalle de propiedad**
+- [x] **Paso 13 — Detalle de propiedad**
   - Crear `/properties/{id}`.
   - Mostrar información completa.
   - Consumir exclusivamente API REST.

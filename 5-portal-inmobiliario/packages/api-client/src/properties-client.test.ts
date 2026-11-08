@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ApiRequestError, buildPropertiesUrl, fetchPropertyPage } from "./properties-client";
+import {
+  ApiRequestError,
+  buildPropertiesUrl,
+  buildPropertyUrl,
+  fetchPropertyDetail,
+  fetchPropertyPage,
+} from "./properties-client";
 
 describe("buildPropertiesUrl", () => {
   it("devuelve la ruta base sin parámetros", () => {
@@ -68,5 +74,31 @@ describe("fetchPropertyPage", () => {
       status: 500,
     });
     await expect(fetchPropertyPage("/api/properties")).rejects.toBeInstanceOf(ApiRequestError);
+  });
+});
+
+describe("detalle de propiedad", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("codifica el id en la URL", () => {
+    expect(buildPropertyUrl("abc 1/2")).toBe("/api/properties/abc%201%2F2");
+  });
+
+  it("devuelve el detalle cuando la respuesta es correcta", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ id: "p1" }))));
+    expect(await fetchPropertyDetail("/api/properties/p1")).toEqual({ id: "p1" });
+  });
+
+  it("propaga el estado 404 como ApiRequestError", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("{}", { status: 404 })));
+    await expect(fetchPropertyDetail("/api/properties/x")).rejects.toMatchObject({
+      name: "ApiRequestError",
+      status: 404,
+    });
+  });
+
+  it("propaga otros errores del servidor", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("{}", { status: 500 })));
+    await expect(fetchPropertyDetail("/api/properties/x")).rejects.toBeInstanceOf(ApiRequestError);
   });
 });
