@@ -33,15 +33,12 @@ export function HeroSection() {
       className="bg-gradient-to-b from-hero-tint/10 to-transparent"
     >
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
-        <h1
-          id="hero-title"
-          className="max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl"
-        >
+        <h1 id="hero-title" className="max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl">
           Encuentra la propiedad ideal en México
         </h1>
         <p className="mt-4 max-w-2xl text-lg text-foreground/70">
-          Casas, departamentos, terrenos y oficinas en venta o arriendo. Busca,
-          compara y contacta en un solo lugar.
+          Casas, departamentos, terrenos y oficinas en venta o arriendo. Busca, compara y contacta
+          en un solo lugar.
         </p>
 
         <form
@@ -58,7 +55,9 @@ export function HeroSection() {
             <input
               id="hero-search"
               type="search"
-              placeholder="Colonia, ciudad o estado"
+              placeholder="Ej. Polanco, Mérida o Jalisco…"
+              autoComplete="off"
+              spellCheck={false}
               aria-invalid={errors.search ? "true" : "false"}
               aria-describedby={errors.search ? "hero-search-error" : undefined}
               className={fieldClassName}

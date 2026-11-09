@@ -106,8 +106,18 @@ export function ContactForm({ propertyId, propertyTitle }: ContactFormProps) {
         className="mt-4 space-y-4"
       >
         {textField("name", "Nombre", { type: "text", autoComplete: "name" })}
-        {textField("email", "Email", { type: "email", autoComplete: "email" })}
-        {textField("phone", "Teléfono (opcional)", { type: "tel", autoComplete: "tel" })}
+        {textField("email", "Email", {
+          type: "email",
+          autoComplete: "email",
+          spellCheck: false,
+          placeholder: "tu@correo.com",
+        })}
+        {textField("phone", "Teléfono (opcional)", {
+          type: "tel",
+          autoComplete: "tel",
+          inputMode: "tel",
+          placeholder: "Ej. 55 1234 5678…",
+        })}
         <div>
           <label htmlFor="contact-message" className="mb-1 block text-sm font-medium">
             Mensaje

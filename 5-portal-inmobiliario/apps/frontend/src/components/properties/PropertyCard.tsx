@@ -14,6 +14,8 @@ type PropertyCardProps = {
   property: PropertySummaryDto;
   /** Carga la imagen con prioridad: solo para tarjetas visibles al cargar (posibles LCP). */
   priority?: boolean;
+  /** Nivel del título para respetar la jerarquía de la página (h2 en el catálogo, h3 bajo secciones). */
+  headingLevel?: "h2" | "h3";
 };
 
 /** Tarjeta reutilizable de propiedad para landing, catálogo y resultados de búsqueda. */
@@ -24,6 +26,7 @@ type PropertyCardProps = {
 export const PropertyCard = memo(function PropertyCard({
   property,
   priority = false,
+  headingLevel: Heading = "h3",
 }: PropertyCardProps) {
   const specifications = [
     property.bedrooms !== null &&
@@ -54,14 +57,14 @@ export const PropertyCard = memo(function PropertyCard({
           </span>
         </div>
         <div className="flex flex-1 flex-col p-4">
-          <p className="text-xl font-bold">
+          <p className="text-xl font-bold tabular-nums">
             {formatPrice(property.price, property.currency, property.operation)}
           </p>
           <p className="mt-1 text-xs font-medium uppercase tracking-wide text-foreground/70">
             {formatPropertyType(property.type)}
           </p>
-          <h3 className="mt-1 line-clamp-2 font-medium">{property.title}</h3>
-          <p className="mt-1 text-sm text-foreground/70">
+          <Heading className="mt-1 line-clamp-2 font-medium break-words">{property.title}</Heading>
+          <p className="mt-1 break-words text-sm text-foreground/70">
             {property.commune}, {property.city}
           </p>
           {specifications.length > 0 && (

@@ -122,7 +122,7 @@ export function PropertyDetail({ propertyId }: PropertyDetailProps) {
 
       <div className="mt-6 grid gap-8 lg:grid-cols-[2fr_1fr]">
         <div>
-          <h1 id="property-title" className="text-3xl font-bold tracking-tight">
+          <h1 id="property-title" className="break-words text-3xl font-bold tracking-tight">
             {property.title}
           </h1>
           <p className="mt-2 text-foreground/70">
@@ -130,7 +130,9 @@ export function PropertyDetail({ propertyId }: PropertyDetailProps) {
           </p>
 
           <h2 className="mt-8 text-xl font-semibold">Descripción</h2>
-          <p className="mt-2 whitespace-pre-line text-foreground/90">{property.description}</p>
+          <p className="mt-2 whitespace-pre-line break-words text-foreground/90">
+            {property.description}
+          </p>
 
           {property.features.length > 0 && (
             <>
@@ -162,7 +164,7 @@ export function PropertyDetail({ propertyId }: PropertyDetailProps) {
             aria-label="Resumen de la propiedad"
             className="rounded-xl border border-foreground/10 bg-surface p-6 shadow-sm"
           >
-            <p className="text-3xl font-bold">
+            <p className="text-3xl font-bold tabular-nums">
               {formatPrice(property.price, property.currency, property.operation)}
             </p>
             <dl className="mt-4 divide-y divide-foreground/10">

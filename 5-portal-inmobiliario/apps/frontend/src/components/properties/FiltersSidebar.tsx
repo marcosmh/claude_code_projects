@@ -58,6 +58,7 @@ export function FiltersSidebar({ id, filters, cities, regions }: FiltersSidebarP
         id={`filter-${name}`}
         inputMode="decimal"
         placeholder={placeholder}
+        autoComplete="off"
         aria-invalid={errors[name] ? "true" : "false"}
         aria-describedby={errors[name] ? `filter-${name}-error` : undefined}
         className={inputClassName}
@@ -154,7 +155,13 @@ export function FiltersSidebar({ id, filters, cities, regions }: FiltersSidebarP
         <label htmlFor="filter-commune" className="mb-1 block text-sm font-medium">
           Colonia o comuna
         </label>
-        <input id="filter-commune" className={inputClassName} {...register("commune")} />
+        <input
+          id="filter-commune"
+          autoComplete="off"
+          placeholder="Ej. Polanco…"
+          className={inputClassName}
+          {...register("commune")}
+        />
       </div>
 
       <div className="grid grid-cols-2 gap-3">

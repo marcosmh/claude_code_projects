@@ -72,6 +72,28 @@ describe("PropertyCard", () => {
   });
 });
 
+describe("PropertyCard accesibilidad y tipografía", () => {
+  it("usa h3 por defecto y permite h2 para respetar la jerarquía", () => {
+    const { rerender } = render(<PropertyCard property={property} />);
+    expect(screen.getByRole("heading", { level: 3, name: property.title })).toBeTruthy();
+    rerender(<PropertyCard property={property} headingLevel="h2" />);
+    expect(screen.getByRole("heading", { level: 2, name: property.title })).toBeTruthy();
+  });
+
+  it("muestra el precio con cifras tabulares", () => {
+    render(<PropertyCard property={property} />);
+    expect(screen.getByText(/24,500/).className).toContain("tabular-nums");
+  });
+
+  it("evita saltos de línea entre cifra y unidad", () => {
+    render(<PropertyCard property={property} />);
+    // Testing Library normaliza los espacios, así que se comprueba el texto crudo.
+    const features = screen.getByRole("list", { name: "Características" }).textContent ?? "";
+    expect(features).toContain("68\u00a0m²");
+    expect(features).toContain("1\u00a0baño");
+  });
+});
+
 describe("PropertyGrid", () => {
   it("define columnas responsive", () => {
     const { container } = render(

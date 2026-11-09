@@ -5,10 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { ThemeSwitcher } from "@/components/layout/ThemeSwitcher";
 import { cn } from "@/lib/cn";
-import {
-  isNavigationItemActive,
-  publicNavigationItems,
-} from "@/lib/navigation";
+import { isNavigationItemActive, publicNavigationItems } from "@/lib/navigation";
 
 export function Header() {
   const currentPathname = usePathname();
@@ -24,17 +21,14 @@ export function Header() {
           onClick={closeMobileMenu}
           className="text-lg font-bold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
-          Portal Inmobiliario
+          <span translate="no">Portal Inmobiliario</span>
         </Link>
 
         <div className="hidden items-center gap-2 md:flex">
           <nav aria-label="Navegación principal">
             <ul className="flex items-center gap-1">
               {publicNavigationItems.map((item) => {
-                const isActive = isNavigationItemActive(
-                  currentPathname,
-                  item.href,
-                );
+                const isActive = isNavigationItemActive(currentPathname, item.href);
                 return (
                   <li key={item.href}>
                     <Link

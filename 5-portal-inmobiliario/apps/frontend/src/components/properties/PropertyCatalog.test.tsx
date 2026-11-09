@@ -156,7 +156,7 @@ describe("PropertyCatalog", () => {
     currentQuery = "operation=SALE";
     mockList({ properties: [property], total: 25, totalPages: 3 });
     render(<PropertyCatalog />);
-    expect(screen.getByRole("heading", { level: 3, name: "Casa en Coyoacán" })).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 2, name: "Casa en Coyoacán" })).toBeTruthy();
     expect(screen.getByText("25 propiedades disponibles")).toBeTruthy();
     expect(screen.getByText("Página 1 de 3")).toBeTruthy();
     expect(screen.queryByRole("link", { name: /Anterior/ })).toBeNull();

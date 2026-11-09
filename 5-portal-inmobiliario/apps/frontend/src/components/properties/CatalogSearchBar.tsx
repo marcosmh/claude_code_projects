@@ -48,7 +48,9 @@ export function CatalogSearchBar({ filters }: CatalogSearchBarProps) {
         <input
           id="catalog-search"
           type="search"
-          placeholder="Título, colonia, ciudad, estado o descripción"
+          placeholder="Ej. casa con alberca en Mérida…"
+          autoComplete="off"
+          spellCheck={false}
           aria-invalid={errors.search ? "true" : "false"}
           aria-describedby={errors.search ? "catalog-search-error" : undefined}
           className="h-11 w-full rounded-md border border-foreground/20 bg-surface px-3 text-base focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"

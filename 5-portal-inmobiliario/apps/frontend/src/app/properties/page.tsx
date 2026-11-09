@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function PropertiesPage() {
   return (
-    <main className="flex-1">
+    <main id="main-content" tabIndex={-1} className="flex-1 focus:outline-none">
       <Suspense
         fallback={
           <p className="px-4 py-10 text-center text-foreground/70">Cargando propiedades…</p>

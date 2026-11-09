@@ -10,15 +10,15 @@ export function formatPrice(
     currency,
     maximumFractionDigits: 0,
   }).format(price);
-  return operation === "RENT" ? `${formattedPrice} / mes` : formattedPrice;
+  return operation === "RENT" ? `${formattedPrice}\u00a0/\u00a0mes` : formattedPrice;
 }
 
 export function formatArea(squareMeters: number): string {
-  return `${new Intl.NumberFormat("es-MX", { maximumFractionDigits: 2 }).format(squareMeters)} m²`;
+  return `${new Intl.NumberFormat("es-MX", { maximumFractionDigits: 2 }).format(squareMeters)}\u00a0m²`;
 }
 
 export function formatBathrooms(count: number): string {
-  return `${count} ${count === 1 ? "baño" : "baños"}`;
+  return `${count}\u00a0${count === 1 ? "baño" : "baños"}`;
 }
 
 const propertyTypeLabels: Record<PropertyType, string> = {

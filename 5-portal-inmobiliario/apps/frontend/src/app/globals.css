@@ -102,3 +102,50 @@ body {
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
+
+/* El header es sticky: evita que cubra el elemento enfocado o un ancla al desplazarse. */
+html {
+  scroll-padding-top: 5rem;
+}
+
+/* Táctil: sin retardo de doble toque y con resaltado intencional. */
+a,
+button,
+input,
+select,
+textarea,
+label,
+summary,
+[role="button"] {
+  touch-action: manipulation;
+}
+
+html {
+  -webkit-tap-highlight-color: color-mix(in srgb, var(--foreground) 12%, transparent);
+}
+
+/* <select> nativos con colores explícitos (modo oscuro de Windows). */
+select,
+option {
+  background-color: var(--surface);
+  color: var(--foreground);
+}
+
+/* Títulos sin palabras sueltas al final de línea. */
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+/* Respeta la preferencia de movimiento reducido. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

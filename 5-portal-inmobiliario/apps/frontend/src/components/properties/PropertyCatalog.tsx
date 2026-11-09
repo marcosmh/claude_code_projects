@@ -163,7 +163,12 @@ export function PropertyCatalog() {
                 )}
               >
                 {properties.map((property, index) => (
-                  <PropertyCard key={property.id} property={property} priority={index < 3} />
+                  <PropertyCard
+                    key={property.id}
+                    property={property}
+                    priority={index < 3}
+                    headingLevel="h2"
+                  />
                 ))}
               </PropertyGrid>
               <Pagination
