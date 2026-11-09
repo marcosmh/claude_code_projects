@@ -2,6 +2,17 @@
 
 Proyecto base para desarrollar un portal inmobiliario utilizando **Spec-Driven Development (SDD)** con Claude Code.
 
+## Estado
+
+Implementado (Pasos 1–16 de `specs/portal-inmobiliario/tasks.md`):
+
+- API REST pública de propiedades, ubicaciones y consultas de contacto.
+- Landing, catálogo con tarjetas, búsqueda, filtros (sidebar colapsable), ordenamiento y paginación.
+- Detalle de propiedad con galería, mapa de Google Maps y formulario de contacto (Web3Forms).
+- Temas visuales: Claro, Oscuro y Smallville.
+
+Pendiente: **Paso 17 — Registro y login REST** y el resto de autenticación, usuarios y administración.
+
 ## Estructura
 
 Monorepo con **pnpm Workspaces** y **Turborepo**. Más detalle en [docs/architecture.md](docs/architecture.md).
@@ -54,25 +65,78 @@ pnpm db:seed
 | `pnpm test`          | Pruebas de todos los paquetes (Vitest)      |
 | `pnpm lint`          | ESLint en todo el monorepo                  |
 | `pnpm typecheck`     | TypeScript en todo el monorepo              |
+| `pnpm format`        | Prettier sobre el repositorio               |
+| `pnpm db:migrate`    | Crea/aplica migraciones (desarrollo)        |
+| `pnpm db:deploy`     | Aplica migraciones existentes               |
+| `pnpm db:seed`       | Carga datos de ejemplo                      |
+| `pnpm db:seed:reset` | Reinicia y vuelve a cargar los datos        |
+| `pnpm db:studio`     | Prisma Studio                               |
+| `pnpm db:check`      | Verifica la conexión a la base              |
 
 El frontend llama a `/api/**` de su propio origen y Next.js lo reenvía al backend
 (`BACKEND_URL`), por lo que abriendo `http://localhost:3000/api/properties` se llega a la API.
 
+Para ver pgAdmin en desarrollo: `docker compose up -d` (puerto 5050; credenciales en el `.env` de la raíz).
+
+## Variables de entorno
+
+| Archivo | Variable | Uso |
+| --- | --- | --- |
+| `apps/backend/.env.local` | `DATABASE_URL` | Conexión a PostgreSQL |
+| | `AUTH_SECRET` | Firma de sesiones (autenticación) |
+| | `CLOUDINARY_*` | Imágenes de propiedades |
+| | `WEB3FORMS_ACCESS_KEY` | Envío de consultas por correo |
+| `apps/frontend/.env.local` | `BACKEND_URL` | Destino del proxy `/api/**` |
+| | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Mapa del detalle |
+| | `NEXT_PUBLIC_APP_URL` | URL pública de la aplicación |
+| `.env` (raíz) | `PGADMIN_DEFAULT_EMAIL`, `PGADMIN_DEFAULT_PASSWORD` | Solo pgAdmin |
+
+Los archivos `.env*` reales no se versionan; usa los `.env.example`.
+
+## API REST
+
+| Método | Ruta | Descripción |
+| --- | --- | --- |
+| GET | `/api/properties` | Listado paginado de propiedades publicadas |
+| GET | `/api/properties/{id}` | Detalle con imágenes y características |
+| GET | `/api/locations` | Ciudades y regiones disponibles |
+| POST | `/api/inquiries` | Registra una consulta y notifica por Web3Forms |
+
+Parámetros de `GET /api/properties`:
+
+| Parámetro | Descripción |
+| --- | --- |
+| `page`, `pageSize` | Paginación (12 por página por defecto, máximo 50) |
+| `search` | Texto libre, sin distinguir mayúsculas ni acentos |
+| `operation`, `type` | Uno o varios valores separados por comas (`SALE,RENT`) |
+| `commune`, `city`, `region` | Coincidencia parcial sin acentos |
+| `minPrice`, `maxPrice` | Rango de precio |
+| `bedrooms`, `bathrooms` | "Al menos" N |
+| `minUsableArea` | Superficie útil mínima |
+| `featured` | `true`/`false` |
+| `sort` | `newest` (defecto), `price_asc`, `price_desc`, `area_asc`, `area_desc` |
+
+Los errores devuelven `{ message, status, details? }`. Las colecciones de `resources/` aún no cubren `/api/locations`, `/api/inquiries` ni los filtros nuevos.
+
+## Pruebas
+
+`pnpm test` ejecuta Vitest en todos los paquetes. Las pruebas de integración del backend usan la base de `DATABASE_URL` y limpian lo que crean; Web3Forms se mockea, así que no se envían correos.
+
 ## Documentos
 
-### `CLAUDE.md`
+### `CLAUDE.md` y `AGENTS.md`
 
-Contiene las instrucciones permanentes que Claude Code debe seguir durante el desarrollo.
+Instrucciones permanentes para Claude Code y otros agentes. `AGENTS.md` incluye además el bloque generado por Next.js (no editar entre sus marcas).
 
-### `spec.md`
+### `specs/portal-inmobiliario/spec.md`
 
 Define **qué debe hacer la aplicación**: funcionalidades, usuarios, propiedades, filtros, imágenes, ubicación, contacto, administración y criterios de aceptación.
 
-### `plan.md`
+### `specs/portal-inmobiliario/plan.md`
 
 Define **cómo se construirá técnicamente**: arquitectura, PostgreSQL, API REST, autenticación, Cloudinary, Google Maps, Web3Forms y separación de responsabilidades.
 
-### `tasks.md`
+### `specs/portal-inmobiliario/tasks.md`
 
 Divide la implementación en una secuencia incremental de tareas.
 
