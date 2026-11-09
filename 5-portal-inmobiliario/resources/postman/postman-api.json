@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Portal Inmobiliario API",
-    "description": "Colección para probar la API REST del Portal Inmobiliario.\n\nRequisitos: `npm run dev` (http://localhost:3000) y la base con el seed cargado (`npm run db:seed`).\n\nEjecuta primero «Listar propiedades»: guarda `propertyId` para las peticiones de detalle.",
+    "description": "Colección para probar la API REST del Portal Inmobiliario.\n\nRequisitos: `pnpm dev` (frontend http://localhost:3000, que reenvía /api/** al backend en :4000) y la base con el seed cargado (`pnpm db:seed`).\n\nEjecuta primero «Listar propiedades»: guarda `propertyId` para el detalle y las consultas.\n\nLas carpetas «Consultas (contacto)» y «Autenticación» escriben en la base de desarrollo (y la primera envía un correo por Web3Forms).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -18,6 +18,16 @@
     {
       "key": "searchTotalAccent",
       "value": "",
+      "type": "string"
+    },
+    {
+      "key": "authEmail",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "authPassword",
+      "value": "clave-segura-1",
       "type": "string"
     }
   ],
@@ -542,6 +552,1337 @@
                   "  const positions = body.images.map(function (i) { return i.position; });",
                   "  pm.expect(positions).to.eql(positions.slice().sort(function (a, b) { return a - b; }));",
                   "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Filtros y orden",
+      "description": "Filtros combinables y ordenamiento. Operación y tipo admiten varios valores separados por comas.",
+      "item": [
+        {
+          "name": "Operación múltiple (SALE,RENT)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/properties?operation=SALE,RENT&pageSize=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "properties"
+              ],
+              "query": [
+                {
+                  "key": "operation",
+                  "value": "SALE,RENT"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "50"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Solo SALE o RENT\", function () { pm.response.json().items.forEach(function (p) { pm.expect([\"SALE\", \"RENT\"]).to.include(p.operation); }); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tipo único (HOUSE)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/properties?type=HOUSE&pageSize=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "properties"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "HOUSE"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "50"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Todas son HOUSE\", function () { pm.response.json().items.forEach(function (p) { pm.expect(p.type).to.eql(\"HOUSE\"); }); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tipo múltiple (HOUSE,APARTMENT)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/properties?type=HOUSE,APARTMENT&pageSize=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "properties"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "HOUSE,APARTMENT"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "50"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Solo casas o departamentos\", function () { pm.response.json().items.forEach(function (p) { pm.expect([\"HOUSE\", \"APARTMENT\"]).to.include(p.type); }); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Rango de precio",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/properties?minPrice=1000000&maxPrice=5000000&pageSize=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "properties"
+              ],
+              "query": [
+                {
+                  "key": "minPrice",
+                  "value": "1000000"
+                },
+                {
+                  "key": "maxPrice",
+                  "value": "5000000"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "50"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Precios dentro del rango\", function () { pm.response.json().items.forEach(function (p) { pm.expect(p.price).to.be.within(1000000, 5000000); }); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Dormitorios, baños y superficie mínimos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/properties?bedrooms=3&bathrooms=2&minUsableArea=100&pageSize=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "properties"
+              ],
+              "query": [
+                {
+                  "key": "bedrooms",
+                  "value": "3"
+                },
+                {
+                  "key": "bathrooms",
+                  "value": "2"
+                },
+                {
+                  "key": "minUsableArea",
+                  "value": "100"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "50"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Cumplen los mínimos\", function () { pm.response.json().items.forEach(function (p) { pm.expect(p.bedrooms).to.be.at.least(3); pm.expect(p.bathrooms).to.be.at.least(2); pm.expect(p.usableArea).to.be.at.least(100); }); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ciudad (Mérida)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/properties?city=Mérida&pageSize=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "properties"
+              ],
+              "query": [
+                {
+                  "key": "city",
+                  "value": "Mérida"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "La ubicación ignora mayúsculas y acentos: `city=merida` da el mismo resultado."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Todas en Mérida\", function () { pm.response.json().items.forEach(function (p) { pm.expect(p.city).to.eql(\"Mérida\"); }); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Filtros combinados",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/properties?operation=SALE&type=HOUSE,APARTMENT&bedrooms=2&sort=price_asc&pageSize=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "properties"
+              ],
+              "query": [
+                {
+                  "key": "operation",
+                  "value": "SALE"
+                },
+                {
+                  "key": "type",
+                  "value": "HOUSE,APARTMENT"
+                },
+                {
+                  "key": "bedrooms",
+                  "value": "2"
+                },
+                {
+                  "key": "sort",
+                  "value": "price_asc"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "50"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Cumplen todos los filtros\", function () { pm.response.json().items.forEach(function (p) { pm.expect(p.operation).to.eql(\"SALE\"); pm.expect([\"HOUSE\", \"APARTMENT\"]).to.include(p.type); pm.expect(p.bedrooms).to.be.at.least(2); }); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Orden: precio menor a mayor",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/properties?sort=price_asc&pageSize=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "properties"
+              ],
+              "query": [
+                {
+                  "key": "sort",
+                  "value": "price_asc"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "50"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });",
+                  "const values = pm.response.json().items.map(function (p) { return p.price; }).filter(function (v) { return v !== null; });",
+                  "pm.test(\"Precios ascendentes\", function () { for (let i = 1; i < values.length; i++) { const a = values[i - 1]; const b = values[i]; pm.expect(a <= b).to.eql(true); } });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Orden: precio mayor a menor",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/properties?sort=price_desc&pageSize=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "properties"
+              ],
+              "query": [
+                {
+                  "key": "sort",
+                  "value": "price_desc"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "50"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });",
+                  "const values = pm.response.json().items.map(function (p) { return p.price; }).filter(function (v) { return v !== null; });",
+                  "pm.test(\"Precios descendentes\", function () { for (let i = 1; i < values.length; i++) { const a = values[i - 1]; const b = values[i]; pm.expect(a >= b).to.eql(true); } });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Orden: superficie menor a mayor",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/properties?sort=area_asc&pageSize=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "properties"
+              ],
+              "query": [
+                {
+                  "key": "sort",
+                  "value": "area_asc"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "50"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });",
+                  "const values = pm.response.json().items.map(function (p) { return p.usableArea; }).filter(function (v) { return v !== null; });",
+                  "pm.test(\"Superficies ascendentes\", function () { for (let i = 1; i < values.length; i++) { const a = values[i - 1]; const b = values[i]; pm.expect(a <= b).to.eql(true); } });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Orden: superficie mayor a menor",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/properties?sort=area_desc&pageSize=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "properties"
+              ],
+              "query": [
+                {
+                  "key": "sort",
+                  "value": "area_desc"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "50"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });",
+                  "const values = pm.response.json().items.map(function (p) { return p.usableArea; }).filter(function (v) { return v !== null; });",
+                  "pm.test(\"Superficies descendentes\", function () { for (let i = 1; i < values.length; i++) { const a = values[i - 1]; const b = values[i]; pm.expect(a >= b).to.eql(true); } });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Ubicaciones",
+      "description": "Ciudades y regiones de las propiedades publicadas (opciones de los filtros).",
+      "item": [
+        {
+          "name": "Listar ubicaciones",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/locations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "locations"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Trae ciudades y regiones\", function () { pm.expect(body.cities).to.be.an(\"array\").that.is.not.empty; pm.expect(body.regions).to.be.an(\"array\").that.is.not.empty; });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Consultas (contacto)",
+      "description": "POST /api/inquiries guarda la consulta en PostgreSQL y la notifica por Web3Forms. «Enviar consulta» crea una fila real y envía un correo real: ejecútala solo cuando quieras probarlo. Requiere haber ejecutado «Listar propiedades» (propertyId).",
+      "item": [
+        {
+          "name": "Enviar consulta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/inquiries",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "inquiries"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"propertyId\": \"{{propertyId}}\",\n  \"name\": \"Ana Pérez\",\n  \"email\": \"ana@example.com\",\n  \"phone\": \"+52 55 1234 5678\",\n  \"message\": \"Me interesa visitar la propiedad este fin de semana.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Persiste la consulta (nunca se pierde) y notifica por Web3Forms. Si el envío falla, responde 201 con notificationSent=false."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", function () { pm.response.to.have.status(201); });",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Devuelve id y estado de la notificación\", function () { pm.expect(body).to.have.keys(\"id\", \"notificationSent\"); pm.expect(body.notificationSent).to.be.a(\"boolean\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "400 — datos inválidos",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/inquiries",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "inquiries"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"propertyId\": \"{{propertyId}}\",\n  \"name\": \"A\",\n  \"email\": \"x\",\n  \"message\": \"hola\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400\", function () { pm.response.to.have.status(400); });",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Cuerpo de error estándar\", function () { pm.expect(body.status).to.eql(400); pm.expect(body.message).to.eql(\"Datos de consulta inválidos\"); });",
+                  "pm.test(\"Detalla los campos inválidos\", function () { pm.expect(body.details.map(function (d) { return d.field; }).sort()).to.eql([\"email\", \"message\", \"name\"]); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "404 — propiedad inexistente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/inquiries",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "inquiries"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"propertyId\": \"no-existe\",\n  \"name\": \"Ana Pérez\",\n  \"email\": \"ana@example.com\",\n  \"phone\": \"+52 55 1234 5678\",\n  \"message\": \"Me interesa visitar la propiedad este fin de semana.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", function () { pm.response.to.have.status(404); });",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Cuerpo de error estándar\", function () { pm.expect(body.status).to.eql(404); pm.expect(body.message).to.eql(\"Propiedad no encontrada\"); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Autenticación",
+      "description": "Registro, login, logout y usuario actual. La sesión viaja en la cookie httpOnly `portal_session`; Postman la guarda en su cookie jar y la envía sola.\n\nEjecuta las peticiones en orden: «Registrar» genera un email nuevo en cada ejecución (authEmail) y crea un usuario real en la base de desarrollo. El rol siempre es USER.",
+      "item": [
+        {
+          "name": "Registrar usuario",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Prueba Postman\",\n  \"email\": \"{{authEmail}}\",\n  \"password\": \"{{authPassword}}\",\n  \"role\": \"ADMIN\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Crea una cuenta e inicia sesión. Se envía role=ADMIN a propósito: la API lo ignora. La sesión viaja en la cookie httpOnly `portal_session`; Postman la guarda en su cookie jar y la envía sola."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"authEmail\", \"postman-\" + Date.now() + \"@example.com\");"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", function () { pm.response.to.have.status(201); });",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Devuelve el usuario sin datos sensibles\", function () { pm.expect(body).to.have.keys(\"id\", \"email\", \"name\", \"role\"); pm.expect(pm.response.text()).to.not.include(\"passwordHash\"); });",
+                  "pm.test(\"El rol es USER aunque se envíe ADMIN\", function () { pm.expect(body.role).to.eql(\"USER\"); });",
+                  "pm.test(\"Establece la cookie de sesión httpOnly\", function () { const header = pm.response.headers.get(\"Set-Cookie\") || \"\"; pm.expect(header).to.include(\"portal_session=\"); pm.expect(header).to.match(/HttpOnly/i); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "409 — email ya registrado",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Otra Persona\",\n  \"email\": \"{{authEmail}}\",\n  \"password\": \"{{authPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 409\", function () { pm.response.to.have.status(409); });",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Cuerpo de error estándar\", function () { pm.expect(body.status).to.eql(409); pm.expect(body.message).to.eql(\"Ya existe una cuenta con este email\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "400 — registro inválido",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"A\",\n  \"email\": \"no-es-email\",\n  \"password\": \"corta\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400\", function () { pm.response.to.have.status(400); });",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Cuerpo de error estándar\", function () { pm.expect(body.status).to.eql(400); pm.expect(body.message).to.eql(\"Datos de registro inválidos\"); });",
+                  "pm.test(\"Detalla los campos\", function () { pm.expect(body.details.map(function (d) { return d.field; }).sort()).to.eql([\"email\", \"name\", \"password\"]); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Usuario actual (con sesión)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Requiere la cookie de sesión (tras registrar o iniciar sesión)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Es el usuario registrado\", function () { pm.expect(body.email).to.eql(pm.collectionVariables.get(\"authEmail\").toLowerCase()); pm.expect(body.role).to.eql(\"USER\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cerrar sesión",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 204\", function () { pm.response.to.have.status(204); });",
+                  "pm.test(\"Expira la cookie de sesión\", function () { const header = pm.response.headers.get(\"Set-Cookie\") || \"\"; pm.expect(header).to.include(\"portal_session=\"); pm.expect(header).to.match(/Max-Age=0/i); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "401 — usuario actual sin sesión",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Tras cerrar sesión ya no hay cookie."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 401\", function () { pm.response.to.have.status(401); });",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Cuerpo de error estándar\", function () { pm.expect(body.status).to.eql(401); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "401 — contraseña incorrecta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{authEmail}}\",\n  \"password\": \"incorrecta-1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Mismo mensaje que con un email inexistente, para no revelar qué cuentas existen."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 401\", function () { pm.response.to.have.status(401); });",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Cuerpo de error estándar\", function () { pm.expect(body.status).to.eql(401); pm.expect(body.message).to.eql(\"Email o contraseña incorrectos\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Iniciar sesión",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{authEmail}}\",\n  \"password\": \"{{authPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Devuelve el usuario\", function () { pm.expect(body).to.have.keys(\"id\", \"email\", \"name\", \"role\"); });",
+                  "pm.test(\"Establece la cookie de sesión\", function () { pm.expect(pm.response.headers.get(\"Set-Cookie\") || \"\").to.include(\"portal_session=\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "400 — login inválido",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"no-es-email\",\n  \"password\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400\", function () { pm.response.to.have.status(400); });",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Cuerpo de error estándar\", function () { pm.expect(body.status).to.eql(400); pm.expect(body.message).to.eql(\"Datos de acceso inválidos\"); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Cuentas de ejemplo (seed)",
+      "description": "Cuentas creadas por `pnpm db:seed` (se crean o restablecen en cada ejecución del seed, incluso con propiedades ya cargadas).\n\n| Email | Contraseña | Rol | Estado |\n| --- | --- | --- | --- |\n| admin@portal.mx | Admin1234! | ADMIN | activa |\n| usuario@portal.mx | Usuario1234! | USER | activa |\n| inactivo@portal.mx | Inactivo1234! | USER | desactivada |\n\nSolo para desarrollo. Postman guarda la cookie `portal_session` de la última cuenta con la que inicies sesión.",
+      "item": [
+        {
+          "name": "Login administrador",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@portal.mx\",\n  \"password\": \"Admin1234!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Cuenta ADMIN del seed."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Es ADMIN\", function () { pm.expect(body.role).to.eql(\"ADMIN\"); pm.expect(body.email).to.eql(\"admin@portal.mx\"); });",
+                  "pm.test(\"Establece la cookie de sesión\", function () { pm.expect(pm.response.headers.get(\"Set-Cookie\") || \"\").to.include(\"portal_session=\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login usuario",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"usuario@portal.mx\",\n  \"password\": \"Usuario1234!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Cuenta USER activa del seed."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Es USER\", function () { pm.expect(body.role).to.eql(\"USER\"); pm.expect(body.email).to.eql(\"usuario@portal.mx\"); });",
+                  "pm.test(\"Establece la cookie de sesión\", function () { pm.expect(pm.response.headers.get(\"Set-Cookie\") || \"\").to.include(\"portal_session=\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "403 — login usuario inactivo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"inactivo@portal.mx\",\n  \"password\": \"Inactivo1234!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "La cuenta existe pero está desactivada: no puede iniciar sesión."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 403\", function () { pm.response.to.have.status(403); });",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Cuenta desactivada\", function () { pm.expect(body.status).to.eql(403); pm.expect(body.message).to.eql(\"Tu cuenta está desactivada\"); });",
+                  "pm.test(\"No establece cookie\", function () { pm.expect(pm.response.headers.get(\"Set-Cookie\") || \"\").to.not.include(\"portal_session=\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Usuario actual (tras el login)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Devuelve la cuenta con la que iniciaste sesión por última vez (usa la cookie guardada)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Es una cuenta del seed\", function () { pm.expect(pm.response.json().email).to.be.oneOf([\"admin@portal.mx\",\"usuario@portal.mx\"]); });"
                 ]
               }
             }

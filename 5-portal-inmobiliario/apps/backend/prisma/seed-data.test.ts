@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { seedFeatures, seedProperties } from "./seed-data";
+import { registerInputSchema } from "@portal/shared-types";
+import { seedFeatures, seedProperties, seedUsers } from "./seed-data";
 
 describe("datos del seed", () => {
   it("incluye propiedades de venta y de arriendo", () => {
@@ -27,7 +28,9 @@ describe("datos del seed", () => {
     expect(seedProperties.some((property) => property.isFeatured)).toBe(true);
     expect(seedProperties.some((property) => !property.isPublished)).toBe(true);
     expect(
-      seedProperties.filter((property) => property.isFeatured).every((property) => property.isPublished),
+      seedProperties
+        .filter((property) => property.isFeatured)
+        .every((property) => property.isPublished),
     ).toBe(true);
   });
 
@@ -71,5 +74,30 @@ describe("datos del seed", () => {
         .map((property) => property.price),
     );
     expect(maximumRentMxn).toBeLessThan(minimumSaleMxn);
+  });
+});
+
+describe("usuarios de ejemplo del seed", () => {
+  it("incluye un administrador, un usuario activo y uno inactivo", () => {
+    expect(seedUsers.some((user) => user.role === "ADMIN" && user.isActive)).toBe(true);
+    expect(seedUsers.some((user) => user.role === "USER" && user.isActive)).toBe(true);
+    expect(seedUsers.some((user) => !user.isActive)).toBe(true);
+  });
+
+  it("tiene emails únicos en minúsculas", () => {
+    const emails = seedUsers.map((user) => user.email);
+    expect(new Set(emails).size).toBe(emails.length);
+    for (const email of emails) expect(email).toBe(email.toLowerCase());
+  });
+
+  it("sus credenciales cumplen las reglas de registro", () => {
+    for (const user of seedUsers) {
+      const result = registerInputSchema.safeParse({
+        name: user.name,
+        email: user.email,
+        password: user.password,
+      });
+      expect(result.success).toBe(true);
+    }
   });
 });

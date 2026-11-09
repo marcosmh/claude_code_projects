@@ -387,3 +387,23 @@ Decisiones:
 - Se mantienen en el sidebar los demás filtros (precio, dormitorios, baños, superficie, colonia). La búsqueda de texto y el orden quedan sobre los resultados.
 - Backend: el filtrado multivalor se aplica en PostgreSQL (`IN`).
 
+
+## 21. Autenticación REST (Paso 17)
+
+Decisiones que concretan la sección 10 de este plan:
+
+- **Hashing**: `scrypt` de Node (`node:crypto`) con N=2^15, r=8, p=1, sal aleatoria de 16 bytes y comparación en tiempo constante. Se almacena como `scrypt$N$r$p$sal$hash`, de modo que los parámetros puedan subirse después. Sin dependencias nativas. Las contraseñas se normalizan a NFKC.
+- **Sesión**: JWT firmado HS256 (`jose`) con `AUTH_SECRET` (mínimo 32 caracteres), 7 días de vigencia, entregado en la cookie `portal_session` (`HttpOnly`, `SameSite=Lax`, `Path=/`, `Secure` en producción). Nunca se usa `localStorage`.
+- **El token solo lleva el id de usuario.** El rol y `isActive` se leen siempre de PostgreSQL, por lo que un cambio de rol o una desactivación surten efecto de inmediato (base para el Paso 18). Limitación conocida: el logout borra la cookie pero un token ya emitido sigue siendo válido hasta expirar; se mitiga porque cada solicitud revalida al usuario en la base.
+- **Endpoints**: `POST /api/auth/register` (201, inicia sesión; el rol siempre es USER y se ignora cualquier `role` enviado), `POST /api/auth/login` (200; 401 con mensaje único para email desconocido o contraseña incorrecta; 403 para cuenta desactivada), `POST /api/auth/logout` (204, idempotente) y `GET /api/auth/me` (200; 401 sin sesión válida, y en ese caso se borra la cookie).
+- **Enumeración de cuentas**: el login ejecuta una verificación ficticia cuando el email no existe para igualar tiempos de respuesta. Los emails se normalizan a minúsculas; la unicidad la garantiza `User.email` y un duplicado concurrente se traduce en 409.
+- **Capas**: Route Handlers (HTTP y cookies) → `createAuthService` → `userRepository` → Prisma. El cliente `@portal/api-client` expone `registerUser`, `loginUser`, `logoutUser` y `fetchCurrentUser` (devuelve `null` ante 401).
+- **Fuera de alcance del Paso 17** (pasos posteriores): roles y protección de rutas (Paso 18), formularios de registro/login y estado de sesión en la interfaz, y límite de intentos de login y rotación de secretos (Paso 34, seguridad).
+
+## 22. Interfaz de acceso y cuentas de ejemplo (extensión)
+
+- Rutas del frontend `/login` y `/register` (componentes de cliente con React Hook Form y los esquemas Zod de `@portal/shared-types`), que consumen `@portal/api-client` (`loginUser`, `registerUser`, `logoutUser`).
+- Estado de sesión: hook `useCurrentUser` sobre SWR (`GET /api/auth/me`, 401 = sin sesión). Mientras no se conoce la sesión, el header reserva el espacio con un marcador, de modo que el primer render del cliente coincide con el HTML del servidor (sin desajuste de hidratación). Tras iniciar o cerrar sesión se actualiza la caché de SWR sin volver a consultar.
+- Header: componente `AccountControls` (botón Ingresar, o nombre más Cerrar sesión). `loginNavigationItem` se separa de `headerMenuItems`; `publicNavigationItems` conserva Ingresar para el footer y las llamadas a la acción.
+- Seed: `seedUsers` en `prisma/seed-data.ts` (admin, usuario activo e inactivo). `pnpm db:seed` las crea o restablece con `upsert` aunque ya existan propiedades; las contraseñas se guardan con scrypt. Solo desarrollo (el seed ya rechaza `NODE_ENV=production`).
+- Fuera de alcance: rutas protegidas y redirección por rol (Paso 18), página `/account` (Paso 19) y recuperación de contraseña.

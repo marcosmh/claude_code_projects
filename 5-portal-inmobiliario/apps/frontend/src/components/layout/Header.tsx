@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { AccountControls } from "@/components/layout/AccountControls";
 import { LogoMark } from "@/components/layout/LogoMark";
 import { ThemeSwitcher } from "@/components/layout/ThemeSwitcher";
 import { cn } from "@/lib/cn";
-import { isNavigationItemActive, publicNavigationItems } from "@/lib/navigation";
+import { headerMenuItems, isNavigationItemActive } from "@/lib/navigation";
 
 export function Header() {
   const currentPathname = usePathname();
@@ -29,7 +30,7 @@ export function Header() {
         <div className="hidden items-center gap-2 md:flex">
           <nav aria-label="Navegación principal">
             <ul className="flex items-center gap-1">
-              {publicNavigationItems.map((item) => {
+              {headerMenuItems.map((item) => {
                 const isActive = isNavigationItemActive(currentPathname, item.href);
                 return (
                   <li key={item.href}>
@@ -49,6 +50,7 @@ export function Header() {
             </ul>
           </nav>
           <ThemeSwitcher />
+          <AccountControls variant="desktop" />
         </div>
 
         <button
@@ -84,7 +86,7 @@ export function Header() {
         className="border-t border-foreground/10 md:hidden"
       >
         <ul className="flex flex-col px-4 py-2 sm:px-6">
-          {publicNavigationItems.map((item) => {
+          {headerMenuItems.map((item) => {
             const isActive = isNavigationItemActive(currentPathname, item.href);
             return (
               <li key={item.href}>
@@ -103,7 +105,8 @@ export function Header() {
             );
           })}
         </ul>
-        <div className="border-t border-foreground/10 px-4 py-3 sm:px-6">
+        <div className="space-y-3 border-t border-foreground/10 px-4 py-3 sm:px-6">
+          <AccountControls variant="mobile" onNavigate={closeMobileMenu} />
           <ThemeSwitcher showLabels align="left" />
         </div>
       </nav>

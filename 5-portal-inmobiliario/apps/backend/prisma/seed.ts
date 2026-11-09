@@ -1,10 +1,7 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
-import {
-  seedFeatures,
-  seedImagesPerProperty,
-  seedProperties,
-} from "./seed-data";
+import { hashPassword } from "../src/lib/auth/password";
+import { seedFeatures, seedImagesPerProperty, seedProperties, seedUsers } from "./seed-data";
 
 const shouldResetExistingData = process.argv.includes("--reset");
 
@@ -26,6 +23,22 @@ async function main(): Promise<void> {
   const client = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
 
   try {
+    // Las cuentas de ejemplo se crean (o se restablecen) siempre, incluso si ya hay propiedades.
+    for (const seedUser of seedUsers) {
+      const accountData = {
+        name: seedUser.name,
+        passwordHash: await hashPassword(seedUser.password),
+        role: seedUser.role,
+        isActive: seedUser.isActive,
+      };
+      await client.user.upsert({
+        where: { email: seedUser.email },
+        update: accountData,
+        create: { email: seedUser.email, ...accountData },
+      });
+    }
+    console.log(`Usuarios de ejemplo listos: ${seedUsers.map((user) => user.email).join(", ")}.`);
+
     const existingPropertyCount = await client.property.count();
 
     if (existingPropertyCount > 0 && !shouldResetExistingData) {

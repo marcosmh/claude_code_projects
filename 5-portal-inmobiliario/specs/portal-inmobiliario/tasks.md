@@ -107,7 +107,7 @@
 
 ## Fase 3 — Autenticación y usuario
 
-- [ ] **Paso 17 — Registro y login REST**
+- [x] **Paso 17 — Registro y login REST**
   - Registro.
   - Login.
   - Logout.
@@ -276,3 +276,9 @@
   - Filtros multivalor en la API (`operation=SALE,RENT`) y en la URL.
   - Pruebas, lint y build pasan.
 
+- [x] **Extra D — Interfaz de acceso y cuentas de ejemplo**
+  - Botón «Ingresar» en el header (escritorio y móvil); con sesión muestra el nombre y «Cerrar sesión».
+  - Páginas `/login` y `/register` sobre la API REST del Paso 17.
+  - Hook `useCurrentUser` (SWR) sin desajuste de hidratación.
+  - Cuentas de ejemplo en el seed (ADMIN, USER y USER inactivo) y su uso en Postman y REST Client.
+  - Pruebas, lint, typecheck y build pasan.

@@ -539,3 +539,37 @@ export const seedProperties: SeedProperty[] = [
 
 /** Cantidad de imágenes de ejemplo que se generan por propiedad. */
 export const seedImagesPerProperty = 4;
+
+export type SeedUser = {
+  email: string;
+  name: string;
+  /** Contraseña de ejemplo solo para desarrollo; en la base se guarda su hash (scrypt). */
+  password: string;
+  role: "USER" | "ADMIN";
+  isActive: boolean;
+};
+
+/** Cuentas de ejemplo para probar el login en Postman, REST Client y el frontend. */
+export const seedUsers: SeedUser[] = [
+  {
+    email: "admin@portal.mx",
+    name: "Administrador Demo",
+    password: "Admin1234!",
+    role: "ADMIN",
+    isActive: true,
+  },
+  {
+    email: "usuario@portal.mx",
+    name: "Usuario Demo",
+    password: "Usuario1234!",
+    role: "USER",
+    isActive: true,
+  },
+  {
+    email: "inactivo@portal.mx",
+    name: "Usuario Inactivo",
+    password: "Inactivo1234!",
+    role: "USER",
+    isActive: false,
+  },
+];

@@ -4,14 +4,16 @@ Proyecto base para desarrollar un portal inmobiliario utilizando **Spec-Driven D
 
 ## Estado
 
-Implementado (Pasos 1–16 de `specs/portal-inmobiliario/tasks.md`):
+Implementado (Pasos 1–17 de `specs/portal-inmobiliario/tasks.md`):
 
 - API REST pública de propiedades, ubicaciones y consultas de contacto.
 - Landing, catálogo con tarjetas, búsqueda, filtros (sidebar colapsable), ordenamiento y paginación.
 - Detalle de propiedad con galería, mapa de Google Maps y formulario de contacto (Web3Forms).
 - Temas visuales: Claro, Oscuro y Smallville.
+- API REST de autenticación: registro, login, logout y usuario actual, con contraseñas en scrypt y sesión en cookie httpOnly.
+- Páginas `/login` y `/register`, y el header muestra «Ingresar» o el nombre con «Cerrar sesión» (Extra D).
 
-Pendiente: **Paso 17 — Registro y login REST** y el resto de autenticación, usuarios y administración.
+Pendiente: **Paso 18 — Autorización USER y ADMIN** y el resto de usuarios y administración.
 
 ## Estructura
 
@@ -83,7 +85,7 @@ Para ver pgAdmin en desarrollo: `docker compose up -d` (puerto 5050; credenciale
 | Archivo | Variable | Uso |
 | --- | --- | --- |
 | `apps/backend/.env.local` | `DATABASE_URL` | Conexión a PostgreSQL |
-| | `AUTH_SECRET` | Firma de sesiones (autenticación) |
+| | `AUTH_SECRET` | Firma de sesiones (mínimo 32 caracteres; p. ej. `openssl rand -base64 32`) |
 | | `CLOUDINARY_*` | Imágenes de propiedades |
 | | `WEB3FORMS_ACCESS_KEY` | Envío de consultas por correo |
 | `apps/frontend/.env.local` | `BACKEND_URL` | Destino del proxy `/api/**` |
@@ -93,6 +95,18 @@ Para ver pgAdmin en desarrollo: `docker compose up -d` (puerto 5050; credenciale
 
 Los archivos `.env*` reales no se versionan; usa los `.env.example`.
 
+## Cuentas de ejemplo
+
+`pnpm db:seed` crea (o restablece) estas cuentas, también si ya hay propiedades cargadas. Solo para desarrollo:
+
+| Email | Contraseña | Rol | Estado |
+| --- | --- | --- | --- |
+| `admin@portal.mx` | `Admin1234!` | ADMIN | activa |
+| `usuario@portal.mx` | `Usuario1234!` | USER | activa |
+| `inactivo@portal.mx` | `Inactivo1234!` | USER | desactivada (el login responde 403) |
+
+Sirven en `/login`, en `resources/postman/postman-api.json` y en `resources/rest-client/rest-client.http`.
+
 ## API REST
 
 | Método | Ruta | Descripción |
@@ -101,6 +115,10 @@ Los archivos `.env*` reales no se versionan; usa los `.env.example`.
 | GET | `/api/properties/{id}` | Detalle con imágenes y características |
 | GET | `/api/locations` | Ciudades y regiones disponibles |
 | POST | `/api/inquiries` | Registra una consulta y notifica por Web3Forms |
+| POST | `/api/auth/register` | Crea una cuenta USER e inicia sesión (201; 409 si el email existe) |
+| POST | `/api/auth/login` | Inicia sesión (200; 401 credenciales incorrectas; 403 cuenta desactivada) |
+| POST | `/api/auth/logout` | Cierra la sesión borrando la cookie (204) |
+| GET | `/api/auth/me` | Usuario de la sesión actual (200; 401 sin sesión válida) |
 
 Parámetros de `GET /api/properties`:
 

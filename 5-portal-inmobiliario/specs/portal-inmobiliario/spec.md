@@ -581,3 +581,15 @@ Requisitos:
 - El selector es accesible (teclado, etiquetas, foco visible) y funciona en escritorio y móvil.
 - Todos los temas cumplen contraste WCAG AA para texto (4.5:1) y elementos de interfaz (3:1).
 - Los temas no deben requerir cambios en los componentes al añadir uno nuevo.
+
+---
+
+## 28. Interfaz de acceso y cuentas de ejemplo (extensión)
+
+> Extensión solicitada después de la especificación inicial. Aplica la sección 15 en la interfaz; no altera los criterios de la sección 26.
+
+- El header muestra un botón **Ingresar** (hacia `/login`) a los visitantes. Con sesión iniciada muestra el nombre de la persona y un botón **Cerrar sesión**. También en el menú móvil.
+- `/login` permite iniciar sesión con email y contraseña; `/register` crea una cuenta USER e inicia sesión. Ambas validan con las mismas reglas que la API y muestran el mensaje de error de la API (credenciales incorrectas, cuenta desactivada, email ya registrado).
+- Tras iniciar sesión o registrarse se vuelve al inicio. Quien ya tiene sesión ve un aviso en lugar del formulario.
+- La sesión nunca se guarda en `localStorage`: viaja en una cookie httpOnly.
+- El seed de desarrollo crea cuentas de ejemplo: un ADMIN, un USER activo y un USER desactivado, para probar el login en la interfaz, Postman y REST Client.

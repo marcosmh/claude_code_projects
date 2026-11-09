@@ -1,9 +1,10 @@
 ### ============================================================
 ### Portal Inmobiliario — API REST (extensión "REST Client" de VS Code)
-### Requisitos: npm run dev  (http://localhost:3000)
+### Requisitos: pnpm dev  (frontend http://localhost:3000, que reenvía
+### /api/** al backend en :4000) y la base con el seed (pnpm db:seed).
 ### Ejecuta cada petición con "Send Request" sobre la línea ###.
 ### Las peticiones están en orden; "listProperties" guarda un id
-### que reutilizan las de detalle.
+### que reutilizan las de detalle y las consultas.
 ### ============================================================
 
 @baseUrl = http://localhost:3000
@@ -86,4 +87,234 @@ Accept: application/json
 
 ### 404 — id inexistente
 GET {{baseUrl}}/api/properties/no-existe
+Accept: application/json
+
+### ------------------------------------------------------------
+### Filtros y orden — se combinan entre sí
+### Operación y tipo admiten varios valores separados por comas.
+### ------------------------------------------------------------
+
+### Operación múltiple (venta y arriendo)
+GET {{baseUrl}}/api/properties?operation=SALE,RENT&pageSize=50
+Accept: application/json
+
+### Tipo único
+GET {{baseUrl}}/api/properties?type=HOUSE&pageSize=50
+Accept: application/json
+
+### Tipo múltiple (casas y departamentos)
+GET {{baseUrl}}/api/properties?type=HOUSE,APARTMENT&pageSize=50
+Accept: application/json
+
+### Rango de precio
+GET {{baseUrl}}/api/properties?minPrice=1000000&maxPrice=5000000&pageSize=50
+Accept: application/json
+
+### Dormitorios, baños y superficie útil mínimos
+GET {{baseUrl}}/api/properties?bedrooms=3&bathrooms=2&minUsableArea=100&pageSize=50
+Accept: application/json
+
+### Ciudad (ignora mayúsculas y acentos: city=merida da lo mismo)
+GET {{baseUrl}}/api/properties?city=Mérida&pageSize=50
+Accept: application/json
+
+### Filtros combinados con orden
+GET {{baseUrl}}/api/properties?operation=SALE&type=HOUSE,APARTMENT&bedrooms=2&sort=price_asc&pageSize=50
+Accept: application/json
+
+### Orden: precio menor a mayor
+GET {{baseUrl}}/api/properties?sort=price_asc&pageSize=50
+Accept: application/json
+
+### Orden: precio mayor a menor
+GET {{baseUrl}}/api/properties?sort=price_desc&pageSize=50
+Accept: application/json
+
+### Orden: superficie menor a mayor
+GET {{baseUrl}}/api/properties?sort=area_asc&pageSize=50
+Accept: application/json
+
+### Orden: superficie mayor a menor
+GET {{baseUrl}}/api/properties?sort=area_desc&pageSize=50
+Accept: application/json
+
+### ------------------------------------------------------------
+### Ubicaciones — opciones de los filtros de ciudad y región
+### ------------------------------------------------------------
+
+### Ciudades y regiones con propiedades publicadas
+GET {{baseUrl}}/api/locations
+Accept: application/json
+
+### ------------------------------------------------------------
+### Consultas (contacto)
+### Guarda la consulta en PostgreSQL y la notifica por Web3Forms.
+### La primera crea una fila real y envía un correo real.
+### ------------------------------------------------------------
+
+### Enviar consulta (201; notificationSent=false si falla Web3Forms)
+POST {{baseUrl}}/api/inquiries
+Content-Type: application/json
+Accept: application/json
+
+{
+  "propertyId": "{{propertyId}}",
+  "name": "Ana Pérez",
+  "email": "ana@example.com",
+  "phone": "+52 55 1234 5678",
+  "message": "Me interesa visitar la propiedad este fin de semana."
+}
+
+### 400 — datos inválidos (detalla name, email y message)
+POST {{baseUrl}}/api/inquiries
+Content-Type: application/json
+Accept: application/json
+
+{
+  "propertyId": "{{propertyId}}",
+  "name": "A",
+  "email": "x",
+  "message": "hola"
+}
+
+### 404 — propiedad inexistente
+POST {{baseUrl}}/api/inquiries
+Content-Type: application/json
+Accept: application/json
+
+{
+  "propertyId": "no-existe",
+  "name": "Ana Pérez",
+  "email": "ana@example.com",
+  "message": "Me interesa visitar la propiedad este fin de semana."
+}
+
+### ------------------------------------------------------------
+### Autenticación — registro, login, logout y usuario actual
+### La sesión viaja en la cookie httpOnly "portal_session"; REST Client
+### la guarda y la reenvía sola. Ejecuta en orden: "register" crea un
+### usuario real (rol USER) en la base de desarrollo.
+### ------------------------------------------------------------
+
+@authPassword = clave-segura-1
+
+### Registrar usuario (201, inicia sesión). El role se ignora: siempre USER.
+# @name register
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Prueba REST Client",
+  "email": "rest-client-{{$timestamp}}@example.com",
+  "password": "{{authPassword}}",
+  "role": "ADMIN"
+}
+
+###
+@authEmail = {{register.response.body.$.email}}
+
+### 409 — email ya registrado
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Otra Persona",
+  "email": "{{authEmail}}",
+  "password": "{{authPassword}}"
+}
+
+### 400 — registro inválido (detalla name, email y password)
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "A",
+  "email": "no-es-email",
+  "password": "corta"
+}
+
+### Usuario actual (200; requiere la cookie de sesión)
+GET {{baseUrl}}/api/auth/me
+Accept: application/json
+
+### Cerrar sesión (204; expira la cookie)
+POST {{baseUrl}}/api/auth/logout
+
+### 401 — usuario actual sin sesión (tras cerrar sesión)
+GET {{baseUrl}}/api/auth/me
+Accept: application/json
+
+### 401 — contraseña incorrecta (mismo mensaje que con un email inexistente)
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "{{authEmail}}",
+  "password": "incorrecta-1"
+}
+
+### Iniciar sesión (200; vuelve a establecer la cookie)
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "{{authEmail}}",
+  "password": "{{authPassword}}"
+}
+
+### 400 — login inválido
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "no-es-email",
+  "password": ""
+}
+
+### ------------------------------------------------------------
+### Cuentas de ejemplo (pnpm db:seed) — solo para desarrollo
+###   admin@portal.mx     Admin1234!     ADMIN   activa
+###   usuario@portal.mx   Usuario1234!   USER    activa
+###   inactivo@portal.mx  Inactivo1234!  USER    desactivada (403)
+### La última cuenta con la que inicies sesión queda en la cookie.
+### ------------------------------------------------------------
+
+### Login administrador (200, role ADMIN)
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "admin@portal.mx",
+  "password": "Admin1234!"
+}
+
+### Login usuario (200, role USER)
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "usuario@portal.mx",
+  "password": "Usuario1234!"
+}
+
+### 403 — login usuario inactivo (cuenta desactivada)
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "inactivo@portal.mx",
+  "password": "Inactivo1234!"
+}
+
+### Usuario actual tras el login (200)
+GET {{baseUrl}}/api/auth/me
 Accept: application/json
