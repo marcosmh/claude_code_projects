@@ -88,7 +88,7 @@
   - Mostrar información completa.
   - Consumir exclusivamente API REST.
 
-- [ ] **Paso 14 — Galería**
+- [x] **Paso 14 — Galería**
   - Imagen principal.
   - Miniaturas.
   - Navegación.

@@ -85,10 +85,11 @@ describe("PropertyDetail", () => {
     expect(summary.getByText("A estrenar")).toBeTruthy();
   });
 
-  it("usa la imagen principal con texto alternativo", () => {
+  it("muestra la galería con la imagen principal primero", () => {
     mockDetail({ property });
     render(<PropertyDetail propertyId="p1" />);
-    expect(screen.getByAltText("Fotografía de Casa en Coyoacán").getAttribute("src")).toBe(
+    expect(screen.getByRole("region", { name: "Galería de Casa en Coyoacán" })).toBeTruthy();
+    expect(screen.getByAltText("Fotografía 1 de 2 de Casa en Coyoacán").getAttribute("src")).toBe(
       "https://example.com/a.jpg",
     );
   });

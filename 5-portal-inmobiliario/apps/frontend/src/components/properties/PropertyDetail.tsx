@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
+import { PropertyGallery } from "./PropertyGallery";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { usePropertyDetail } from "@/hooks/usePropertyDetail";
 import { formatArea, formatOperation, formatPrice, formatPropertyType } from "@/lib/format";
@@ -77,7 +77,6 @@ export function PropertyDetail({ propertyId }: PropertyDetailProps) {
     );
   }
 
-  const primaryImage = property.images.find((image) => image.isPrimary) ?? property.images[0];
   const specifications: { label: string; value: string }[] = [
     { label: "Tipo", value: formatPropertyType(property.type) },
     property.usableArea !== null && {
@@ -107,20 +106,16 @@ export function PropertyDetail({ propertyId }: PropertyDetailProps) {
     <article className={containerClassName} aria-labelledby="property-title">
       <BackToCatalog />
 
-      <div className="relative mt-6 aspect-[16/9] overflow-hidden rounded-xl bg-foreground/5">
-        {primaryImage && (
-          <Image
-            src={primaryImage.url}
-            alt={`Fotografía de ${property.title}`}
-            fill
-            priority
-            sizes="(min-width: 1280px) 1216px, 100vw"
-            className="object-cover"
-          />
-        )}
-        <span className="absolute left-4 top-4 rounded-full bg-badge px-3 py-1 text-sm font-semibold text-badge-foreground">
-          {formatOperation(property.operation)}
-        </span>
+      <div className="mt-6">
+        <PropertyGallery
+          images={property.images}
+          propertyTitle={property.title}
+          overlay={
+            <span className="absolute left-4 top-4 rounded-full bg-badge px-3 py-1 text-sm font-semibold text-badge-foreground">
+              {formatOperation(property.operation)}
+            </span>
+          }
+        />
       </div>
 
       <div className="mt-6 grid gap-8 lg:grid-cols-[2fr_1fr]">
