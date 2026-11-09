@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import {
@@ -28,15 +29,25 @@ export function HeroSection() {
   };
 
   return (
-    <section
-      aria-labelledby="hero-title"
-      className="bg-gradient-to-b from-hero-tint/10 to-transparent"
-    >
+    <section aria-labelledby="hero-title" className="relative isolate overflow-hidden">
+      {/* Imagen decorativa: translúcida y con degradado para mantener el contraste del texto en todos los temas. */}
+      <Image
+        src="/hero-building.jpg"
+        alt=""
+        fill
+        priority
+        sizes="100vw"
+        className="-z-20 object-cover opacity-25"
+      />
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 -z-10 bg-gradient-to-b from-hero-tint/15 via-background/60 to-background"
+      />
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
         <h1 id="hero-title" className="max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl">
           Encuentra la propiedad ideal en México
         </h1>
-        <p className="mt-4 max-w-2xl text-lg text-foreground/70">
+        <p className="mt-4 max-w-2xl text-lg text-foreground/80">
           Casas, departamentos, terrenos y oficinas en venta o arriendo. Busca, compara y contacta
           en un solo lugar.
         </p>

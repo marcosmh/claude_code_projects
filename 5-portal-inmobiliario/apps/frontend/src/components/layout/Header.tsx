@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { LogoMark } from "@/components/layout/LogoMark";
 import { ThemeSwitcher } from "@/components/layout/ThemeSwitcher";
 import { cn } from "@/lib/cn";
 import { isNavigationItemActive, publicNavigationItems } from "@/lib/navigation";
@@ -19,8 +20,9 @@ export function Header() {
         <Link
           href="/"
           onClick={closeMobileMenu}
-          className="text-lg font-bold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          className="flex items-center gap-2 text-lg font-bold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
+          <LogoMark className="size-8 shrink-0" />
           <span translate="no">Portal Inmobiliario</span>
         </Link>
 
