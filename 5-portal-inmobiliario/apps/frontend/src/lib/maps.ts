@@ -19,13 +19,13 @@ export function buildMapsSearchUrl(location: PropertyLocation): string {
   return `https://www.google.com/maps/search/?api=1&query=${query}`;
 }
 
-/** URL del mapa incrustado (Maps Embed API). Devuelve null si no hay clave configurada. */
-export function buildMapsEmbedUrl(
-  location: PropertyLocation,
-  apiKey: string | undefined,
-): string | null {
-  const key = apiKey?.trim();
-  if (!key) return null;
+/**
+ * URL del mapa incrustado. Con clave usa la Maps Embed API oficial; sin clave usa el
+ * mapa incrustable público de Google Maps, así la vista previa siempre se muestra.
+ */
+export function buildMapsEmbedUrl(location: PropertyLocation, apiKey: string | undefined): string {
   const query = encodeURIComponent(buildLocationQuery(location));
+  const key = apiKey?.trim();
+  if (!key) return `https://maps.google.com/maps?q=${query}&hl=es&z=15&output=embed`;
   return `https://www.google.com/maps/embed/v1/place?key=${encodeURIComponent(key)}&q=${query}&language=es&region=MX`;
 }

@@ -30,12 +30,18 @@ describe("buildMapsSearchUrl", () => {
 });
 
 describe("buildMapsEmbedUrl", () => {
-  it("devuelve null sin clave de API", () => {
-    expect(buildMapsEmbedUrl(location, undefined)).toBeNull();
-    expect(buildMapsEmbedUrl(location, "  ")).toBeNull();
+  it("sin clave de API usa el mapa incrustable público", () => {
+    for (const apiKey of [undefined, "  "]) {
+      const url = new URL(buildMapsEmbedUrl(location, apiKey));
+      expect(url.origin + url.pathname).toBe("https://maps.google.com/maps");
+      expect(url.searchParams.get("output")).toBe("embed");
+      expect(url.searchParams.get("q")).toBe(
+        "Calle 21 No. 310, Montebello, Mérida, Yucatán, México",
+      );
+    }
   });
   it("construye la URL del mapa incrustado con la clave", () => {
-    const url = new URL(buildMapsEmbedUrl(location, "KEY123") as string);
+    const url = new URL(buildMapsEmbedUrl(location, "KEY123"));
     expect(url.origin + url.pathname).toBe("https://www.google.com/maps/embed/v1/place");
     expect(url.searchParams.get("key")).toBe("KEY123");
     expect(url.searchParams.get("q")).toBe("Calle 21 No. 310, Montebello, Mérida, Yucatán, México");

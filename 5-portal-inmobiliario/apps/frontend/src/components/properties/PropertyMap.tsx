@@ -10,8 +10,9 @@ type PropertyMapProps = {
 
 /**
  * Ubicación de la propiedad con Google Maps a partir de su dirección textual.
- * La clave (NEXT_PUBLIC_GOOGLE_MAPS_API_KEY) es una clave de navegador restringida
- * por dominio; sin ella se muestra solo el enlace a Google Maps.
+ * Con NEXT_PUBLIC_GOOGLE_MAPS_API_KEY (clave de navegador restringida por dominio) usa la
+ * Maps Embed API; sin ella usa el mapa incrustable público, de modo que la vista previa
+ * siempre se muestra.
  */
 export function PropertyMap({ title, ...location }: PropertyMapProps) {
   const embedUrl = buildMapsEmbedUrl(location, process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY);
@@ -22,16 +23,14 @@ export function PropertyMap({ title, ...location }: PropertyMapProps) {
         Ubicación
       </h2>
       <p className="mt-1 text-foreground/70">{buildLocationQuery(location)}</p>
-      {embedUrl && (
-        <iframe
-          title={`Mapa de ubicación de ${title}`}
-          src={embedUrl}
-          loading="lazy"
-          allowFullScreen
-          referrerPolicy="strict-origin-when-cross-origin"
-          className="mt-3 aspect-[16/10] w-full rounded-xl border border-foreground/10 bg-foreground/5"
-        />
-      )}
+      <iframe
+        title={`Mapa de ubicación de ${title}`}
+        src={embedUrl}
+        loading="lazy"
+        allowFullScreen
+        referrerPolicy="strict-origin-when-cross-origin"
+        className="mt-3 aspect-[16/10] w-full rounded-xl border border-foreground/10 bg-foreground/5"
+      />
       <a
         href={buildMapsSearchUrl(location)}
         target="_blank"

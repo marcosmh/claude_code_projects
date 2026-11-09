@@ -30,10 +30,12 @@ describe("PropertyMap", () => {
     expect(link.getAttribute("rel")).toBe("noopener noreferrer");
   });
 
-  it("sin clave muestra solo la dirección y el enlace", () => {
+  it("sin clave muestra igualmente la vista previa del mapa y el enlace", () => {
     vi.stubEnv("NEXT_PUBLIC_GOOGLE_MAPS_API_KEY", "");
     render(<PropertyMap {...props} />);
-    expect(screen.queryByTitle(/Mapa de ubicación/)).toBeNull();
+    const frame = screen.getByTitle("Mapa de ubicación de Casa en Mérida");
+    expect(frame.getAttribute("src")).toContain("https://maps.google.com/maps?q=");
+    expect(frame.getAttribute("src")).toContain("output=embed");
     expect(screen.getByRole("link", { name: /Abrir en Google Maps/ })).toBeTruthy();
   });
 });
