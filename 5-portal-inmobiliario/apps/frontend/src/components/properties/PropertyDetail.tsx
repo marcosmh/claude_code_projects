@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { PropertyGallery } from "./PropertyGallery";
+import { PropertyMap } from "./PropertyMap";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { usePropertyDetail } from "@/hooks/usePropertyDetail";
 import { formatArea, formatOperation, formatPrice, formatPropertyType } from "@/lib/format";
@@ -145,6 +146,14 @@ export function PropertyDetail({ propertyId }: PropertyDetailProps) {
               </ul>
             </>
           )}
+
+          <PropertyMap
+            title={property.title}
+            address={property.address}
+            commune={property.commune}
+            city={property.city}
+            region={property.region}
+          />
         </div>
 
         <aside

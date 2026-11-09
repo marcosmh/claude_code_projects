@@ -70,7 +70,14 @@ describe("PropertyDetail", () => {
     mockDetail({ property });
     render(<PropertyDetail propertyId="p1" />);
     expect(screen.getByRole("heading", { level: 1, name: "Casa en Coyoacán" })).toBeTruthy();
-    expect(screen.getByText(/Calle Hidalgo 10, Coyoacán, Ciudad de México/)).toBeTruthy();
+    expect(
+      screen.getByText("Calle Hidalgo 10, Coyoacán, Ciudad de México, Ciudad de México"),
+    ).toBeTruthy();
+    const location = within(screen.getByRole("region", { name: "Ubicación" }));
+    expect(
+      location.getByText("Calle Hidalgo 10, Coyoacán, Ciudad de México, Ciudad de México, México"),
+    ).toBeTruthy();
+    expect(location.getByRole("link", { name: /Abrir en Google Maps/ })).toBeTruthy();
     expect(screen.getByText("Venta")).toBeTruthy();
     expect(screen.getByText("$5,000,000")).toBeTruthy();
     expect(screen.getByText(/Casa amplia/)).toBeTruthy();

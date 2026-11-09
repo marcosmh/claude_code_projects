@@ -94,7 +94,7 @@
   - Navegación.
   - Responsive.
 
-- [ ] **Paso 15 — Google Maps**
+- [x] **Paso 15 — Google Maps**
   - Construir ubicación desde dirección, comuna, ciudad y región.
   - Integrar Google Maps.
   - No solicitar latitud/longitud manual.
