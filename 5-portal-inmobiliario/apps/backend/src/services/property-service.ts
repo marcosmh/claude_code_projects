@@ -91,15 +91,12 @@ export function createPropertyService(repository: PropertyRepository) {
         region: query.region,
         isFeatured: query.featured,
       };
-      const [records, total] = await Promise.all([
-        repository.findPublishedPage({
-          skip: (query.page - 1) * query.pageSize,
-          take: query.pageSize,
-          filters,
-          sort: query.sort,
-        }),
-        repository.countPublished(filters),
-      ]);
+      const { records, total } = await repository.findPublishedPage({
+        skip: (query.page - 1) * query.pageSize,
+        take: query.pageSize,
+        filters,
+        sort: query.sort,
+      });
 
       return {
         items: records.map(toSummaryDto),

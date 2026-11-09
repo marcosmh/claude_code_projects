@@ -64,8 +64,7 @@ function buildDetailRecord(
 
 function buildRepository(overrides: Partial<PropertyRepository> = {}): PropertyRepository {
   return {
-    findPublishedPage: vi.fn().mockResolvedValue([]),
-    countPublished: vi.fn().mockResolvedValue(0),
+    findPublishedPage: vi.fn().mockResolvedValue({ records: [], total: 0 }),
     findPublishedById: vi.fn().mockResolvedValue(null),
     findPublishedLocations: vi.fn().mockResolvedValue({ cities: [], regions: [] }),
     ...overrides,
@@ -76,8 +75,9 @@ describe("listPublishedProperties", () => {
   it("convierte decimales a números y expone la imagen principal", async () => {
     const service = createPropertyService(
       buildRepository({
-        findPublishedPage: vi.fn().mockResolvedValue([buildSummaryRecord()]),
-        countPublished: vi.fn().mockResolvedValue(1),
+        findPublishedPage: vi
+          .fn()
+          .mockResolvedValue({ records: [buildSummaryRecord()], total: 1 }),
       }),
     );
 
@@ -97,10 +97,10 @@ describe("listPublishedProperties", () => {
   it("devuelve primaryImageUrl nulo cuando no hay imagen principal", async () => {
     const service = createPropertyService(
       buildRepository({
-        findPublishedPage: vi
-          .fn()
-          .mockResolvedValue([buildSummaryRecord({ images: [], usableArea: null })]),
-        countPublished: vi.fn().mockResolvedValue(1),
+        findPublishedPage: vi.fn().mockResolvedValue({
+          records: [buildSummaryRecord({ images: [], usableArea: null })],
+          total: 1,
+        }),
       }),
     );
     const result = await service.listPublishedProperties({ page: 1, pageSize: 12, sort: "newest" });
@@ -109,10 +109,8 @@ describe("listPublishedProperties", () => {
   });
 
   it("calcula skip/take y metadatos de paginación", async () => {
-    const findPublishedPage = vi.fn().mockResolvedValue([]);
-    const service = createPropertyService(
-      buildRepository({ findPublishedPage, countPublished: vi.fn().mockResolvedValue(25) }),
-    );
+    const findPublishedPage = vi.fn().mockResolvedValue({ records: [], total: 25 });
+    const service = createPropertyService(buildRepository({ findPublishedPage }));
 
     const result = await service.listPublishedProperties({ page: 3, pageSize: 10, sort: "newest" });
 
@@ -123,11 +121,8 @@ describe("listPublishedProperties", () => {
 
 describe("listPublishedProperties con filtros", () => {
   it("traduce operation y featured a filtros del repositorio", async () => {
-    const findPublishedPage = vi.fn().mockResolvedValue([]);
-    const countPublished = vi.fn().mockResolvedValue(0);
-    const service = createPropertyService(
-      buildRepository({ findPublishedPage, countPublished }),
-    );
+    const findPublishedPage = vi.fn().mockResolvedValue({ records: [], total: 0 });
+    const service = createPropertyService(buildRepository({ findPublishedPage }));
 
     await service.listPublishedProperties({
       page: 1,
@@ -151,7 +146,6 @@ describe("listPublishedProperties con filtros", () => {
       filters: expectedFilters,
       sort: "price_desc",
     });
-    expect(countPublished).toHaveBeenCalledWith(expectedFilters);
   });
 });
 

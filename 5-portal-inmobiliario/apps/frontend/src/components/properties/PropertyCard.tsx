@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { memo } from "react";
 import {
   formatArea,
   formatBathrooms,
@@ -11,10 +12,19 @@ import type { PropertySummaryDto } from "@portal/shared-types";
 
 type PropertyCardProps = {
   property: PropertySummaryDto;
+  /** Carga la imagen con prioridad: solo para tarjetas visibles al cargar (posibles LCP). */
+  priority?: boolean;
 };
 
 /** Tarjeta reutilizable de propiedad para landing, catálogo y resultados de búsqueda. */
-export function PropertyCard({ property }: PropertyCardProps) {
+/**
+ * Memoizada: al abrir/cerrar el panel de filtros o cambiar el orden, el catálogo se vuelve a
+ * renderizar pero las tarjetas con el mismo `property` no.
+ */
+export const PropertyCard = memo(function PropertyCard({
+  property,
+  priority = false,
+}: PropertyCardProps) {
   const specifications = [
     property.bedrooms !== null &&
       `${property.bedrooms} ${property.bedrooms === 1 ? "dorm." : "dorms."}`,
@@ -34,6 +44,7 @@ export function PropertyCard({ property }: PropertyCardProps) {
               src={property.primaryImageUrl}
               alt={`Fotografía de ${property.title}`}
               fill
+              priority={priority}
               sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
               className="object-cover"
             />
@@ -67,4 +78,4 @@ export function PropertyCard({ property }: PropertyCardProps) {
       </Link>
     </article>
   );
-}
+});

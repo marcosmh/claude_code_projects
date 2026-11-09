@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { usePropertyList } from "@/hooks/usePropertyList";
 import type { PropertyListParams } from "@portal/api-client";
-import { Skeleton } from "@/components/ui/Skeleton";
 import { PropertyCard } from "@/components/properties/PropertyCard";
 import { PropertyGrid } from "@/components/properties/PropertyGrid";
+import { PropertyGridSkeleton } from "@/components/properties/PropertyGridSkeleton";
 
 type PropertySectionProps = {
   id: string;
@@ -48,15 +48,11 @@ export function PropertySection({
       </div>
 
       {isLoading && (
-        <PropertyGrid className="mt-6" role="status" aria-label={`Cargando ${title.toLowerCase()}`}>
-          {Array.from({ length: skeletonCount }, (_, index) => (
-            <div key={index} className="space-y-3">
-              <Skeleton className="aspect-[3/2] w-full" />
-              <Skeleton className="h-6 w-1/2" />
-              <Skeleton className="h-4 w-3/4" />
-            </div>
-          ))}
-        </PropertyGrid>
+        <PropertyGridSkeleton
+          count={skeletonCount}
+          label={`Cargando ${title.toLowerCase()}`}
+          className="mt-6"
+        />
       )}
 
       {hasError && (

@@ -39,9 +39,11 @@ function readText(searchParams: URLSearchParams, key: string): string | undefine
   return value === "" ? undefined : value;
 }
 
+const NON_NEGATIVE_NUMBER_PATTERN = /^\d+(\.\d+)?$/;
+
 function readNonNegativeNumber(searchParams: URLSearchParams, key: string): number | undefined {
   const rawValue = (searchParams.get(key) ?? "").trim();
-  if (!/^\d+(\.\d+)?$/.test(rawValue)) return undefined;
+  if (!NON_NEGATIVE_NUMBER_PATTERN.test(rawValue)) return undefined;
   return Number(rawValue);
 }
 

@@ -7,6 +7,8 @@ import { fetchPropertyLocations, propertyLocationsUrl } from "@portal/api-client
 export function usePropertyLocations() {
   const { data } = useSWR(propertyLocationsUrl, fetchPropertyLocations, {
     revalidateOnFocus: false,
+    // Las ubicaciones casi no cambian: se comparten entre montajes durante un minuto.
+    dedupingInterval: 60_000,
   });
   return { cities: data?.cities ?? [], regions: data?.regions ?? [] };
 }

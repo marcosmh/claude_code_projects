@@ -207,4 +207,19 @@ describe("PropertyCatalog", () => {
     render(<PropertyCatalog />);
     expect(screen.getByText("No hay propiedades que coincidan con los filtros.")).toBeTruthy();
   });
+
+  it("atenúa y marca como ocupados los resultados mientras se actualizan", () => {
+    mockList({ properties: [property], total: 1, totalPages: 1, isRefreshing: true });
+    render(<PropertyCatalog />);
+    const grid = screen.getByRole("article").parentElement as HTMLElement;
+    expect(grid.getAttribute("aria-busy")).toBe("true");
+    expect(grid.className).toContain("opacity-60");
+  });
+
+  it("no atenúa los resultados cuando no se están actualizando", () => {
+    mockList({ properties: [property], total: 1, totalPages: 1, isRefreshing: false });
+    render(<PropertyCatalog />);
+    const grid = screen.getByRole("article").parentElement as HTMLElement;
+    expect(grid.className).not.toContain("opacity-60");
+  });
 });

@@ -320,6 +320,7 @@ describe.skipIf(!databaseUrl)("API REST pública de propiedades", () => {
     const body = (await response.json()) as { cities: string[]; regions: string[] };
 
     expect(response.status).toBe(200);
+    expect(response.headers.get("Cache-Control")).toContain("s-maxage=300");
     expect(body.cities).toContain("Ciudad de México");
     expect(body.regions).toContain("Ciudad de México");
     expect(new Set(body.cities).size).toBe(body.cities.length);

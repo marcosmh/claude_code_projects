@@ -55,11 +55,13 @@ export type PaginationOptions = {
 };
 
 export type PropertyRepository = {
-  findPublishedPage(options: PaginationOptions): Promise<PropertySummaryRecord[]>;
-  countPublished(filters: PropertyFilters): Promise<number>;
+  /** Página de resultados y total de coincidencias, resolviendo el filtro una sola vez. */
+  findPublishedPage(options: PaginationOptions): Promise<PublishedPage>;
   findPublishedById(propertyId: string): Promise<PropertyDetailRecord | null>;
   findPublishedLocations(): Promise<PropertyLocations>;
 };
+
+export type PublishedPage = { records: PropertySummaryRecord[]; total: number };
 
 export type PropertyLocations = { cities: string[]; regions: string[] };
 
@@ -147,17 +149,19 @@ function buildOrderBy(sort: PropertySortOption): Prisma.PropertyOrderByWithRelat
 
 export const propertyRepository: PropertyRepository = {
   async findPublishedPage({ skip, take, filters, sort }) {
-    return database.property.findMany({
-      where: await buildPublishedWhere(filters),
-      include: summaryInclude,
-      orderBy: buildOrderBy(sort),
-      skip,
-      take,
-    });
-  },
-
-  async countPublished(filters) {
-    return database.property.count({ where: await buildPublishedWhere(filters) });
+    // El filtro (incluida la búsqueda SQL con unaccent) se resuelve una vez y se comparte.
+    const where = await buildPublishedWhere(filters);
+    const [records, total] = await Promise.all([
+      database.property.findMany({
+        where,
+        include: summaryInclude,
+        orderBy: buildOrderBy(sort),
+        skip,
+        take,
+      }),
+      database.property.count({ where }),
+    ]);
+    return { records, total };
   },
 
   async findPublishedLocations() {

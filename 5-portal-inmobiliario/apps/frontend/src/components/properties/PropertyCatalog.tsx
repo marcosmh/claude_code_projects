@@ -2,7 +2,6 @@
 
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { Skeleton } from "@/components/ui/Skeleton";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { usePropertyLocations } from "@/hooks/usePropertyLocations";
 import { usePropertyList } from "@/hooks/usePropertyList";
@@ -18,6 +17,7 @@ import { FiltersSidebar } from "./FiltersSidebar";
 import { Pagination } from "./Pagination";
 import { PropertyCard } from "./PropertyCard";
 import { PropertyGrid } from "./PropertyGrid";
+import { PropertyGridSkeleton } from "./PropertyGridSkeleton";
 import { SortSelect } from "./SortSelect";
 
 const headingByOperation = {
@@ -51,11 +51,12 @@ export function PropertyCatalog() {
   const catalogParams = parseCatalogParams(useSearchParams());
   const { page, ...filters } = catalogParams;
   const { search, operation } = filters;
-  const { properties, total, totalPages, isLoading, hasError, retry } = usePropertyList({
-    page,
-    pageSize: catalogPageSize,
-    ...filters,
-  });
+  const { properties, total, totalPages, isLoading, isRefreshing, hasError, retry } =
+    usePropertyList({
+      page,
+      pageSize: catalogPageSize,
+      ...filters,
+    });
   const { cities, regions } = usePropertyLocations();
 
   // Abierto por defecto en escritorio y cerrado en móvil, salvo que la persona lo cambie.
@@ -118,19 +119,11 @@ export function PropertyCatalog() {
           )}
 
           {isLoading && (
-            <PropertyGrid
+            <PropertyGridSkeleton
+              count={6}
+              label="Cargando propiedades"
               className={cn("mt-4", gridClassName)}
-              role="status"
-              aria-label="Cargando propiedades"
-            >
-              {Array.from({ length: 6 }, (_, index) => (
-                <div key={index} className="space-y-3">
-                  <Skeleton className="aspect-[3/2] w-full" />
-                  <Skeleton className="h-6 w-1/2" />
-                  <Skeleton className="h-4 w-3/4" />
-                </div>
-              ))}
-            </PropertyGrid>
+            />
           )}
 
           {hasError && (
@@ -161,9 +154,16 @@ export function PropertyCatalog() {
 
           {!isLoading && !hasError && properties.length > 0 && (
             <>
-              <PropertyGrid className={cn("mt-4", gridClassName)}>
-                {properties.map((property) => (
-                  <PropertyCard key={property.id} property={property} />
+              <PropertyGrid
+                aria-busy={isRefreshing}
+                className={cn(
+                  "mt-4 transition-opacity",
+                  gridClassName,
+                  isRefreshing && "opacity-60",
+                )}
+              >
+                {properties.map((property, index) => (
+                  <PropertyCard key={property.id} property={property} priority={index < 3} />
                 ))}
               </PropertyGrid>
               <Pagination
