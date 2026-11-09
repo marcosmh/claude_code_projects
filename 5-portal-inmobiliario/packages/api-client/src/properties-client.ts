@@ -1,4 +1,5 @@
 import type {
+  InquiryResponseDto,
   PaginatedResponse,
   PropertyDetailDto,
   PropertyOperation,
@@ -89,4 +90,25 @@ export async function fetchPropertyDetail(url: string): Promise<PropertyDetailDt
     );
   }
   return (await response.json()) as PropertyDetailDto;
+}
+
+export type InquiryRequest = {
+  propertyId: string;
+  name: string;
+  email: string;
+  phone?: string;
+  message: string;
+};
+
+/** Envía una consulta de contacto. Lanza ApiRequestError si la API no responde con éxito. */
+export async function submitInquiry(request: InquiryRequest): Promise<InquiryResponseDto> {
+  const response = await fetch("/api/inquiries", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify(request),
+  });
+  if (!response.ok) {
+    throw new ApiRequestError("No se pudo enviar la consulta", response.status);
+  }
+  return (await response.json()) as InquiryResponseDto;
 }

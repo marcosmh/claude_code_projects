@@ -92,6 +92,12 @@ describe("PropertyDetail", () => {
     expect(summary.getByText("A estrenar")).toBeTruthy();
   });
 
+  it("incluye el formulario de contacto de la propiedad", () => {
+    mockDetail({ property });
+    render(<PropertyDetail propertyId="p1" />);
+    expect(screen.getByRole("form", { name: "Formulario de contacto" })).toBeTruthy();
+  });
+
   it("muestra la galería con la imagen principal primero", () => {
     mockDetail({ property });
     render(<PropertyDetail propertyId="p1" />);

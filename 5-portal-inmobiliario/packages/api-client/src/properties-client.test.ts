@@ -5,6 +5,7 @@ import {
   buildPropertyUrl,
   fetchPropertyDetail,
   fetchPropertyPage,
+  submitInquiry,
 } from "./properties-client";
 
 describe("buildPropertiesUrl", () => {
@@ -100,5 +101,36 @@ describe("detalle de propiedad", () => {
   it("propaga otros errores del servidor", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("{}", { status: 500 })));
     await expect(fetchPropertyDetail("/api/properties/x")).rejects.toBeInstanceOf(ApiRequestError);
+  });
+});
+
+describe("submitInquiry", () => {
+  afterEach(() => vi.unstubAllGlobals());
+  const request = {
+    propertyId: "p1",
+    name: "Ana",
+    email: "ana@example.com",
+    message: "Hola, me interesa",
+  };
+
+  it("hace POST con el cuerpo JSON y devuelve la respuesta", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response(JSON.stringify({ id: "i1", notificationSent: true })));
+    vi.stubGlobal("fetch", fetchMock);
+
+    expect(await submitInquiry(request)).toEqual({ id: "i1", notificationSent: true });
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("/api/inquiries");
+    expect(init.method).toBe("POST");
+    expect(JSON.parse(init.body as string)).toEqual(request);
+  });
+
+  it("lanza ApiRequestError con el estado cuando la API falla", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("{}", { status: 404 })));
+    await expect(submitInquiry(request)).rejects.toMatchObject({
+      name: "ApiRequestError",
+      status: 404,
+    });
   });
 });

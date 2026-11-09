@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ContactForm } from "./ContactForm";
 import { PropertyGallery } from "./PropertyGallery";
 import { PropertyMap } from "./PropertyMap";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -156,22 +157,27 @@ export function PropertyDetail({ propertyId }: PropertyDetailProps) {
           />
         </div>
 
-        <aside
-          aria-label="Resumen de la propiedad"
-          className="h-fit rounded-xl border border-foreground/10 bg-surface p-6 shadow-sm"
-        >
-          <p className="text-3xl font-bold">
-            {formatPrice(property.price, property.currency, property.operation)}
-          </p>
-          <dl className="mt-4 divide-y divide-foreground/10">
-            {specifications.map((item) => (
-              <div key={item.label} className="flex justify-between gap-4 py-2 text-sm">
-                <dt className="text-foreground/70">{item.label}</dt>
-                <dd className="font-medium">{item.value}</dd>
-              </div>
-            ))}
-          </dl>
-        </aside>
+        <div className="h-fit space-y-6">
+          <aside
+            aria-label="Resumen de la propiedad"
+            className="rounded-xl border border-foreground/10 bg-surface p-6 shadow-sm"
+          >
+            <p className="text-3xl font-bold">
+              {formatPrice(property.price, property.currency, property.operation)}
+            </p>
+            <dl className="mt-4 divide-y divide-foreground/10">
+              {specifications.map((item) => (
+                <div key={item.label} className="flex justify-between gap-4 py-2 text-sm">
+                  <dt className="text-foreground/70">{item.label}</dt>
+                  <dd className="font-medium">{item.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </aside>
+          <div className="rounded-xl border border-foreground/10 bg-surface p-6 shadow-sm [&>section]:mt-0">
+            <ContactForm propertyId={property.id} propertyTitle={property.title} />
+          </div>
+        </div>
       </div>
     </article>
   );
