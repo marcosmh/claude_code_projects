@@ -95,14 +95,11 @@ export function FiltersSidebar({ id, filters, cities, regions }: FiltersSidebarP
   const radioGroup = (name: "bedrooms" | "bathrooms", legend: string, maximum: number) => (
     <fieldset>
       <legend className={legendClassName}>{legend}</legend>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-col">
         {["", ...Array.from({ length: maximum }, (_, index) => String(index + 1))].map((value) => (
-          <label
-            key={value}
-            className="flex h-9 min-w-10 cursor-pointer items-center justify-center rounded-md border border-foreground/20 px-3 text-sm has-[:checked]:border-primary has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ring"
-          >
-            <input type="radio" value={value} className="sr-only" {...register(name)} />
-            {value === "" ? "Todos" : `${value}+`}
+          <label key={value} className={checkboxLabelClassName}>
+            <input type="radio" value={value} className={checkboxClassName} {...register(name)} />
+            {value === "" ? "Todos" : `${value} o más`}
           </label>
         ))}
       </div>

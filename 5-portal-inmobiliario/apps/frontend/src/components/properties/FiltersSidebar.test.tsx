@@ -72,7 +72,7 @@ describe("FiltersSidebar", () => {
     expect(
       (
         within(screen.getByRole("group", { name: "Dormitorios" })).getByRole("radio", {
-          name: "3+",
+          name: "3 o más",
         }) as HTMLInputElement
       ).checked,
     ).toBe(true);
@@ -93,7 +93,7 @@ describe("FiltersSidebar", () => {
     await user.selectOptions(screen.getByLabelText("Ciudad"), "Mérida");
     await user.type(screen.getByLabelText("Precio máximo"), "5000000");
     await user.click(
-      within(screen.getByRole("group", { name: "Dormitorios" })).getByRole("radio", { name: "2+" }),
+      within(screen.getByRole("group", { name: "Dormitorios" })).getByRole("radio", { name: "2 o más" }),
     );
     await user.click(screen.getByRole("button", { name: "Aplicar filtros" }));
 
