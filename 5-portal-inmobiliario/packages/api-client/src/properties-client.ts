@@ -2,6 +2,7 @@ import type {
   InquiryResponseDto,
   PaginatedResponse,
   PropertyDetailDto,
+  PropertyLocationsDto,
   PropertyOperation,
   PropertySort,
   PropertyType,
@@ -12,8 +13,10 @@ export type PropertyListParams = {
   page?: number;
   pageSize?: number;
   search?: string;
-  operation?: PropertyOperation;
-  type?: PropertyType;
+  /** Una o varias operaciones (se envían separadas por comas). */
+  operation?: PropertyOperation | readonly PropertyOperation[];
+  /** Uno o varios tipos (se envían separados por comas). */
+  type?: PropertyType | readonly PropertyType[];
   minPrice?: number;
   maxPrice?: number;
   bedrooms?: number;
@@ -35,13 +38,20 @@ const numericFilterKeys = [
 ] as const;
 const locationFilterKeys = ["commune", "city", "region"] as const;
 
+function joinValues(value: string | readonly string[] | undefined): string {
+  if (value === undefined) return "";
+  return typeof value === "string" ? value : value.join(",");
+}
+
 export function buildPropertiesUrl(params: PropertyListParams = {}): string {
   const searchParams = new URLSearchParams();
   if (params.page !== undefined) searchParams.set("page", String(params.page));
   if (params.pageSize !== undefined) searchParams.set("pageSize", String(params.pageSize));
   if (params.search) searchParams.set("search", params.search);
-  if (params.operation !== undefined) searchParams.set("operation", params.operation);
-  if (params.type !== undefined) searchParams.set("type", params.type);
+  const operations = joinValues(params.operation);
+  if (operations) searchParams.set("operation", operations);
+  const types = joinValues(params.type);
+  if (types) searchParams.set("type", types);
   for (const key of numericFilterKeys) {
     const value = params[key];
     if (value !== undefined) searchParams.set(key, String(value));
@@ -111,4 +121,15 @@ export async function submitInquiry(request: InquiryRequest): Promise<InquiryRes
     throw new ApiRequestError("No se pudo enviar la consulta", response.status);
   }
   return (await response.json()) as InquiryResponseDto;
+}
+
+export const propertyLocationsUrl = "/api/locations";
+
+/** Ciudades y regiones con propiedades publicadas (opciones de los filtros). */
+export async function fetchPropertyLocations(url: string): Promise<PropertyLocationsDto> {
+  const response = await fetch(url, { headers: { Accept: "application/json" } });
+  if (!response.ok) {
+    throw new ApiRequestError("No se pudieron cargar las ubicaciones", response.status);
+  }
+  return (await response.json()) as PropertyLocationsDto;
 }

@@ -67,6 +67,7 @@ function buildRepository(overrides: Partial<PropertyRepository> = {}): PropertyR
     findPublishedPage: vi.fn().mockResolvedValue([]),
     countPublished: vi.fn().mockResolvedValue(0),
     findPublishedById: vi.fn().mockResolvedValue(null),
+    findPublishedLocations: vi.fn().mockResolvedValue({ cities: [], regions: [] }),
     ...overrides,
   };
 }
@@ -132,12 +133,18 @@ describe("listPublishedProperties con filtros", () => {
       page: 1,
       pageSize: 3,
       search: "querétaro",
-      operation: "RENT",
+      operation: ["RENT", "SALE"],
+      type: ["HOUSE"],
       featured: true,
       sort: "price_desc",
     });
 
-    const expectedFilters = { searchText: "querétaro", operation: "RENT", isFeatured: true };
+    const expectedFilters = {
+      searchText: "querétaro",
+      operations: ["RENT", "SALE"],
+      types: ["HOUSE"],
+      isFeatured: true,
+    };
     expect(findPublishedPage).toHaveBeenCalledWith({
       skip: 0,
       take: 3,
@@ -177,3 +184,14 @@ describe("getPublishedPropertyById", () => {
     await expect(service.getPublishedPropertyById("x")).rejects.toBeInstanceOf(NotFoundError);
   });
 });
+
+describe("listPublishedLocations", () => {
+  it("devuelve las ciudades y regiones del repositorio", async () => {
+    const locations = { cities: ["Mérida"], regions: ["Yucatán"] };
+    const service = createPropertyService(
+      buildRepository({ findPublishedLocations: vi.fn().mockResolvedValue(locations) }),
+    );
+    expect(await service.listPublishedLocations()).toEqual(locations);
+  });
+});
+

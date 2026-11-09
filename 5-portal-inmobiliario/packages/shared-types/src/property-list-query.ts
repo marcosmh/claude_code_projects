@@ -14,6 +14,23 @@ const optionalText = z
 const optionalNumber = (schema: z.ZodType<number>) =>
   z.union([z.literal("").transform(() => undefined), schema.optional()]).optional();
 
+/**
+ * Lista separada por comas (p. ej. "SALE,RENT"). Un valor único sigue siendo válido;
+ * los duplicados se eliminan y una lista vacía equivale a "sin filtro".
+ */
+const commaSeparatedEnum = <TValue extends string>(values: readonly [TValue, ...TValue[]]) =>
+  z
+    .string()
+    .transform((value) =>
+      value
+        .split(",")
+        .map((item) => item.trim())
+        .filter((item) => item !== ""),
+    )
+    .pipe(z.array(z.enum(values)))
+    .transform((items) => (items.length === 0 ? undefined : [...new Set(items)]))
+    .optional();
+
 export const propertyTypeValues = [
   "HOUSE",
   "APARTMENT",
@@ -42,8 +59,10 @@ export const propertyListQuerySchema = z
       .max(100)
       .transform((value) => (value === "" ? undefined : value))
       .optional(),
-    operation: z.enum(["SALE", "RENT"]).optional(),
-    type: z.enum(propertyTypeValues).optional(),
+    /** Una o varias operaciones: `SALE`, `RENT` o `SALE,RENT`. */
+    operation: commaSeparatedEnum(["SALE", "RENT"]),
+    /** Uno o varios tipos separados por comas. */
+    type: commaSeparatedEnum(propertyTypeValues),
     minPrice: optionalNumber(z.coerce.number().min(0)),
     maxPrice: optionalNumber(z.coerce.number().min(0)),
     /** Mínimo de dormitorios (3 = "3 o más"). */

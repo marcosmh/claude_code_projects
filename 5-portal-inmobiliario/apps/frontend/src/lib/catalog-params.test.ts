@@ -8,7 +8,7 @@ describe("parseCatalogParams", () => {
   it("lee página y operación válidas", () => {
     expect(parseCatalogParams(new URLSearchParams("page=3&operation=RENT"))).toEqual({
       page: 3,
-      operation: "RENT",
+      operation: ["RENT"],
     });
   });
   it("lee el texto de búsqueda recortado", () => {
@@ -30,7 +30,7 @@ describe("buildCatalogHref", () => {
     expect(buildCatalogHref({ page: 1 })).toBe("/properties");
   });
   it("conserva la operación al cambiar de página", () => {
-    expect(buildCatalogHref({ page: 2, operation: "SALE" })).toBe(
+    expect(buildCatalogHref({ page: 2, operation: ["SALE"] })).toBe(
       "/properties?operation=SALE&page=2",
     );
   });
@@ -44,8 +44,8 @@ describe("buildCatalogHref", () => {
     expect(
       buildCatalogHref({
         page: 3,
-        operation: "SALE",
-        type: "HOUSE",
+        operation: ["SALE"],
+        type: ["HOUSE"],
         minPrice: 100,
         bedrooms: 3,
         commune: "las-condes",
@@ -66,7 +66,7 @@ describe("parseCatalogParams con filtros", () => {
       ),
     ).toEqual({
       page: 1,
-      type: "LAND",
+      type: ["LAND"],
       minPrice: 1000,
       maxPrice: 2500.5,
       bedrooms: 3,
@@ -100,5 +100,26 @@ describe("orden en la URL", () => {
       "/properties?sort=price_asc&page=2",
     );
     expect(buildCatalogHref({ page: 1, sort: "newest" })).toBe("/properties");
+  });
+});
+
+describe("selección múltiple en la URL", () => {
+  it("lee varias operaciones y tipos en orden canónico, sin duplicados ni valores desconocidos", () => {
+    expect(
+      parseCatalogParams(
+        new URLSearchParams("operation=RENT,SALE,SALE,LEASE&type=LAND, HOUSE,CASTLE"),
+      ),
+    ).toEqual({ page: 1, operation: ["SALE", "RENT"], type: ["HOUSE", "LAND"] });
+  });
+
+  it("ignora listas sin valores válidos", () => {
+    expect(parseCatalogParams(new URLSearchParams("operation=foo&type=,"))).toEqual({ page: 1 });
+  });
+
+  it("serializa las listas separadas por comas y omite las vacías", () => {
+    expect(
+      buildCatalogHref({ page: 1, operation: ["SALE", "RENT"], type: ["HOUSE", "LAND"] }),
+    ).toBe("/properties?operation=SALE%2CRENT&type=HOUSE%2CLAND");
+    expect(buildCatalogHref({ page: 1, operation: [], type: [] })).toBe("/properties");
   });
 });

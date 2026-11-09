@@ -59,3 +59,9 @@ export type PaginatedResponse<TItem> = {
   total: number;
   totalPages: number;
 };
+
+/** Valores distintos de ubicación en propiedades publicadas (opciones de los filtros). */
+export type PropertyLocationsDto = {
+  cities: string[];
+  regions: string[];
+};

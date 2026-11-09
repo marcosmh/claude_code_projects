@@ -15,6 +15,11 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(currentQuery),
   useRouter: () => ({ push: pushMock }),
 }));
+vi.mock("@/hooks/usePropertyLocations", () => ({
+  usePropertyLocations: () => ({ cities: ["Mérida", "Querétaro"], regions: ["Yucatán"] }),
+}));
+const isDesktopMock = vi.hoisted(() => ({ value: true }));
+vi.mock("@/hooks/useMediaQuery", () => ({ useMediaQuery: () => isDesktopMock.value }));
 vi.mock("next/image", () => ({
   // eslint-disable-next-line @next/next/no-img-element
   default: ({ src, alt }: { src: string; alt: string }) => <img src={src} alt={alt} />,
@@ -25,6 +30,7 @@ afterEach(() => {
   usePropertyListMock.mockReset();
   pushMock.mockReset();
   currentQuery = "";
+  isDesktopMock.value = true;
 });
 
 const property: PropertySummaryDto = {
@@ -62,7 +68,11 @@ describe("PropertyCatalog", () => {
     currentQuery = "operation=RENT&page=2";
     mockList({ isLoading: true });
     render(<PropertyCatalog />);
-    expect(usePropertyListMock).toHaveBeenCalledWith({ page: 2, pageSize: 12, operation: "RENT" });
+    expect(usePropertyListMock).toHaveBeenCalledWith({
+      page: 2,
+      pageSize: 12,
+      operation: ["RENT"],
+    });
     expect(screen.getByRole("heading", { level: 1, name: "Propiedades en arriendo" })).toBeTruthy();
   });
 
@@ -74,7 +84,7 @@ describe("PropertyCatalog", () => {
       page: 1,
       pageSize: 12,
       search: "providencia",
-      operation: "SALE",
+      operation: ["SALE"],
     });
     expect((screen.getByLabelText("Buscar") as HTMLInputElement).value).toBe("providencia");
     expect(screen.getByRole("link", { name: /Siguiente/ }).getAttribute("href")).toBe(
@@ -96,7 +106,7 @@ describe("PropertyCatalog", () => {
     expect(usePropertyListMock).toHaveBeenCalledWith({
       page: 1,
       pageSize: 12,
-      type: "HOUSE",
+      type: ["HOUSE"],
       minPrice: 100,
       bedrooms: 3,
       city: "Mérida",
@@ -113,7 +123,7 @@ describe("PropertyCatalog", () => {
     expect(usePropertyListMock).toHaveBeenCalledWith({
       page: 1,
       pageSize: 12,
-      operation: "SALE",
+      operation: ["SALE"],
       sort: "price_asc",
     });
     const select = screen.getByLabelText("Ordenar por") as HTMLSelectElement;
@@ -153,5 +163,48 @@ describe("PropertyCatalog", () => {
     expect(screen.getByRole("link", { name: /Siguiente/ }).getAttribute("href")).toBe(
       "/properties?operation=SALE&page=2",
     );
+  });
+
+  it("muestra el sidebar de filtros abierto en escritorio y permite colapsarlo", async () => {
+    mockList({ properties: [property], total: 1, totalPages: 1 });
+    render(<PropertyCatalog />);
+    const toggle = screen.getByRole("button", { name: /Ocultar filtros/ });
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    expect(screen.getByRole("form", { name: "Filtros de propiedades" })).toBeTruthy();
+
+    await userEvent.setup().click(toggle);
+    const reopen = screen.getByRole("button", { name: /Mostrar filtros/ });
+    expect(reopen.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByRole("form", { name: "Filtros de propiedades" })).toBeNull();
+  });
+
+  it("empieza con el sidebar cerrado en móvil", () => {
+    isDesktopMock.value = false;
+    mockList({ properties: [property], total: 1, totalPages: 1 });
+    render(<PropertyCatalog />);
+    expect(screen.getByRole("button", { name: /Mostrar filtros/ })).toBeTruthy();
+  });
+
+  it("indica cuántos filtros hay activos y usa el título genérico con varias operaciones", () => {
+    currentQuery = "operation=SALE,RENT&type=HOUSE,LAND&city=Mérida&search=casa&sort=price_asc";
+    mockList({ properties: [property], total: 1, totalPages: 1 });
+    render(<PropertyCatalog />);
+    expect(screen.getByRole("heading", { level: 1, name: "Propiedades" })).toBeTruthy();
+    // 2 operaciones + 2 tipos + 1 ciudad; la búsqueda y el orden no cuentan.
+    expect(screen.getByText(/^5/, { selector: "span" })).toBeTruthy();
+    expect(usePropertyListMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operation: ["SALE", "RENT"],
+        type: ["HOUSE", "LAND"],
+        city: "Mérida",
+      }),
+    );
+  });
+
+  it("muestra un mensaje específico cuando los filtros no tienen resultados", () => {
+    currentQuery = "type=LAND";
+    mockList({});
+    render(<PropertyCatalog />);
+    expect(screen.getByText("No hay propiedades que coincidan con los filtros.")).toBeTruthy();
   });
 });

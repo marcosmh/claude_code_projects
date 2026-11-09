@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PrismaClient } from "@/generated/prisma/client";
 import { GET as getPropertyById } from "./[id]/route";
+import { GET as listLocations } from "../locations/route";
 import { GET as listProperties } from "./route";
 
 const databaseUrl = process.env.DATABASE_URL;
@@ -215,6 +216,13 @@ describe.skipIf(!databaseUrl)("API REST pública de propiedades", () => {
       expect(await filterIds("&operation=RENT")).toEqual([]);
     });
 
+    it("acepta varios tipos y operaciones a la vez (selección múltiple)", async () => {
+      expect(await filterIds("&type=APARTMENT,HOUSE")).toEqual([matchingId]);
+      expect(await filterIds("&operation=RENT,SALE")).toEqual([matchingId]);
+      expect(await filterIds("&type=APARTMENT,LAND")).toEqual([]);
+      expect(await filterIds("&operation=RENT&type=HOUSE,LAND")).toEqual([]);
+    });
+
     it("filtra por rango de precio (límites incluidos)", async () => {
       expect(await filterIds("&minPrice=3000000&maxPrice=3000000")).toEqual([matchingId]);
       expect(await filterIds("&minPrice=3000001")).toEqual([]);
@@ -253,7 +261,7 @@ describe.skipIf(!databaseUrl)("API REST pública de propiedades", () => {
     });
 
     it("responde 400 con filtros inválidos", async () => {
-      for (const query of ["?type=CASTLE", "?minPrice=-1", "?bedrooms=abc", "?minPrice=10&maxPrice=5"]) {
+      for (const query of ["?type=CASTLE", "?operation=SALE,LEASE", "?minPrice=-1", "?bedrooms=abc", "?minPrice=10&maxPrice=5"]) {
         const response = await listProperties(buildListRequest(query));
         expect(response.status).toBe(400);
       }
@@ -305,6 +313,27 @@ describe.skipIf(!databaseUrl)("API REST pública de propiedades", () => {
       const response = await listProperties(buildListRequest("?sort=random"));
       expect(response.status).toBe(400);
     });
+  });
+
+  it("GET /api/locations lista ciudades y regiones distintas de propiedades publicadas", async () => {
+    const response = await listLocations();
+    const body = (await response.json()) as { cities: string[]; regions: string[] };
+
+    expect(response.status).toBe(200);
+    expect(body.cities).toContain("Ciudad de México");
+    expect(body.regions).toContain("Ciudad de México");
+    expect(new Set(body.cities).size).toBe(body.cities.length);
+    expect(new Set(body.regions).size).toBe(body.regions.length);
+  });
+
+  it("GET /api/locations no incluye ubicaciones de propiedades no publicadas", async () => {
+    const city = `${testRunIdentifier} Ciudad Borrador`;
+    await client.property.create({
+      data: { ...propertyData("ubicación borrador", false), city, region: city },
+    });
+    const body = (await (await listLocations()).json()) as { cities: string[]; regions: string[] };
+    expect(body.cities).not.toContain(city);
+    expect(body.regions).not.toContain(city);
   });
 
   it("GET /api/properties pagina los resultados", async () => {

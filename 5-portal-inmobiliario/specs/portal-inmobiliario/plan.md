@@ -379,3 +379,11 @@ Decisiones:
 - Turborepo orquesta `dev`, `build`, `lint`, `test` y `typecheck`. Prettier, Husky y lint-staged aplican calidad en cada commit.
 - Fuera de alcance: IA/RAG, Ollama y pgvector no forman parte de esta especificación.
 
+## 20. Filtros en sidebar lateral (extensión)
+
+- Los filtros del catálogo se mueven a un sidebar izquierdo colapsable (en móvil se despliega sobre los resultados), para dejar más espacio a la cuadrícula.
+- Selección múltiple con checkboxes: tipo de propiedad y operación. En la URL y en la API se envían separados por comas (`operation=SALE,RENT`, `type=HOUSE,APARTMENT`); un valor único sigue siendo válido.
+- Selección única con select: ciudad y región. Sus opciones salen de `GET /api/locations` (valores distintos de propiedades publicadas), no de listas fijas.
+- Se mantienen en el sidebar los demás filtros (precio, dormitorios, baños, superficie, colonia). La búsqueda de texto y el orden quedan sobre los resultados.
+- Backend: el filtrado multivalor se aplica en PostgreSQL (`IN`).
+

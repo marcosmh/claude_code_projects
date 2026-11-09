@@ -8,19 +8,19 @@ const optionalNumberText = z
   .regex(/^(\d+(\.\d+)?)?$/, "Ingresa un número válido");
 const optionalLocationText = z.string().trim().max(100, "Máximo 100 caracteres");
 
+/** Filtros del sidebar. La búsqueda de texto y el orden se gestionan fuera de este formulario. */
 export const catalogFiltersFormSchema = z
   .object({
-    search: z.string().trim().max(100, "Máximo 100 caracteres"),
-    operation: z.enum(["ALL", "SALE", "RENT"]),
-    type: z.enum(["ALL", ...propertyTypeValues]),
+    operation: z.array(z.enum(["SALE", "RENT"])),
+    type: z.array(z.enum(propertyTypeValues)),
+    city: optionalLocationText,
+    region: optionalLocationText,
+    commune: optionalLocationText,
     minPrice: optionalNumberText,
     maxPrice: optionalNumberText,
     bedrooms: z.enum(["", "1", "2", "3", "4", "5"]),
     bathrooms: z.enum(["", "1", "2", "3", "4"]),
     minUsableArea: optionalNumberText,
-    commune: optionalLocationText,
-    city: optionalLocationText,
-    region: optionalLocationText,
   })
   .refine(
     ({ minPrice, maxPrice }) =>
@@ -34,36 +34,37 @@ export type CatalogFiltersFormValues = z.infer<typeof catalogFiltersFormSchema>;
 export function toFormValues(filters: CatalogFilters): CatalogFiltersFormValues {
   const numberText = (value: number | undefined) => (value === undefined ? "" : String(value));
   return {
-    search: filters.search ?? "",
-    operation: filters.operation ?? "ALL",
-    type: filters.type ?? "ALL",
+    operation: filters.operation ?? [],
+    type: filters.type ?? [],
+    city: filters.city ?? "",
+    region: filters.region ?? "",
+    commune: filters.commune ?? "",
     minPrice: numberText(filters.minPrice),
     maxPrice: numberText(filters.maxPrice),
     bedrooms: numberText(filters.bedrooms) as CatalogFiltersFormValues["bedrooms"],
     bathrooms: numberText(filters.bathrooms) as CatalogFiltersFormValues["bathrooms"],
     minUsableArea: numberText(filters.minUsableArea),
-    commune: filters.commune ?? "",
-    city: filters.city ?? "",
-    region: filters.region ?? "",
   };
 }
 
-/** URL del catálogo para los valores del formulario: omite vacíos y reinicia a la página 1. */
+/**
+ * URL del catálogo con los valores del formulario. Conserva la búsqueda y el orden actuales
+ * (`current`), omite los valores vacíos y reinicia a la página 1.
+ */
 export function buildCatalogFiltersHref(
   values: CatalogFiltersFormValues,
-  sort?: CatalogFilters["sort"],
+  current: Pick<CatalogFilters, "search" | "sort"> = {},
 ): string {
-  const filters: CatalogFilters = sort ? { sort } : {};
-  if (values.search) filters.search = values.search;
-  if (values.operation !== "ALL") filters.operation = values.operation;
-  if (values.type !== "ALL") filters.type = values.type;
+  const filters: CatalogFilters = { ...current };
+  if (values.operation.length > 0) filters.operation = values.operation;
+  if (values.type.length > 0) filters.type = values.type;
+  if (values.city) filters.city = values.city;
+  if (values.region) filters.region = values.region;
+  if (values.commune) filters.commune = values.commune;
   if (values.minPrice !== "") filters.minPrice = Number(values.minPrice);
   if (values.maxPrice !== "") filters.maxPrice = Number(values.maxPrice);
   if (values.bedrooms !== "") filters.bedrooms = Number(values.bedrooms);
   if (values.bathrooms !== "") filters.bathrooms = Number(values.bathrooms);
   if (values.minUsableArea !== "") filters.minUsableArea = Number(values.minUsableArea);
-  if (values.commune) filters.commune = values.commune;
-  if (values.city) filters.city = values.city;
-  if (values.region) filters.region = values.region;
   return buildCatalogHref({ page: 1, ...filters });
 }

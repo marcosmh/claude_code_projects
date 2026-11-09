@@ -27,8 +27,10 @@ export type PropertyDetailRecord = Prisma.PropertyGetPayload<{
 export type PropertyFilters = {
   /** Texto libre: título, descripción, colonia, ciudad y estado (sin acentos ni mayúsculas). */
   searchText?: string;
-  operation?: "SALE" | "RENT";
-  type?: PropertyType;
+  /** Cualquiera de las operaciones indicadas. */
+  operations?: ("SALE" | "RENT")[];
+  /** Cualquiera de los tipos indicados. */
+  types?: PropertyType[];
   minPrice?: number;
   maxPrice?: number;
   /** Mínimo de dormitorios. */
@@ -56,7 +58,10 @@ export type PropertyRepository = {
   findPublishedPage(options: PaginationOptions): Promise<PropertySummaryRecord[]>;
   countPublished(filters: PropertyFilters): Promise<number>;
   findPublishedById(propertyId: string): Promise<PropertyDetailRecord | null>;
+  findPublishedLocations(): Promise<PropertyLocations>;
 };
+
+export type PropertyLocations = { cities: string[]; regions: string[] };
 
 function containsPattern(text: string): string {
   return `%${escapeLikePattern(text)}%`;
@@ -109,8 +114,8 @@ async function buildPublishedWhere(filters: PropertyFilters): Promise<Prisma.Pro
   return {
     isPublished: true,
     ...(matchingIds !== undefined && { id: { in: matchingIds } }),
-    ...(filters.operation !== undefined && { operation: filters.operation }),
-    ...(filters.type !== undefined && { type: filters.type }),
+    ...(filters.operations !== undefined && { operation: { in: filters.operations } }),
+    ...(filters.types !== undefined && { type: { in: filters.types } }),
     ...(hasPriceRange && {
       price: {
         ...(filters.minPrice !== undefined && { gte: filters.minPrice }),
@@ -153,6 +158,27 @@ export const propertyRepository: PropertyRepository = {
 
   async countPublished(filters) {
     return database.property.count({ where: await buildPublishedWhere(filters) });
+  },
+
+  async findPublishedLocations() {
+    const [cityRows, regionRows] = await Promise.all([
+      database.property.findMany({
+        where: { isPublished: true },
+        distinct: ["city"],
+        select: { city: true },
+        orderBy: { city: "asc" },
+      }),
+      database.property.findMany({
+        where: { isPublished: true },
+        distinct: ["region"],
+        select: { region: true },
+        orderBy: { region: "asc" },
+      }),
+    ]);
+    return {
+      cities: cityRows.map((row) => row.city),
+      regions: regionRows.map((row) => row.region),
+    };
   },
 
   findPublishedById(propertyId) {

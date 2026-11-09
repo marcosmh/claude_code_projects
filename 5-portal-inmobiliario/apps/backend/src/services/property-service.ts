@@ -79,8 +79,8 @@ export function createPropertyService(repository: PropertyRepository) {
     ): Promise<PaginatedResponse<PropertySummaryDto>> {
       const filters: PropertyFilters = {
         searchText: query.search,
-        operation: query.operation,
-        type: query.type,
+        operations: query.operation,
+        types: query.type,
         minPrice: query.minPrice,
         maxPrice: query.maxPrice,
         minBedrooms: query.bedrooms,
@@ -108,6 +108,11 @@ export function createPropertyService(repository: PropertyRepository) {
         total,
         totalPages: Math.ceil(total / query.pageSize),
       };
+    },
+
+    /** Ciudades y regiones con propiedades publicadas, para los filtros de selección única. */
+    listPublishedLocations() {
+      return repository.findPublishedLocations();
     },
 
     async getPublishedPropertyById(propertyId: string): Promise<PropertyDetailDto> {

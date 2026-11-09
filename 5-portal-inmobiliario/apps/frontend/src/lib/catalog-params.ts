@@ -14,8 +14,10 @@ const locationFilterKeys = ["commune", "city", "region"] as const;
 
 export type CatalogFilters = {
   search?: string;
-  operation?: PropertyOperation;
-  type?: PropertyType;
+  /** Una o varias operaciones (selección múltiple). */
+  operation?: PropertyOperation[];
+  /** Uno o varios tipos (selección múltiple). */
+  type?: PropertyType[];
   minPrice?: number;
   maxPrice?: number;
   /** Mínimo de dormitorios. */
@@ -43,6 +45,18 @@ function readNonNegativeNumber(searchParams: URLSearchParams, key: string): numb
   return Number(rawValue);
 }
 
+const operationValues: readonly PropertyOperation[] = ["SALE", "RENT"];
+
+/** Lista separada por comas: descarta valores desconocidos y duplicados, y respeta el orden canónico. */
+function readList<TValue extends string>(
+  searchParams: URLSearchParams,
+  key: string,
+  allowedValues: readonly TValue[],
+): TValue[] {
+  const requested = (searchParams.get(key) ?? "").split(",").map((item) => item.trim());
+  return allowedValues.filter((value) => requested.includes(value));
+}
+
 /** Interpreta los query parameters del catálogo; los valores inválidos se ignoran. */
 export function parseCatalogParams(searchParams: URLSearchParams): CatalogParams {
   const rawPage = Number(searchParams.get("page"));
@@ -52,11 +66,10 @@ export function parseCatalogParams(searchParams: URLSearchParams): CatalogParams
 
   const search = readText(searchParams, "search");
   if (search) parsed.search = search;
-  const rawOperation = searchParams.get("operation");
-  if (rawOperation === "SALE" || rawOperation === "RENT") parsed.operation = rawOperation;
-  const rawType = searchParams.get("type");
-  const type = propertyTypeValues.find((candidate) => candidate === rawType);
-  if (type) parsed.type = type;
+  const operation = readList(searchParams, "operation", operationValues);
+  if (operation.length > 0) parsed.operation = operation;
+  const type = readList(searchParams, "type", propertyTypeValues);
+  if (type.length > 0) parsed.type = type;
   const sort = propertySortValues.find((candidate) => candidate === searchParams.get("sort"));
   if (sort && sort !== "newest") parsed.sort = sort;
   for (const key of numericFilterKeys) {
@@ -74,8 +87,8 @@ export function parseCatalogParams(searchParams: URLSearchParams): CatalogParams
 export function buildCatalogHref(params: CatalogParams): string {
   const searchParams = new URLSearchParams();
   if (params.search) searchParams.set("search", params.search);
-  if (params.operation) searchParams.set("operation", params.operation);
-  if (params.type) searchParams.set("type", params.type);
+  if (params.operation?.length) searchParams.set("operation", params.operation.join(","));
+  if (params.type?.length) searchParams.set("type", params.type.join(","));
   if (params.sort && params.sort !== "newest") searchParams.set("sort", params.sort);
   for (const key of numericFilterKeys) {
     const value = params[key];

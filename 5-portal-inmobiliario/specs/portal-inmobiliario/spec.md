@@ -271,6 +271,8 @@ Permitir combinar:
 
 Los filtros deben representarse en la URL.
 
+Presentación (extensión, sección 28 del plan): los filtros viven en un sidebar lateral izquierdo colapsable. Tipo de propiedad y operación admiten selección múltiple (checkboxes); ciudad y región son de selección única (listas desplegables con los valores existentes).
+
 ```text
 /properties?operation=SALE&commune=las-condes&bedrooms=3
 ```

@@ -27,7 +27,7 @@ describe("propertyListQuerySchema", () => {
   it("acepta operation y featured", () => {
     expect(
       propertyListQuerySchema.parse({ operation: "SALE", featured: "true" }),
-    ).toMatchObject({ operation: "SALE", featured: true });
+    ).toMatchObject({ operation: ["SALE"], featured: true });
     expect(propertyListQuerySchema.parse({ featured: "false" }).featured).toBe(false);
   });
 
@@ -63,7 +63,7 @@ describe("propertyListQuerySchema", () => {
         city: "",
       }),
     ).toMatchObject({
-      type: "HOUSE",
+      type: ["HOUSE"],
       minPrice: 1000,
       maxPrice: 5000,
       bedrooms: 3,
@@ -94,4 +94,26 @@ describe("propertyListQuerySchema", () => {
     expect(propertyListQuerySchema.parse({ sort: "price_asc" }).sort).toBe("price_asc");
     expect(propertyListQuerySchema.safeParse({ sort: "random" }).success).toBe(false);
   });
+
+  it("acepta uno o varios valores separados por comas en operation y type", () => {
+    expect(propertyListQuerySchema.parse({ operation: "SALE" }).operation).toEqual(["SALE"]);
+    const parsed = propertyListQuerySchema.parse({
+      operation: "SALE, RENT,SALE",
+      type: "HOUSE,APARTMENT",
+    });
+    expect(parsed.operation).toEqual(["SALE", "RENT"]);
+    expect(parsed.type).toEqual(["HOUSE", "APARTMENT"]);
+  });
+
+  it("trata operation y type vacíos como sin filtro", () => {
+    const parsed = propertyListQuerySchema.parse({ operation: "", type: " , " });
+    expect(parsed.operation).toBeUndefined();
+    expect(parsed.type).toBeUndefined();
+  });
+
+  it("rechaza valores desconocidos dentro de la lista", () => {
+    expect(propertyListQuerySchema.safeParse({ operation: "SALE,LEASE" }).success).toBe(false);
+    expect(propertyListQuerySchema.safeParse({ type: "HOUSE,CASTLE" }).success).toBe(false);
+  });
 });
+

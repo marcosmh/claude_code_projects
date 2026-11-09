@@ -269,3 +269,10 @@
   - `pnpm dev`, `pnpm dev:frontend`, `pnpm dev:backend` y `pnpm build`.
   - Todas las pruebas, lint y build siguen pasando.
 
+- [x] **Extra C — Filtros en sidebar lateral colapsable**
+  - Sidebar izquierdo colapsable con los filtros del catálogo.
+  - Checkboxes de selección múltiple para tipo de propiedad y operación.
+  - Selects de selección única para ciudad y región, con opciones desde `GET /api/locations`.
+  - Filtros multivalor en la API (`operation=SALE,RENT`) y en la URL.
+  - Pruebas, lint y build pasan.
+

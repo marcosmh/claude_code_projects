@@ -4,6 +4,7 @@ import {
   buildPropertiesUrl,
   buildPropertyUrl,
   fetchPropertyDetail,
+  fetchPropertyLocations,
   fetchPropertyPage,
   submitInquiry,
 } from "./properties-client";
@@ -132,5 +133,31 @@ describe("submitInquiry", () => {
       name: "ApiRequestError",
       status: 404,
     });
+  });
+});
+
+describe("filtros multivalor y ubicaciones", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("une varias operaciones y tipos con comas", () => {
+    expect(buildPropertiesUrl({ operation: ["SALE", "RENT"], type: ["HOUSE", "APARTMENT"] })).toBe(
+      "/api/properties?operation=SALE%2CRENT&type=HOUSE%2CAPARTMENT",
+    );
+  });
+
+  it("acepta un valor único y omite listas vacías", () => {
+    expect(buildPropertiesUrl({ operation: "SALE" })).toBe("/api/properties?operation=SALE");
+    expect(buildPropertiesUrl({ operation: [], type: [] })).toBe("/api/properties");
+  });
+
+  it("obtiene las ubicaciones disponibles", async () => {
+    const locations = { cities: ["Mérida"], regions: ["Yucatán"] };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify(locations))));
+    expect(await fetchPropertyLocations("/api/locations")).toEqual(locations);
+  });
+
+  it("propaga el error si la API falla", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("{}", { status: 500 })));
+    await expect(fetchPropertyLocations("/api/locations")).rejects.toMatchObject({ status: 500 });
   });
 });
