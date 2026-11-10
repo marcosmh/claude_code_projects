@@ -260,6 +260,21 @@ describe.skipIf(!databaseUrl)("API REST de autenticación", () => {
       expect(await response.json()).toEqual({ id, email, name: "Ana Nueva", role: "USER" });
     });
 
+    it("con las contraseñas vacías conserva la contraseña que tenía", async () => {
+      const { email, token } = await signedUp();
+      const before = await client.user.findUniqueOrThrow({ where: { email } });
+
+      const response = await patch(
+        { name: "Otro Nombre", email, currentPassword: "", newPassword: "" },
+        token,
+      );
+
+      expect(response.status).toBe(200);
+      const after = await client.user.findUniqueOrThrow({ where: { email } });
+      expect(after.passwordHash).toBe(before.passwordHash);
+      expect((await login(postRequest("login", { email, password }))).status).toBe(200);
+    });
+
     it("cambia el email con la contraseña actual y deja la sesión vigente", async () => {
       const { id, token } = await signedUp();
       const newMail = newEmail().toUpperCase();
