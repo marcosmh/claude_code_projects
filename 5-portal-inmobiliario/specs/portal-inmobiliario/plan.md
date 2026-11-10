@@ -443,3 +443,10 @@ Decisiones que concretan la sección 10 de este plan:
 ## 27. Contador de favoritas en el navbar (extensión)
 
 - `AccountControls` usa `useFavorites` (misma clave de SWR que las tarjetas, sin peticiones extra) y, con sesión y lista cargada, muestra un enlace a `/account` con corazón y la cantidad (`aria-label` «Mis favoritas: N»). Mientras la lista carga no se muestra (el primer render del cliente coincide con el del servidor).
+
+## 28. Persistir consultas y asociar usuario (Paso 21)
+
+- El Paso 16 ya dejó `POST /api/inquiries` (validación Zod), persistencia en PostgreSQL (`Inquiry`), asociación con la propiedad publicada y notificación por Web3Forms (se persiste primero; si Web3Forms falla la consulta se conserva con `notificationSent=false`). El Paso 21 completa «asociar usuario cuando exista».
+- `authorizer.authenticateOptional(request)` devuelve el usuario de la sesión o `null` si no hay sesión válida (cookie ausente, manipulada, expirada o cuenta inactiva); nunca falla por eso, porque la consulta sigue siendo pública. Cualquier otro error se propaga.
+- `POST /api/inquiries` guarda `userId` con el usuario autenticado y `null` para visitantes. El `userId` jamás se lee del cuerpo de la solicitud. Si el usuario se elimina, `Inquiry.userId` queda en `null` (`onDelete: SetNull`) y la consulta se conserva.
+- Fuera de alcance: listar las consultas del usuario («Propiedades consultadas») y su gestión por el ADMIN (Pasos posteriores).

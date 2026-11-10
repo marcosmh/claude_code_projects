@@ -59,6 +59,32 @@ describe("authenticate", () => {
   });
 });
 
+describe("authenticateOptional", () => {
+  it("devuelve el usuario cuando hay una sesión válida", async () => {
+    const { authorizer } = buildAuthorizer();
+    expect(await authorizer.authenticateOptional(await requestFor("u1"))).toEqual(regularUser);
+  });
+
+  it("devuelve null sin cookie, con un token falso o con una cuenta que ya no existe", async () => {
+    const { authorizer } = buildAuthorizer({});
+    const forged = new NextRequest("http://localhost/api/algo", {
+      headers: { cookie: `${sessionCookieName}=no-es-un-token` },
+    });
+    expect(await authorizer.authenticateOptional(await requestFor())).toBeNull();
+    expect(await authorizer.authenticateOptional(forged)).toBeNull();
+    expect(await authorizer.authenticateOptional(await requestFor("u1"))).toBeNull();
+  });
+
+  it("propaga los errores que no son de autenticación", async () => {
+    const authorizer = createAuthorizer({
+      getCurrentUser: vi.fn().mockRejectedValue(new Error("base caída")),
+    });
+    await expect(authorizer.authenticateOptional(await requestFor("u1"))).rejects.toThrow(
+      "base caída",
+    );
+  });
+});
+
 describe("requireRole", () => {
   it("permite a USER recursos de USER y a ADMIN recursos de USER y de ADMIN", async () => {
     const { authorizer } = buildAuthorizer();

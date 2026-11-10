@@ -23,6 +23,20 @@ export function createAuthorizer(authService: CurrentUserSource) {
       return authService.getCurrentUser(userId);
     },
 
+    /**
+     * Usuario de la sesión, o null si no hay una sesión válida. Para endpoints públicos que
+     * enriquecen la solicitud cuando la persona ha iniciado sesión (p. ej. las consultas).
+     * Solo absorbe el 401; cualquier otro fallo (base caída…) se propaga.
+     */
+    async authenticateOptional(request: NextRequest): Promise<AuthUserDto | null> {
+      try {
+        return await this.authenticate(request);
+      } catch (error) {
+        if (error instanceof UnauthorizedError) return null;
+        throw error;
+      }
+    },
+
     /** Usuario autenticado con al menos el rol pedido. 401 sin sesión; 403 si el rol no alcanza. */
     async requireRole(request: NextRequest, requiredRole: UserRole): Promise<AuthUserDto> {
       const user = await this.authenticate(request);

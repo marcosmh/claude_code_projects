@@ -132,12 +132,12 @@
   - [x] Evitar duplicados.
   - [x] Integrar en interfaz.
 
-- [ ] **Paso 21 — Persistir consultas**
-  - Crear consulta mediante REST.
-  - Persistir en PostgreSQL.
-  - Asociar propiedad.
-  - Asociar usuario cuando exista.
-  - Integrar envío Web3Forms.
+- [x] **Paso 21 — Persistir consultas**
+  - [x] Crear consulta mediante REST.
+  - [x] Persistir en PostgreSQL.
+  - [x] Asociar propiedad.
+  - [x] Asociar usuario cuando exista.
+  - [x] Integrar envío Web3Forms.
 
 ## Fase 4 — Administración
 

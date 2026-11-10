@@ -16,7 +16,7 @@ Implementado (Pasos 1–17 de `specs/portal-inmobiliario/tasks.md`):
 - Página `/account` con información básica, enlace a `/account/edit` (edición de nombre, email y contraseña) y propiedades interesadas (tus favoritas) y consultadas (vacía hasta los Pasos siguientes).
 - Favoritos (Paso 20): corazón en las tarjetas y en el detalle, y contador de favoritas en el header (Extra F); un visitante que lo pulsa va a iniciar sesión y vuelve a la página.
 
-Pendiente: **Paso 21 — Persistir consultas** y el resto de usuarios y administración.
+Pendiente: **Paso 22 — Dashboard ADMIN** y el resto de usuarios y administración.
 
 ## Estructura
 
@@ -117,7 +117,7 @@ Sirven en `/login`, en `resources/postman/postman-api.json` y en `resources/rest
 | GET | `/api/properties` | Listado paginado de propiedades publicadas |
 | GET | `/api/properties/{id}` | Detalle con imágenes y características |
 | GET | `/api/locations` | Ciudades y regiones disponibles |
-| POST | `/api/inquiries` | Registra una consulta y notifica por Web3Forms |
+| POST | `/api/inquiries` | Registra una consulta (asociada al usuario si hay sesión) y notifica por Web3Forms |
 | POST | `/api/auth/register` | Crea una cuenta USER e inicia sesión (201; 409 si el email existe) |
 | POST | `/api/auth/login` | Inicia sesión (200; 401 credenciales incorrectas; 403 cuenta desactivada) |
 | POST | `/api/auth/logout` | Cierra la sesión borrando la cookie (204) |
