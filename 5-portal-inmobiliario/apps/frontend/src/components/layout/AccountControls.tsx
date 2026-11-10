@@ -48,10 +48,19 @@ export function AccountControls({ variant, onNavigate }: AccountControlsProps) {
 
     return (
       <div className={cn("flex items-center gap-3", isMobile && "justify-between")}>
-        <p className="max-w-40 truncate text-sm font-medium" title={user.name}>
-          <span className="sr-only">Sesión iniciada como </span>
+        <Link
+          href="/account"
+          aria-current={isNavigationItemActive(currentPathname, "/account") ? "page" : undefined}
+          title={user.name}
+          onClick={onNavigate}
+          className={cn(
+            "max-w-40 truncate rounded-md text-sm font-medium hover:underline",
+            focusClassName,
+          )}
+        >
+          <span className="sr-only">Mi cuenta: </span>
           {user.name}
-        </p>
+        </Link>
         <button
           type="button"
           onClick={signOut}

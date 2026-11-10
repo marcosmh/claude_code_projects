@@ -74,6 +74,7 @@ describe("AccountControls con sesión", () => {
     render(<AccountControls variant="desktop" />);
 
     expect(screen.getByText("Ana Pérez")).toBeTruthy();
+    expect(screen.getByRole("link", { name: /Ana Pérez/ }).getAttribute("href")).toBe("/account");
     expect(screen.getByRole("button", { name: "Cerrar sesión" })).toBeTruthy();
     expect(screen.queryByRole("link", { name: "Ingresar" })).toBeNull();
   });

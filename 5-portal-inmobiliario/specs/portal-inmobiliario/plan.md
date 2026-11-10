@@ -415,3 +415,10 @@ Decisiones que concretan la sección 10 de este plan:
 - Frontend: `src/proxy.ts` (Next 16, reemplaza `middleware`) protege `/account/**` (USER) y `/admin/**` (ADMIN) consultando `GET /api/auth/me` con la cookie reenviada. Sin sesión redirige a `/login?next=<ruta>`; con rol insuficiente reescribe a `/forbidden` con estado 403; si el backend falla, deniega (falla cerrado). `src/lib/route-access.ts` define las reglas y `sanitizeNextPath` (solo rutas internas, evita redirección abierta). Login y registro vuelven a `next` tras autenticarse.
 - El proxy solo evita servir páginas privadas; los datos se protegen en cada endpoint con `withRole`, que se aplicará a los endpoints de favoritos, consultas y administración (Pasos 20 en adelante).
 - Fuera de alcance: las páginas `/account` y `/admin` (Pasos 19 y 28+) y endpoints protegidos concretos.
+
+## 24. Cuenta de usuario (Paso 19)
+
+- Ruta `/account` (protegida por `proxy.ts`, rol USER; ADMIN también entra). Página con metadatos `noindex` y componente de cliente `AccountOverview` que lee la sesión con `useCurrentUser` (sin endpoints nuevos).
+- Muestra información básica (nombre, email, rol traducido) y dos secciones preparadas con estado vacío: «Propiedades interesadas» (se llenará con Favoritos, Paso 20) y «Propiedades consultadas» (con el seguimiento de consultas, Pasos posteriores). Cada sección es un `<section>` con encabezado h2 y enlace a `/properties`.
+- El nombre del usuario en el header enlaza a `/account`.
+- Fuera de alcance: editar perfil, listar favoritos o consultas reales.

@@ -120,10 +120,10 @@
   - [x] Proteger páginas (`src/proxy.ts`: sin sesión → `/login?next=…`, rol insuficiente → `/forbidden` 403).
   - [x] Aplicar permisos en backend (rol leído de la base en cada petición; cuenta inactiva o eliminada pierde acceso).
 
-- [ ] **Paso 19 — Cuenta de usuario**
-  - Crear `/account`.
-  - Mostrar información básica.
-  - Preparar secciones de propiedades interesadas y consultadas.
+- [x] **Paso 19 — Cuenta de usuario**
+  - [x] Crear `/account` (protegida por `proxy.ts`).
+  - [x] Mostrar información básica (nombre, email, rol).
+  - [x] Preparar secciones de propiedades interesadas y consultadas (estado vacío).
 
 - [ ] **Paso 20 — Favoritos**
   - Listar.
