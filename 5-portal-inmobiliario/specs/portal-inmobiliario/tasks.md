@@ -114,11 +114,11 @@
   - Endpoint de usuario actual.
   - Hashing seguro.
 
-- [ ] **Paso 18 — Autorización USER y ADMIN**
-  - Crear roles.
-  - Proteger APIs.
-  - Proteger páginas.
-  - Aplicar permisos en backend.
+- [x] **Paso 18 — Autorización USER y ADMIN**
+  - [x] Crear roles (`hasRole` en `@portal/shared-types`: ADMIN incluye USER).
+  - [x] Proteger APIs (`authorizer.requireRole` y `withRole` en el backend; `/api/auth/me` ya usa el autorizador).
+  - [x] Proteger páginas (`src/proxy.ts`: sin sesión → `/login?next=…`, rol insuficiente → `/forbidden` 403).
+  - [x] Aplicar permisos en backend (rol leído de la base en cada petición; cuenta inactiva o eliminada pierde acceso).
 
 - [ ] **Paso 19 — Cuenta de usuario**
   - Crear `/account`.

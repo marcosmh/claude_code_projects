@@ -4,7 +4,11 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const push = vi.hoisted(() => vi.fn());
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
+const search = vi.hoisted(() => ({ params: new URLSearchParams() }));
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push }),
+  useSearchParams: () => search.params,
+}));
 
 const session = vi.hoisted(() => ({
   user: null as { id: string; name: string } | null,
@@ -33,6 +37,7 @@ import { LoginForm } from "./LoginForm";
 afterEach(() => {
   cleanup();
   push.mockReset();
+  search.params = new URLSearchParams();
   loginUserMock.mockReset();
   session.user = null;
   session.setUser.mockReset();
@@ -107,5 +112,30 @@ describe("LoginForm", () => {
     render(<LoginForm />);
     expect(screen.getByText("Ya iniciaste sesión como Usuario Demo.")).toBeTruthy();
     expect(screen.queryByLabelText("Email")).toBeNull();
+  });
+
+  it("vuelve a la ruta indicada en ?next= tras iniciar sesión", async () => {
+    search.params = new URLSearchParams({ next: "/admin?page=2" });
+    loginUserMock.mockResolvedValue({ id: "a1", email: "a@x.mx", name: "Admin", role: "ADMIN" });
+    const user = userEvent.setup();
+    render(<LoginForm />);
+    expect(screen.getByRole("link", { name: "Regístrate" }).getAttribute("href")).toBe(
+      "/register?next=%2Fadmin%3Fpage%3D2",
+    );
+    await user.type(screen.getByLabelText("Email"), "a@x.mx");
+    await user.type(screen.getByLabelText("Contraseña"), "Admin1234!");
+    await user.click(screen.getByRole("button", { name: "Ingresar" }));
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/admin?page=2"));
+  });
+
+  it("ignora un ?next= externo para evitar redirecciones abiertas", async () => {
+    search.params = new URLSearchParams({ next: "//malo.example" });
+    loginUserMock.mockResolvedValue({ id: "u1", email: "u@x.mx", name: "U", role: "USER" });
+    const user = userEvent.setup();
+    render(<LoginForm />);
+    await user.type(screen.getByLabelText("Email"), "u@x.mx");
+    await user.type(screen.getByLabelText("Contraseña"), "x");
+    await user.click(screen.getByRole("button", { name: "Ingresar" }));
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/"));
   });
 });

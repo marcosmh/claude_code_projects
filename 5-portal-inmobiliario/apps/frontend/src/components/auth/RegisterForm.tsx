@@ -2,11 +2,12 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { ApiRequestError, registerUser } from "@portal/api-client";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { sanitizeNextPath } from "@/lib/route-access";
 import {
   registerFormSchema,
   type RegisterFormData,
@@ -21,6 +22,7 @@ const linkClassName =
 
 export function RegisterForm() {
   const router = useRouter();
+  const nextPath = sanitizeNextPath(useSearchParams().get("next"));
   const { user, setUser } = useCurrentUser();
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const {
@@ -38,7 +40,7 @@ export function RegisterForm() {
       // La API inicia sesión al registrar: no hace falta volver a escribir los datos.
       const createdUser = await registerUser(data);
       await setUser(createdUser);
-      router.push("/");
+      router.push(nextPath);
     } catch (error) {
       const isClientError = error instanceof ApiRequestError && error.status < 500;
       setSubmissionError(
@@ -109,7 +111,10 @@ export function RegisterForm() {
           </form>
           <p className="mt-6 text-center text-sm text-foreground/70">
             ¿Ya tienes cuenta?{" "}
-            <Link href="/login" className={linkClassName}>
+            <Link
+              href={`/login${nextPath === "/" ? "" : `?next=${encodeURIComponent(nextPath)}`}`}
+              className={linkClassName}
+            >
               Inicia sesión
             </Link>
           </p>

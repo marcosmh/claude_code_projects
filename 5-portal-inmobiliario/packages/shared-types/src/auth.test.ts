@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { loginInputSchema, registerInputSchema } from "./auth";
+import { hasRole, loginInputSchema, registerInputSchema } from "./auth";
 
 const validRegistration = {
   name: "Ana Pérez",
@@ -61,5 +61,14 @@ describe("loginInputSchema", () => {
       false,
     );
     expect(loginInputSchema.safeParse({ email: "no-es-email", password: "x" }).success).toBe(false);
+  });
+});
+
+describe("hasRole", () => {
+  it("ADMIN incluye los permisos de USER, pero USER no incluye los de ADMIN", () => {
+    expect(hasRole("ADMIN", "ADMIN")).toBe(true);
+    expect(hasRole("ADMIN", "USER")).toBe(true);
+    expect(hasRole("USER", "USER")).toBe(true);
+    expect(hasRole("USER", "ADMIN")).toBe(false);
   });
 });

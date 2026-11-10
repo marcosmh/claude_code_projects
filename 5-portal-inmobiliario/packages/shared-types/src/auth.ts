@@ -2,6 +2,14 @@ import { z } from "zod";
 
 export type UserRole = "USER" | "ADMIN";
 
+// ADMIN puede hacer todo lo que hace USER (spec, sección 2): un rol mayor incluye a los menores.
+const roleRank: Record<UserRole, number> = { USER: 1, ADMIN: 2 };
+
+/** true si `userRole` alcanza el nivel de `requiredRole` (ADMIN incluye USER). */
+export function hasRole(userRole: UserRole, requiredRole: UserRole): boolean {
+  return roleRank[userRole] >= roleRank[requiredRole];
+}
+
 const emailSchema = z
   .string()
   .trim()

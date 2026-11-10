@@ -1,17 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { UnauthorizedError } from "@/lib/errors";
-import { clearSessionCookie, readSessionToken } from "@/lib/auth/session-cookie";
-import { verifySessionToken } from "@/lib/auth/session";
+import { clearSessionCookie } from "@/lib/auth/session-cookie";
 import { domainErrorResponse } from "@/lib/http/domain-error-response";
-import { authService } from "@/services/services";
+import { authorizer } from "@/services/services";
 
 export async function GET(request: NextRequest) {
   try {
-    const token = readSessionToken(request);
-    const userId = token ? await verifySessionToken(token) : null;
-    if (userId === null) throw new UnauthorizedError("No has iniciado sesión");
-
-    const user = await authService.getCurrentUser(userId);
+    const user = await authorizer.authenticate(request);
     return NextResponse.json(user, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     const response = domainErrorResponse(error, "GET /api/auth/me");

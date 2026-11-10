@@ -1,0 +1,67 @@
+import { describe, expect, it } from "vitest";
+import { config } from "@/proxy";
+import {
+  buildLoginPath,
+  findRequiredRole,
+  protectedRoutes,
+  sanitizeNextPath,
+} from "./route-access";
+
+describe("findRequiredRole", () => {
+  it("/account exige USER y /admin exige ADMIN, con sus subrutas", () => {
+    expect(findRequiredRole("/account")).toBe("USER");
+    expect(findRequiredRole("/account/favorites")).toBe("USER");
+    expect(findRequiredRole("/admin")).toBe("ADMIN");
+    expect(findRequiredRole("/admin/properties/12/edit")).toBe("ADMIN");
+  });
+
+  it("las rutas públicas no exigen rol", () => {
+    for (const pathname of ["/", "/properties", "/properties/1", "/login", "/register"]) {
+      expect(findRequiredRole(pathname)).toBeNull();
+    }
+  });
+
+  it("no confunde rutas que solo comparten el comienzo del nombre", () => {
+    expect(findRequiredRole("/accountant")).toBeNull();
+    expect(findRequiredRole("/administrators")).toBeNull();
+  });
+});
+
+describe("sanitizeNextPath", () => {
+  it("acepta rutas internas con query", () => {
+    expect(sanitizeNextPath("/admin/properties?page=2")).toBe("/admin/properties?page=2");
+  });
+
+  it("rechaza redirecciones abiertas y valores vacíos", () => {
+    for (const unsafe of [
+      "https://malo.example",
+      "//malo.example",
+      "/\\malo.example",
+      "javascript:alert(1)",
+      "admin",
+      "",
+      null,
+      undefined,
+    ]) {
+      expect(sanitizeNextPath(unsafe)).toBe("/");
+    }
+  });
+});
+
+describe("buildLoginPath", () => {
+  it("recuerda la ruta de destino codificada", () => {
+    expect(buildLoginPath("/admin?tab=1&x=2")).toBe("/login?next=%2Fadmin%3Ftab%3D1%26x%3D2");
+  });
+
+  it("sin destino o con uno inseguro va a /login a secas", () => {
+    expect(buildLoginPath()).toBe("/login");
+    expect(buildLoginPath("//malo.example")).toBe("/login");
+  });
+});
+
+describe("matcher del proxy", () => {
+  it("cubre exactamente los prefijos protegidos", () => {
+    const expected = protectedRoutes.map(({ prefix }) => `${prefix}/:path*`).sort();
+    expect([...config.matcher].sort()).toEqual(expected);
+  });
+});

@@ -2,11 +2,12 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { ApiRequestError, loginUser } from "@portal/api-client";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { sanitizeNextPath } from "@/lib/route-access";
 import { loginFormSchema, type LoginFormData, type LoginFormValues } from "@/schemas/auth-forms";
 import { AlreadySignedIn } from "./AlreadySignedIn";
 import { AuthCard } from "./AuthCard";
@@ -17,6 +18,7 @@ const linkClassName =
 
 export function LoginForm() {
   const router = useRouter();
+  const nextPath = sanitizeNextPath(useSearchParams().get("next"));
   const { user, setUser } = useCurrentUser();
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const {
@@ -33,7 +35,7 @@ export function LoginForm() {
     try {
       const signedInUser = await loginUser(data);
       await setUser(signedInUser);
-      router.push("/");
+      router.push(nextPath);
     } catch (error) {
       // 401 (credenciales) y 403 (cuenta desactivada) traen un mensaje claro de la API.
       const isClientError = error instanceof ApiRequestError && error.status < 500;
@@ -97,7 +99,10 @@ export function LoginForm() {
           </form>
           <p className="mt-6 text-center text-sm text-foreground/70">
             ¿No tienes cuenta?{" "}
-            <Link href="/register" className={linkClassName}>
+            <Link
+              href={`/register${nextPath === "/" ? "" : `?next=${encodeURIComponent(nextPath)}`}`}
+              className={linkClassName}
+            >
               Regístrate
             </Link>
           </p>

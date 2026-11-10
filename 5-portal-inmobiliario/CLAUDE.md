@@ -14,9 +14,9 @@ La especificación es la fuente de verdad del proyecto.
 
 ## Estado actual
 
-- Pasos **1–17** de `tasks.md` completados: fundamentos, API REST pública, landing, catálogo con tarjetas, búsqueda, filtros, ordenamiento, detalle, galería, Google Maps, contacto con Web3Forms y API REST de registro/login (`/api/auth/*`).
+- Pasos **1–18** de `tasks.md` completados: fundamentos, API REST pública, landing, catálogo con tarjetas, búsqueda, filtros, ordenamiento, detalle, galería, Google Maps, contacto con Web3Forms y API REST de registro/login (`/api/auth/*`) y autorización USER/ADMIN (`withRole`, `proxy.ts`).
 - Extras registrados fuera de la secuencia: **A** temas visuales (Claro, Oscuro, Smallville), **B** monorepo, **C** filtros en sidebar lateral colapsable y **D** interfaz de acceso (`/login`, `/register`, sesión en el header y cuentas de ejemplo del seed).
-- Siguiente tarea pendiente: **Paso 18 — Autorización USER y ADMIN** (roles, proteger APIs y páginas). No avanzar sin que el usuario lo pida.
+- Siguiente tarea pendiente: **Paso 19 — Cuenta de usuario** (`/account`). No avanzar sin que el usuario lo pida.
 - Cualquier mejora que no esté en `tasks.md` se registra primero en `spec.md`/`plan.md` y como "Extra" en `tasks.md`.
 
 ## Flujo de desarrollo

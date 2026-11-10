@@ -4,7 +4,11 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const push = vi.hoisted(() => vi.fn());
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
+const search = vi.hoisted(() => ({ params: new URLSearchParams() }));
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push }),
+  useSearchParams: () => search.params,
+}));
 
 const session = vi.hoisted(() => ({
   user: null as { id: string; name: string } | null,
@@ -33,6 +37,7 @@ import { RegisterForm } from "./RegisterForm";
 afterEach(() => {
   cleanup();
   push.mockReset();
+  search.params = new URLSearchParams();
   registerUserMock.mockReset();
   session.user = null;
   session.setUser.mockReset();
@@ -62,6 +67,19 @@ describe("RegisterForm", () => {
     );
     expect(session.setUser).toHaveBeenCalledWith(created);
     expect(push).toHaveBeenCalledWith("/");
+  });
+
+  it("vuelve a la ruta indicada en ?next= y la conserva en el enlace a login", async () => {
+    search.params = new URLSearchParams({ next: "/account" });
+    registerUserMock.mockResolvedValue({ id: "u9", email: "a@x.mx", name: "Ana", role: "USER" });
+    const user = userEvent.setup();
+    render(<RegisterForm />);
+    expect(screen.getByRole("link", { name: "Inicia sesión" }).getAttribute("href")).toBe(
+      "/login?next=%2Faccount",
+    );
+    await fillValidForm(user);
+    await user.click(screen.getByRole("button", { name: "Crear cuenta" }));
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/account"));
   });
 
   it("valida nombre, email y contraseña corta sin llamar a la API", async () => {

@@ -1,4 +1,5 @@
 import "server-only";
+import { createAuthorizer } from "@/lib/auth/authorizer";
 import { hashPassword, spendVerificationTime, verifyPassword } from "@/lib/auth/password";
 import { web3FormsNotifier } from "@/lib/integrations/web3forms";
 import { inquiryRepository } from "@/repositories/inquiry-repository";
@@ -18,3 +19,4 @@ export const authService = createAuthService({
   repository: userRepository,
   passwordHasher: { hash: hashPassword, verify: verifyPassword, spendVerificationTime },
 });
+export const authorizer = createAuthorizer(authService);

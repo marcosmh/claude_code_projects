@@ -12,8 +12,9 @@ Implementado (Pasos 1–17 de `specs/portal-inmobiliario/tasks.md`):
 - Temas visuales: Claro, Oscuro y Smallville.
 - API REST de autenticación: registro, login, logout y usuario actual, con contraseñas en scrypt y sesión en cookie httpOnly.
 - Páginas `/login` y `/register`, y el header muestra «Ingresar» o el nombre con «Cerrar sesión» (Extra D).
+- Autorización USER/ADMIN: `withRole` protege endpoints y `proxy.ts` protege `/account` y `/admin` (403 en `/forbidden`, redirección a `/login?next=…`).
 
-Pendiente: **Paso 18 — Autorización USER y ADMIN** y el resto de usuarios y administración.
+Pendiente: **Paso 19 — Cuenta de usuario** y el resto de usuarios y administración.
 
 ## Estructura
 

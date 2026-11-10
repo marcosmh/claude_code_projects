@@ -407,3 +407,11 @@ Decisiones que concretan la sección 10 de este plan:
 - Header: componente `AccountControls` (botón Ingresar, o nombre más Cerrar sesión). `loginNavigationItem` se separa de `headerMenuItems`; `publicNavigationItems` conserva Ingresar para el footer y las llamadas a la acción.
 - Seed: `seedUsers` en `prisma/seed-data.ts` (admin, usuario activo e inactivo). `pnpm db:seed` las crea o restablece con `upsert` aunque ya existan propiedades; las contraseñas se guardan con scrypt. Solo desarrollo (el seed ya rechaza `NODE_ENV=production`).
 - Fuera de alcance: rutas protegidas y redirección por rol (Paso 18), página `/account` (Paso 19) y recuperación de contraseña.
+
+## 23. Autorización USER y ADMIN (Paso 18)
+
+- Roles: `USER` y `ADMIN`; `hasRole(userRole, requiredRole)` en `@portal/shared-types` (ADMIN incluye los permisos de USER).
+- Backend: `createAuthorizer(authService)` (`src/lib/auth/authorizer.ts`) expone `authenticate` (cookie → JWT → usuario vigente en base; 401) y `requireRole` (403 si el rol no alcanza). `withRole(rol, handler)` (`src/lib/http/with-role.ts`) envuelve un Route Handler y entrega `{ user, params }`. El rol nunca se toma del token, así que cambiar el rol o desactivar la cuenta surte efecto de inmediato.
+- Frontend: `src/proxy.ts` (Next 16, reemplaza `middleware`) protege `/account/**` (USER) y `/admin/**` (ADMIN) consultando `GET /api/auth/me` con la cookie reenviada. Sin sesión redirige a `/login?next=<ruta>`; con rol insuficiente reescribe a `/forbidden` con estado 403; si el backend falla, deniega (falla cerrado). `src/lib/route-access.ts` define las reglas y `sanitizeNextPath` (solo rutas internas, evita redirección abierta). Login y registro vuelven a `next` tras autenticarse.
+- El proxy solo evita servir páginas privadas; los datos se protegen en cada endpoint con `withRole`, que se aplicará a los endpoints de favoritos, consultas y administración (Pasos 20 en adelante).
+- Fuera de alcance: las páginas `/account` y `/admin` (Pasos 19 y 28+) y endpoints protegidos concretos.
