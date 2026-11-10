@@ -16,6 +16,9 @@ const session = vi.hoisted(() => ({
 }));
 vi.mock("@/hooks/useCurrentUser", () => ({ useCurrentUser: () => session }));
 
+const favoritesState = vi.hoisted(() => ({ favorites: undefined as { id: string }[] | undefined }));
+vi.mock("@/hooks/useFavorites", () => ({ useFavorites: () => favoritesState }));
+
 const logoutUserMock = vi.hoisted(() => vi.fn());
 vi.mock("@portal/api-client", () => ({ logoutUser: logoutUserMock }));
 
@@ -28,6 +31,7 @@ afterEach(() => {
   session.user = null;
   session.isLoading = false;
   session.setUser.mockReset();
+  favoritesState.favorites = undefined;
   logoutUserMock.mockReset();
 });
 
@@ -104,5 +108,37 @@ describe("AccountControls con sesión", () => {
     expect(session.setUser).not.toHaveBeenCalled();
     expect(navigation.push).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "Cerrar sesión" })).toBeTruthy();
+  });
+});
+
+describe("AccountControls contador de favoritas", () => {
+  it("muestra la cantidad de favoritas con un enlace a /account", () => {
+    session.user = { id: "u1", name: "Ana Pérez" };
+    favoritesState.favorites = [{ id: "p1" }, { id: "p2" }, { id: "p3" }];
+    render(<AccountControls variant="desktop" />);
+
+    const link = screen.getByRole("link", { name: "Mis favoritas: 3" });
+    expect(link.getAttribute("href")).toBe("/account");
+    expect(link.textContent).toBe("3");
+  });
+
+  it("muestra 0 cuando no hay favoritas", () => {
+    session.user = { id: "u1", name: "Ana Pérez" };
+    favoritesState.favorites = [];
+    render(<AccountControls variant="mobile" />);
+    expect(screen.getByRole("link", { name: "Mis favoritas: 0" })).toBeTruthy();
+  });
+
+  it("no lo muestra mientras carga la lista ni a los visitantes", () => {
+    session.user = { id: "u1", name: "Ana Pérez" };
+    favoritesState.favorites = undefined;
+    const { unmount } = render(<AccountControls variant="desktop" />);
+    expect(screen.queryByRole("link", { name: /Mis favoritas/ })).toBeNull();
+    unmount();
+
+    session.user = null;
+    favoritesState.favorites = [{ id: "p1" }];
+    render(<AccountControls variant="desktop" />);
+    expect(screen.queryByRole("link", { name: /Mis favoritas/ })).toBeNull();
   });
 });

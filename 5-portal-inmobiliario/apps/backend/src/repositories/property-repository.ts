@@ -4,7 +4,7 @@ import type { PropertyType } from "@/generated/prisma/client";
 import { database } from "@/lib/database/client";
 import { escapeLikePattern, splitSearchTerms } from "@/lib/search";
 
-const summaryInclude = {
+export const summaryInclude = {
   images: {
     where: { isPrimary: true },
     select: { url: true },

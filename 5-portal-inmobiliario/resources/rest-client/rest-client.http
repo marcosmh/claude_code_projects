@@ -336,3 +336,22 @@ Accept: application/json
 ### Usuario actual tras el login (200)
 GET {{baseUrl}}/api/auth/me
 Accept: application/json
+
+### ------------------------------------------------------------
+### Favoritos — requieren sesión (inicia sesión antes, p. ej. con usuario@portal.mx)
+### ------------------------------------------------------------
+
+### Listar mis favoritos (200; 401 sin sesión)
+GET {{baseUrl}}/api/favorites
+Accept: application/json
+
+### Guardar una propiedad (200; repetirlo no duplica)
+PUT {{baseUrl}}/api/favorites/{{propertyId}}
+Accept: application/json
+
+### Quitar una propiedad de favoritos (204; también si no estaba guardada)
+DELETE {{baseUrl}}/api/favorites/{{propertyId}}
+
+### 404 — guardar una propiedad inexistente o no publicada
+PUT {{baseUrl}}/api/favorites/no-existe
+Accept: application/json

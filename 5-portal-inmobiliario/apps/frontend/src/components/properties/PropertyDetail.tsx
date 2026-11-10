@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { FavoriteButton } from "@/components/favorites/FavoriteButton";
 import { ContactForm } from "./ContactForm";
 import { PropertyGallery } from "./PropertyGallery";
 import { PropertyMap } from "./PropertyMap";
@@ -122,9 +123,12 @@ export function PropertyDetail({ propertyId }: PropertyDetailProps) {
 
       <div className="mt-6 grid gap-8 lg:grid-cols-[2fr_1fr]">
         <div>
-          <h1 id="property-title" className="break-words text-3xl font-bold tracking-tight">
-            {property.title}
-          </h1>
+          <div className="flex items-start justify-between gap-4">
+            <h1 id="property-title" className="break-words text-3xl font-bold tracking-tight">
+              {property.title}
+            </h1>
+            <FavoriteButton propertyId={property.id} propertyTitle={property.title} />
+          </div>
           <p className="mt-2 text-foreground/70">
             {property.address}, {property.commune}, {property.city}, {property.region}
           </p>

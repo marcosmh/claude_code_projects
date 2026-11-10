@@ -605,3 +605,12 @@ Requisitos:
 - Las reglas de validación son las del registro. Un email ya usado por otra cuenta se rechaza con un mensaje claro.
 - El rol y el estado de la cuenta no se pueden modificar desde aquí: el cuerpo de la solicitud nunca los acepta.
 - Tras guardar, el header y la página reflejan los datos nuevos sin recargar.
+
+---
+
+## 30. Contador de favoritas en el navbar (extensión)
+
+> Extensión solicitada después de la especificación inicial. Complementa la sección 16 (favoritos); no altera los criterios de la sección 26.
+
+- Con sesión iniciada, el header (escritorio y menú móvil) muestra un enlace con un corazón y la cantidad de propiedades guardadas como favoritas, que lleva a `/account`.
+- El contador se actualiza al guardar o quitar una propiedad, sin recargar. Los visitantes no lo ven.

@@ -11,6 +11,14 @@ vi.mock("@/hooks/useCurrentUser", () => ({
   useCurrentUser: () => ({ user: session.user, isLoading: session.isLoading, setUser: vi.fn() }),
 }));
 
+vi.mock("./FavoritesSection", () => ({
+  FavoritesSection: () => (
+    <section aria-label="Favoritos simulados">
+      <h2>Propiedades interesadas</h2>
+    </section>
+  ),
+}));
+
 import { AccountOverview } from "./AccountOverview";
 
 afterEach(() => {

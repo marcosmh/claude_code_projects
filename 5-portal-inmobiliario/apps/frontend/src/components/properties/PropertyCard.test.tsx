@@ -5,6 +5,11 @@ import type { PropertySummaryDto } from "@portal/shared-types";
 import { PropertyCard } from "./PropertyCard";
 import { PropertyGrid } from "./PropertyGrid";
 
+vi.mock("@/components/favorites/FavoriteButton", () => ({
+  FavoriteButton: ({ propertyId }: { propertyId: string }) => (
+    <button type="button" data-testid="favorite-button">{`fav-${propertyId}`}</button>
+  ),
+}));
 vi.mock("next/image", () => ({
   // eslint-disable-next-line @next/next/no-img-element
   default: ({ src, alt }: { src: string; alt: string }) => <img src={src} alt={alt} />,
@@ -104,5 +109,14 @@ describe("PropertyGrid", () => {
     const className = (container.firstElementChild as HTMLElement).className;
     expect(className).toContain("sm:grid-cols-2");
     expect(className).toContain("lg:grid-cols-3");
+  });
+});
+
+describe("PropertyCard favoritos", () => {
+  it("incluye el botón de favoritos como hermano del enlace, no dentro de él", () => {
+    render(<PropertyCard property={property} />);
+    const button = screen.getByTestId("favorite-button");
+    expect(button.textContent).toBe("fav-p1");
+    expect(button.closest("a")).toBeNull();
   });
 });

@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { memo } from "react";
+import { FavoriteButton } from "@/components/favorites/FavoriteButton";
 import {
   formatArea,
   formatBathrooms,
@@ -36,7 +37,7 @@ export const PropertyCard = memo(function PropertyCard({
   ].filter(Boolean);
 
   return (
-    <article className="h-full overflow-hidden rounded-xl border border-foreground/10 bg-surface shadow-sm transition-shadow focus-within:shadow-md hover:shadow-md">
+    <article className="relative h-full overflow-hidden rounded-xl border border-foreground/10 bg-surface shadow-sm transition-shadow focus-within:shadow-md hover:shadow-md">
       <Link
         href={`/properties/${property.id}`}
         className="flex h-full flex-col focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
@@ -79,6 +80,12 @@ export const PropertyCard = memo(function PropertyCard({
           )}
         </div>
       </Link>
+      {/* Hermano del enlace (no dentro): un botón anidado en un <a> no es HTML válido ni accesible. */}
+      <FavoriteButton
+        propertyId={property.id}
+        propertyTitle={property.title}
+        className="absolute right-3 top-3"
+      />
     </article>
   );
 });

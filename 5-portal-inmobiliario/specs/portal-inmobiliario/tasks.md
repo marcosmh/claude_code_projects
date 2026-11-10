@@ -125,12 +125,12 @@
   - [x] Mostrar información básica (nombre, email, rol).
   - [x] Preparar secciones de propiedades interesadas y consultadas (estado vacío).
 
-- [ ] **Paso 20 — Favoritos**
-  - Listar.
-  - Agregar.
-  - Eliminar.
-  - Evitar duplicados.
-  - Integrar en interfaz.
+- [x] **Paso 20 — Favoritos**
+  - [x] Listar.
+  - [x] Agregar.
+  - [x] Eliminar.
+  - [x] Evitar duplicados.
+  - [x] Integrar en interfaz.
 
 - [ ] **Paso 21 — Persistir consultas**
   - Crear consulta mediante REST.
@@ -286,4 +286,9 @@
 - [x] **Extra E — Edición de la cuenta**
   - `PATCH /api/auth/me` protegido con `withRole("USER")` (nombre, email y contraseña con la actual).
   - Página independiente `/account/edit` con el formulario precargado, enlazada desde `/account`, que actualiza la sesión.
+  - Pruebas, lint, typecheck y build pasan.
+
+- [x] **Extra F — Contador de favoritas en el navbar**
+  - Enlace con corazón y cantidad de favoritas junto al nombre (escritorio y móvil), solo con sesión.
+  - Se actualiza al guardar o quitar favoritas.
   - Pruebas, lint, typecheck y build pasan.

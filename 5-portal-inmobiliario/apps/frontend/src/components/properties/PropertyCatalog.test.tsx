@@ -20,6 +20,11 @@ vi.mock("@/hooks/usePropertyLocations", () => ({
 }));
 const isDesktopMock = vi.hoisted(() => ({ value: true }));
 vi.mock("@/hooks/useMediaQuery", () => ({ useMediaQuery: () => isDesktopMock.value }));
+vi.mock("@/components/favorites/FavoriteButton", () => ({
+  FavoriteButton: ({ propertyId }: { propertyId: string }) => (
+    <button type="button" data-testid="favorite-button">{`fav-${propertyId}`}</button>
+  ),
+}));
 vi.mock("next/image", () => ({
   // eslint-disable-next-line @next/next/no-img-element
   default: ({ src, alt }: { src: string; alt: string }) => <img src={src} alt={alt} />,

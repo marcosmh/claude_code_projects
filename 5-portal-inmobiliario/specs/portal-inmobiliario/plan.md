@@ -430,3 +430,16 @@ Decisiones que concretan la sección 10 de este plan:
 - Capas: `authService.updateProfile(userId, input)` → `userRepository.update(id, data)` (traduce P2002 a `ConflictError`). La nueva contraseña se guarda con el mismo hasher scrypt. La sesión no cambia: el token solo lleva el id.
 - Cliente: `updateProfile` en `@portal/api-client`.
 - Frontend: página independiente `/account/edit` (protegida por el prefijo `/account` del proxy) con el componente `ProfileForm` (React Hook Form + el esquema compartido); al guardar actualiza la sesión de SWR con `setUser`. `/account` muestra los datos y enlaza a «Editar datos»; la página de edición enlaza de vuelta a «Mi cuenta».
+
+## 26. Favoritos (Paso 20)
+
+- API (todas con `withRole("USER")`; ADMIN también puede): `GET /api/favorites` lista las propiedades guardadas como `PropertySummaryDto[]` (más recientes primero, solo publicadas); `PUT /api/favorites/{propertyId}` guarda (idempotente: repetirlo no duplica y responde 200; 404 si la propiedad no existe o no está publicada); `DELETE /api/favorites/{propertyId}` quita (204, también si no estaba guardada).
+- Duplicados: restricción única `(userId, propertyId)` ya existente en `Favorite`; el repositorio absorbe la carrera (P2002) como "ya guardada".
+- Capas: Route Handler → `createFavoriteService(repository)` → `favoriteRepository` → Prisma. El usuario sale siempre de la sesión.
+- Cliente: `fetchFavorites`, `addFavorite`, `removeFavorite` en `@portal/api-client`.
+- Frontend: hook `useFavorites` (SWR, solo con sesión) y `FavoriteButton` (corazón con `aria-pressed`) en la tarjeta y en el detalle; un visitante que lo pulsa va a `/login?next=<ruta actual>`. En `/account`, «Propiedades interesadas» lista las favoritas con las mismas tarjetas.
+- Fuera de alcance: «Propiedades consultadas» (seguimiento de consultas por usuario) y favoritos de propiedades despublicadas.
+
+## 27. Contador de favoritas en el navbar (extensión)
+
+- `AccountControls` usa `useFavorites` (misma clave de SWR que las tarjetas, sin peticiones extra) y, con sesión y lista cargada, muestra un enlace a `/account` con corazón y la cantidad (`aria-label` «Mis favoritas: N»). Mientras la lista carga no se muestra (el primer render del cliente coincide con el del servidor).

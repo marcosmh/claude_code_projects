@@ -9,6 +9,11 @@ const usePropertyListMock = vi.fn();
 vi.mock("@/hooks/usePropertyList", () => ({
   usePropertyList: (params: unknown) => usePropertyListMock(params),
 }));
+vi.mock("@/components/favorites/FavoriteButton", () => ({
+  FavoriteButton: ({ propertyId }: { propertyId: string }) => (
+    <button type="button" data-testid="favorite-button">{`fav-${propertyId}`}</button>
+  ),
+}));
 vi.mock("next/image", () => ({
   // eslint-disable-next-line @next/next/no-img-element
   default: ({ src, alt }: { src: string; alt: string }) => <img src={src} alt={alt} />,
@@ -52,13 +57,23 @@ function renderSection() {
 
 describe("PropertySection", () => {
   it("pide las propiedades con los parámetros recibidos", () => {
-    usePropertyListMock.mockReturnValue({ properties: [], isLoading: true, hasError: false, retry: vi.fn() });
+    usePropertyListMock.mockReturnValue({
+      properties: [],
+      isLoading: true,
+      hasError: false,
+      retry: vi.fn(),
+    });
     renderSection();
     expect(usePropertyListMock).toHaveBeenCalledWith({ operation: "RENT", pageSize: 3 });
   });
 
   it("muestra skeletons mientras carga", () => {
-    usePropertyListMock.mockReturnValue({ properties: [], isLoading: true, hasError: false, retry: vi.fn() });
+    usePropertyListMock.mockReturnValue({
+      properties: [],
+      isLoading: true,
+      hasError: false,
+      retry: vi.fn(),
+    });
     renderSection();
     expect(screen.getByRole("status")).toBeTruthy();
     expect(screen.queryByRole("article")).toBeNull();
@@ -66,7 +81,12 @@ describe("PropertySection", () => {
 
   it("muestra error con botón de reintento", async () => {
     const retry = vi.fn();
-    usePropertyListMock.mockReturnValue({ properties: [], isLoading: false, hasError: true, retry });
+    usePropertyListMock.mockReturnValue({
+      properties: [],
+      isLoading: false,
+      hasError: true,
+      retry,
+    });
     renderSection();
     expect(screen.getByRole("alert")).toBeTruthy();
     await userEvent.setup().click(screen.getByRole("button", { name: "Reintentar" }));
@@ -74,20 +94,34 @@ describe("PropertySection", () => {
   });
 
   it("muestra estado vacío", () => {
-    usePropertyListMock.mockReturnValue({ properties: [], isLoading: false, hasError: false, retry: vi.fn() });
+    usePropertyListMock.mockReturnValue({
+      properties: [],
+      isLoading: false,
+      hasError: false,
+      retry: vi.fn(),
+    });
     renderSection();
     expect(screen.getByText(/no hay propiedades/i)).toBeTruthy();
   });
 
   it("muestra las tarjetas con precio, ubicación, enlace al detalle y alt en la imagen", () => {
-    usePropertyListMock.mockReturnValue({ properties: [sampleProperty], isLoading: false, hasError: false, retry: vi.fn() });
+    usePropertyListMock.mockReturnValue({
+      properties: [sampleProperty],
+      isLoading: false,
+      hasError: false,
+      retry: vi.fn(),
+    });
     renderSection();
 
     expect(screen.getByRole("heading", { level: 2, name: "Propiedades en arriendo" })).toBeTruthy();
     expect(screen.getByText("$24,500 / mes")).toBeTruthy();
     expect(screen.getByText("Polanco, Ciudad de México")).toBeTruthy();
-    expect(screen.getByRole("link", { name: /Departamento en Polanco/ }).getAttribute("href")).toBe("/properties/p1");
+    expect(screen.getByRole("link", { name: /Departamento en Polanco/ }).getAttribute("href")).toBe(
+      "/properties/p1",
+    );
     expect(screen.getByAltText("Fotografía de Departamento en Polanco")).toBeTruthy();
-    expect(screen.getByRole("link", { name: /Ver todas en arriendo/ }).getAttribute("href")).toBe("/properties?operation=RENT");
+    expect(screen.getByRole("link", { name: /Ver todas en arriendo/ }).getAttribute("href")).toBe(
+      "/properties?operation=RENT",
+    );
   });
 });

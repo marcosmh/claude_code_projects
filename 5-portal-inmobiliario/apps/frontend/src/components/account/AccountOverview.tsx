@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import type { UserRole } from "@portal/shared-types";
+import { FavoritesSection } from "@/components/account/FavoritesSection";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 const roleLabels: Record<UserRole, string> = { USER: "Usuario", ADMIN: "Administrador" };
@@ -93,18 +94,13 @@ export function AccountOverview() {
         </Link>
       </section>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <AccountSection
-          id="account-interested-title"
-          title="Propiedades interesadas"
-          emptyMessage="Aún no tienes propiedades guardadas."
-        />
-        <AccountSection
-          id="account-inquiries-title"
-          title="Propiedades consultadas"
-          emptyMessage="Aún no has consultado ninguna propiedad."
-        />
-      </div>
+      <FavoritesSection />
+
+      <AccountSection
+        id="account-inquiries-title"
+        title="Propiedades consultadas"
+        emptyMessage="Aún no has consultado ninguna propiedad."
+      />
     </div>
   );
 }

@@ -10,6 +10,7 @@ vi.mock("next/navigation", () => ({
 vi.mock("@/hooks/useCurrentUser", () => ({
   useCurrentUser: () => ({ user: null, isLoading: false, setUser: vi.fn() }),
 }));
+vi.mock("@/hooks/useFavorites", () => ({ useFavorites: () => ({ favorites: undefined }) }));
 vi.mock("@portal/api-client", () => ({ logoutUser: vi.fn() }));
 
 import { Header } from "./Header";

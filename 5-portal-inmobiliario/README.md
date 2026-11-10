@@ -13,9 +13,10 @@ Implementado (Pasos 1–17 de `specs/portal-inmobiliario/tasks.md`):
 - API REST de autenticación: registro, login, logout y usuario actual, con contraseñas en scrypt y sesión en cookie httpOnly.
 - Páginas `/login` y `/register`, y el header muestra «Ingresar» o el nombre con «Cerrar sesión» (Extra D).
 - Autorización USER/ADMIN: `withRole` protege endpoints y `proxy.ts` protege `/account` y `/admin` (403 en `/forbidden`, redirección a `/login?next=…`).
-- Página `/account` con información básica, enlace a `/account/edit` (edición de nombre, email y contraseña) y secciones de propiedades interesadas y consultadas (vacías hasta los Pasos siguientes).
+- Página `/account` con información básica, enlace a `/account/edit` (edición de nombre, email y contraseña) y propiedades interesadas (tus favoritas) y consultadas (vacía hasta los Pasos siguientes).
+- Favoritos (Paso 20): corazón en las tarjetas y en el detalle, y contador de favoritas en el header (Extra F); un visitante que lo pulsa va a iniciar sesión y vuelve a la página.
 
-Pendiente: **Paso 20 — Favoritos** y el resto de usuarios y administración.
+Pendiente: **Paso 21 — Persistir consultas** y el resto de usuarios y administración.
 
 ## Estructura
 
@@ -122,6 +123,9 @@ Sirven en `/login`, en `resources/postman/postman-api.json` y en `resources/rest
 | POST | `/api/auth/logout` | Cierra la sesión borrando la cookie (204) |
 | GET | `/api/auth/me` | Usuario de la sesión actual (200; 401 sin sesión válida) |
 | PATCH | `/api/auth/me` | Actualiza nombre, email y contraseña propios (200; 400, 401, 403 sin contraseña actual, 409 email repetido) |
+| GET | `/api/favorites` | Favoritas de la sesión (200; 401) |
+| PUT | `/api/favorites/{propertyId}` | Guarda una propiedad sin duplicar (200; 401; 404) |
+| DELETE | `/api/favorites/{propertyId}` | Quita una propiedad de favoritos (204; 401) |
 
 Parámetros de `GET /api/properties`:
 

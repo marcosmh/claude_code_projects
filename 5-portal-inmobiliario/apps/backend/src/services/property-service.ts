@@ -16,7 +16,7 @@ function toNumberOrNull(value: { toNumber(): number } | null): number | null {
   return value === null ? null : value.toNumber();
 }
 
-function toSummaryDto(record: PropertySummaryRecord): PropertySummaryDto {
+export function toSummaryDto(record: PropertySummaryRecord): PropertySummaryDto {
   return {
     id: record.id,
     title: record.title,

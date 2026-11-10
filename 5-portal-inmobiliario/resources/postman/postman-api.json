@@ -1792,6 +1792,188 @@
       ]
     },
     {
+      "name": "Favoritos (requiere sesión)",
+      "description": "Usan la cookie de sesión de la carpeta Autenticación (termina con una sesión iniciada). Si no hay sesión, responden 401.",
+      "item": [
+        {
+          "name": "Guardar propiedad",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/favorites/{{propertyId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "favorites",
+                "{{propertyId}}"
+              ]
+            },
+            "description": "Idempotente: repetirlo no duplica."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Devuelve la propiedad guardada\", function () { pm.expect(pm.response.json().id).to.eql(pm.collectionVariables.get(\"propertyId\")); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Guardar de nuevo (sin duplicar)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/favorites/{{propertyId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "favorites",
+                "{{propertyId}}"
+              ]
+            },
+            "description": "Segunda vez: sigue siendo 200 y no crea otra fila."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar favoritos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/favorites",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "favorites"
+              ]
+            },
+            "description": "Propiedades guardadas, la más reciente primero."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Incluye la propiedad guardada\", function () { pm.expect(pm.response.json().map(function (p) { return p.id; })).to.include(pm.collectionVariables.get(\"propertyId\")); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Quitar de favoritos",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/favorites/{{propertyId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "favorites",
+                "{{propertyId}}"
+              ]
+            },
+            "description": "Responde 204 aunque no estuviera guardada."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 204\", function () { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "404 — propiedad inexistente",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/favorites/no-existe",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "favorites",
+                "no-existe"
+              ]
+            },
+            "description": "No existe o no está publicada."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", function () { pm.response.to.have.status(404); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "Cuentas de ejemplo (seed)",
       "description": "Cuentas creadas por `pnpm db:seed` (se crean o restablecen en cada ejecución del seed, incluso con propiedades ya cargadas).\n\n| Email | Contraseña | Rol | Estado |\n| --- | --- | --- | --- |\n| admin@portal.mx | Admin1234! | ADMIN | activa |\n| usuario@portal.mx | Usuario1234! | USER | activa |\n| inactivo@portal.mx | Inactivo1234! | USER | desactivada |\n\nSolo para desarrollo. Postman guarda la cookie `portal_session` de la última cuenta con la que inicies sesión.",
       "item": [
