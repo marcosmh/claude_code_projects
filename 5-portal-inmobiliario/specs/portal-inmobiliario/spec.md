@@ -593,3 +593,15 @@ Requisitos:
 - Tras iniciar sesión o registrarse se vuelve al inicio. Quien ya tiene sesión ve un aviso en lugar del formulario.
 - La sesión nunca se guarda en `localStorage`: viaja en una cookie httpOnly.
 - El seed de desarrollo crea cuentas de ejemplo: un ADMIN, un USER activo y un USER desactivado, para probar el login en la interfaz, Postman y REST Client.
+
+---
+
+## 29. Edición de la cuenta (extensión)
+
+> Extensión solicitada después de la especificación inicial. Complementa la sección 17 (cuenta de usuario); no altera los criterios de la sección 26.
+
+- `/account` enlaza a una página independiente, `/account/edit`, donde la persona autenticada ve un formulario precargado con sus datos y puede actualizar su **nombre** y su **email**.
+- Puede cambiar su **contraseña** indicando la actual y la nueva. Cambiar el email o la contraseña exige la contraseña actual.
+- Las reglas de validación son las del registro. Un email ya usado por otra cuenta se rechaza con un mensaje claro.
+- El rol y el estado de la cuenta no se pueden modificar desde aquí: el cuerpo de la solicitud nunca los acepta.
+- Tras guardar, el header y la página reflejan los datos nuevos sin recargar.

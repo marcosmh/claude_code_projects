@@ -1,6 +1,11 @@
 import { ConflictError, ForbiddenError, UnauthorizedError } from "@/lib/errors";
 import type { UserRecord, UserRepository } from "@/repositories/user-repository";
-import type { AuthUserDto, LoginInput, RegisterInput } from "@portal/shared-types";
+import type {
+  AuthUserDto,
+  LoginInput,
+  RegisterInput,
+  UpdateProfileInput,
+} from "@portal/shared-types";
 
 export type PasswordHasher = {
   hash(password: string): Promise<string>;
@@ -49,6 +54,42 @@ export function createAuthService({ repository, passwordHasher }: AuthServiceDep
         throw new ForbiddenError("Tu cuenta está desactivada");
       }
       return toAuthUserDto(user);
+    },
+
+    /**
+     * Actualiza nombre, email y, opcionalmente, la contraseña del propio usuario. Cambiar el email
+     * o la contraseña exige la contraseña actual, para que una sesión robada no tome la cuenta.
+     */
+    async updateProfile(userId: string, input: UpdateProfileInput): Promise<AuthUserDto> {
+      const user = await repository.findById(userId);
+      if (user === null || !user.isActive) {
+        throw new UnauthorizedError("Sesión no válida");
+      }
+
+      const isChangingEmail = input.email !== user.email;
+      const isChangingPassword = input.newPassword !== undefined;
+      if (isChangingEmail || isChangingPassword) {
+        if (input.currentPassword === undefined) {
+          throw new ForbiddenError(
+            "Ingresa tu contraseña actual para cambiar el email o la contraseña",
+          );
+        }
+        if (!(await passwordHasher.verify(input.currentPassword, user.passwordHash))) {
+          throw new ForbiddenError("La contraseña actual no es correcta");
+        }
+      }
+      if (isChangingEmail && (await repository.findByEmail(input.email)) !== null) {
+        throw new ConflictError("Ya existe una cuenta con este email");
+      }
+
+      const updated = await repository.update(userId, {
+        name: input.name,
+        email: input.email,
+        ...(input.newPassword === undefined
+          ? {}
+          : { passwordHash: await passwordHasher.hash(input.newPassword) }),
+      });
+      return toAuthUserDto(updated);
     },
 
     /** Usuario de una sesión válida. Una cuenta eliminada o desactivada invalida la sesión. */

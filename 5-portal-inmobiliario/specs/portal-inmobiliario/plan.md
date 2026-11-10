@@ -422,3 +422,11 @@ Decisiones que concretan la sección 10 de este plan:
 - Muestra información básica (nombre, email, rol traducido) y dos secciones preparadas con estado vacío: «Propiedades interesadas» (se llenará con Favoritos, Paso 20) y «Propiedades consultadas» (con el seguimiento de consultas, Pasos posteriores). Cada sección es un `<section>` con encabezado h2 y enlace a `/properties`.
 - El nombre del usuario en el header enlaza a `/account`.
 - Fuera de alcance: editar perfil, listar favoritos o consultas reales.
+
+## 25. Edición de la cuenta (extensión)
+
+- Contrato: `updateProfileInputSchema` en `@portal/shared-types` (`name`, `email`, `currentPassword?`, `newPassword?`; las contraseñas vacías se tratan como ausentes; `newPassword` exige `currentPassword`). Se descartan campos desconocidos (como `role`).
+- API: `PATCH /api/auth/me` protegido con `withRole("USER")`. 200 con el `AuthUserDto` actualizado; 400 validación; 401 sin sesión; 403 si falta o es incorrecta la contraseña actual al cambiar email o contraseña; 409 si el email pertenece a otra cuenta.
+- Capas: `authService.updateProfile(userId, input)` → `userRepository.update(id, data)` (traduce P2002 a `ConflictError`). La nueva contraseña se guarda con el mismo hasher scrypt. La sesión no cambia: el token solo lleva el id.
+- Cliente: `updateProfile` en `@portal/api-client`.
+- Frontend: página independiente `/account/edit` (protegida por el prefijo `/account` del proxy) con el componente `ProfileForm` (React Hook Form + el esquema compartido); al guardar actualiza la sesión de SWR con `setUser`. `/account` muestra los datos y enlaza a «Editar datos»; la página de edición enlaza de vuelta a «Mi cuenta».

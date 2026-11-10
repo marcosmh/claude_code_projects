@@ -32,8 +32,39 @@ export const loginInputSchema = z.object({
   password: z.string().min(1, "Ingresa tu contraseña").max(128, "Máximo 128 caracteres"),
 });
 
+const passwordMaxMessage = "Máximo 128 caracteres";
+
+/** Contraseña opcional de un formulario: el texto vacío cuenta como "no indicada". */
+const optionalPasswordSchema = z
+  .string()
+  .max(128, passwordMaxMessage)
+  .transform((value) => (value === "" ? undefined : value))
+  .pipe(z.string().optional());
+
+/**
+ * Actualización del perfil propio. Nunca acepta rol ni estado de la cuenta. Cambiar el email o la
+ * contraseña exige `currentPassword`; el servicio comprueba lo del email porque depende del usuario.
+ */
+export const updateProfileInputSchema = z
+  .object({
+    name: registerInputSchema.shape.name,
+    email: emailSchema,
+    currentPassword: optionalPasswordSchema.optional(),
+    newPassword: z
+      .string()
+      .max(128, passwordMaxMessage)
+      .transform((value) => (value === "" ? undefined : value))
+      .pipe(z.string().min(8, "La contraseña debe tener al menos 8 caracteres").optional())
+      .optional(),
+  })
+  .refine((input) => input.newPassword === undefined || input.currentPassword !== undefined, {
+    path: ["currentPassword"],
+    message: "Ingresa tu contraseña actual",
+  });
+
 export type RegisterInput = z.infer<typeof registerInputSchema>;
 export type LoginInput = z.infer<typeof loginInputSchema>;
+export type UpdateProfileInput = z.output<typeof updateProfileInputSchema>;
 
 /** Usuario autenticado tal como lo expone la API (nunca incluye el hash de la contraseña). */
 export type AuthUserDto = {

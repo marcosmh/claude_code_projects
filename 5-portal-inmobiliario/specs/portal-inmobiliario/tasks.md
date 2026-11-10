@@ -282,3 +282,8 @@
   - Hook `useCurrentUser` (SWR) sin desajuste de hidratación.
   - Cuentas de ejemplo en el seed (ADMIN, USER y USER inactivo) y su uso en Postman y REST Client.
   - Pruebas, lint, typecheck y build pasan.
+
+- [x] **Extra E — Edición de la cuenta**
+  - `PATCH /api/auth/me` protegido con `withRole("USER")` (nombre, email y contraseña con la actual).
+  - Página independiente `/account/edit` con el formulario precargado, enlazada desde `/account`, que actualiza la sesión.
+  - Pruebas, lint, typecheck y build pasan.

@@ -1,4 +1,9 @@
-import type { AuthUserDto, LoginInput, RegisterInput } from "@portal/shared-types";
+import type {
+  AuthUserDto,
+  LoginInput,
+  RegisterInput,
+  UpdateProfileInput,
+} from "@portal/shared-types";
 import { ApiRequestError } from "./properties-client";
 
 export const currentUserUrl = "/api/auth/me";
@@ -39,6 +44,22 @@ export async function loginUser(input: LoginInput): Promise<AuthUserDto> {
   if (!response.ok) {
     throw new ApiRequestError(
       await readErrorMessage(response, "No se pudo iniciar sesión"),
+      response.status,
+    );
+  }
+  return (await response.json()) as AuthUserDto;
+}
+
+/** Actualiza el perfil propio. Los errores conservan el mensaje de la API (contraseña, email repetido). */
+export async function updateProfile(input: UpdateProfileInput): Promise<AuthUserDto> {
+  const response = await fetch(currentUserUrl, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!response.ok) {
+    throw new ApiRequestError(
+      await readErrorMessage(response, "No se pudo actualizar la cuenta"),
       response.status,
     );
   }

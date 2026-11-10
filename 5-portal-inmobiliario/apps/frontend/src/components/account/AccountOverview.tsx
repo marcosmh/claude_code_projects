@@ -85,6 +85,12 @@ export function AccountOverview() {
           <Field label="Email">{user.email}</Field>
           <Field label="Rol">{roleLabels[user.role]}</Field>
         </dl>
+        <Link
+          href="/account/edit"
+          className="mt-5 inline-flex h-11 items-center rounded-md border border-foreground/20 px-5 text-sm font-semibold hover:bg-foreground/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        >
+          Editar datos
+        </Link>
       </section>
 
       <div className="grid gap-6 md:grid-cols-2">

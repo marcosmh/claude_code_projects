@@ -240,6 +240,24 @@ Accept: application/json
 GET {{baseUrl}}/api/auth/me
 Accept: application/json
 
+### Actualizar nombre (200; requiere la cookie de sesión)
+PATCH {{baseUrl}}/api/auth/me
+Content-Type: application/json
+
+{
+  "name": "Nombre actualizado",
+  "email": "{{authEmail}}"
+}
+
+### 403 — cambiar el email sin la contraseña actual
+PATCH {{baseUrl}}/api/auth/me
+Content-Type: application/json
+
+{
+  "name": "Nombre actualizado",
+  "email": "otro-correo@example.com"
+}
+
 ### Cerrar sesión (204; expira la cookie)
 POST {{baseUrl}}/api/auth/logout
 

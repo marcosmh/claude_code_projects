@@ -28,6 +28,9 @@ describe("AccountOverview", () => {
     expect(screen.getByText("Ana Pérez")).toBeTruthy();
     expect(screen.getByText("ana@portal.mx")).toBeTruthy();
     expect(screen.getByText("Usuario")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Editar datos" }).getAttribute("href")).toBe(
+      "/account/edit",
+    );
     expect(screen.getByRole("heading", { level: 2, name: "Propiedades interesadas" })).toBeTruthy();
     expect(screen.getByRole("heading", { level: 2, name: "Propiedades consultadas" })).toBeTruthy();
   });

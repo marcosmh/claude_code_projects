@@ -1,7 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { clearSessionCookie } from "@/lib/auth/session-cookie";
 import { domainErrorResponse } from "@/lib/http/domain-error-response";
-import { authorizer } from "@/services/services";
+import { parseJsonBody } from "@/lib/http/parse-body";
+import { withRole } from "@/lib/http/with-role";
+import { authService, authorizer } from "@/services/services";
+import { updateProfileInputSchema } from "@portal/shared-types";
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,3 +22,16 @@ export async function GET(request: NextRequest) {
     return unauthorized;
   }
 }
+
+/** Actualiza el perfil de quien tiene la sesión. El id sale de la sesión, nunca del cuerpo. */
+export const PATCH = withRole("USER", async (request, { user }) => {
+  const { data, response } = await parseJsonBody(
+    request,
+    updateProfileInputSchema,
+    "Datos de perfil no válidos",
+  );
+  if (response) return response;
+
+  const updatedUser = await authService.updateProfile(user.id, data);
+  return NextResponse.json(updatedUser, { headers: { "Cache-Control": "no-store" } });
+});

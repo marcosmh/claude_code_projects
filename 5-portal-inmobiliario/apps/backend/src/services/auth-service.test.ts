@@ -20,6 +20,7 @@ function buildRepository(overrides: Partial<UserRepository> = {}): UserRepositor
     findByEmail: vi.fn().mockResolvedValue(null),
     findById: vi.fn().mockResolvedValue(null),
     create: vi.fn().mockImplementation(async (data) => buildUser({ ...data, id: "nuevo" })),
+    update: vi.fn().mockImplementation(async (id, data) => buildUser({ ...data, id })),
     ...overrides,
   };
 }
@@ -149,6 +150,114 @@ describe("getCurrentUser", () => {
         passwordHasher: buildHasher(),
       });
       await expect(service.getCurrentUser("user-1")).rejects.toBeInstanceOf(UnauthorizedError);
+    }
+  });
+});
+
+describe("updateProfile", () => {
+  const edit = { name: "Ana M. Pérez", email: "ana@example.com" };
+
+  function buildService(
+    repositoryOverrides: Partial<UserRepository> = {},
+    hasherOverrides: Partial<PasswordHasher> = {},
+  ) {
+    const repository = buildRepository({
+      findById: vi.fn().mockResolvedValue(buildUser()),
+      ...repositoryOverrides,
+    });
+    const passwordHasher = buildHasher(hasherOverrides);
+    return {
+      repository,
+      passwordHasher,
+      service: createAuthService({ repository, passwordHasher }),
+    };
+  }
+
+  it("cambia solo el nombre sin pedir contraseña ni tocar el hash", async () => {
+    const { service, repository, passwordHasher } = buildService();
+
+    const user = await service.updateProfile("user-1", edit);
+
+    expect(repository.update).toHaveBeenCalledWith("user-1", {
+      name: "Ana M. Pérez",
+      email: "ana@example.com",
+    });
+    expect(passwordHasher.verify).not.toHaveBeenCalled();
+    expect(user).toEqual({
+      id: "user-1",
+      email: "ana@example.com",
+      name: "Ana M. Pérez",
+      role: "USER",
+    });
+  });
+
+  it("cambia el email con la contraseña actual correcta", async () => {
+    const { service, repository } = buildService();
+    await service.updateProfile("user-1", {
+      ...edit,
+      email: "nueva@example.com",
+      currentPassword: "clave-segura-1",
+    });
+    expect(repository.update).toHaveBeenCalledWith("user-1", {
+      name: "Ana M. Pérez",
+      email: "nueva@example.com",
+    });
+  });
+
+  it("exige la contraseña actual para cambiar el email", async () => {
+    const { service, repository } = buildService();
+    await expect(
+      service.updateProfile("user-1", { ...edit, email: "nueva@example.com" }),
+    ).rejects.toBeInstanceOf(ForbiddenError);
+    expect(repository.update).not.toHaveBeenCalled();
+  });
+
+  it("rechaza una contraseña actual incorrecta", async () => {
+    const { service, repository } = buildService({}, { verify: vi.fn().mockResolvedValue(false) });
+    await expect(
+      service.updateProfile("user-1", {
+        ...edit,
+        email: "nueva@example.com",
+        currentPassword: "equivocada",
+      }),
+    ).rejects.toMatchObject({ message: "La contraseña actual no es correcta" });
+    expect(repository.update).not.toHaveBeenCalled();
+  });
+
+  it("guarda el hash de la nueva contraseña, nunca el texto", async () => {
+    const { service, repository, passwordHasher } = buildService();
+    await service.updateProfile("user-1", {
+      ...edit,
+      currentPassword: "clave-segura-1",
+      newPassword: "clave-nueva-123",
+    });
+    expect(passwordHasher.verify).toHaveBeenCalledWith("clave-segura-1", "hash-almacenado");
+    expect(passwordHasher.hash).toHaveBeenCalledWith("clave-nueva-123");
+    expect(repository.update).toHaveBeenCalledWith("user-1", {
+      name: "Ana M. Pérez",
+      email: "ana@example.com",
+      passwordHash: "hash-nuevo",
+    });
+  });
+
+  it("lanza ConflictError si el email pertenece a otra cuenta", async () => {
+    const { service, repository } = buildService({
+      findByEmail: vi.fn().mockResolvedValue(buildUser({ id: "otro" })),
+    });
+    await expect(
+      service.updateProfile("user-1", {
+        ...edit,
+        email: "ocupado@example.com",
+        currentPassword: "clave-segura-1",
+      }),
+    ).rejects.toBeInstanceOf(ConflictError);
+    expect(repository.update).not.toHaveBeenCalled();
+  });
+
+  it("lanza UnauthorizedError si la cuenta ya no existe o está desactivada", async () => {
+    for (const found of [null, buildUser({ isActive: false })]) {
+      const { service } = buildService({ findById: vi.fn().mockResolvedValue(found) });
+      await expect(service.updateProfile("user-1", edit)).rejects.toBeInstanceOf(UnauthorizedError);
     }
   });
 });

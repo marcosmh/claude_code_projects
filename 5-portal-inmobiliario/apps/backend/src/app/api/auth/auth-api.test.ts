@@ -5,7 +5,7 @@ import { PrismaClient } from "@/generated/prisma/client";
 import { sessionCookieName } from "@/lib/auth/session";
 import { POST as login } from "./login/route";
 import { POST as logout } from "./logout/route";
-import { GET as currentUser } from "./me/route";
+import { GET as currentUser, PATCH as updateProfile } from "./me/route";
 import { POST as register } from "./register/route";
 
 const databaseUrl = process.env.DATABASE_URL;
@@ -228,6 +228,119 @@ describe.skipIf(!databaseUrl)("API REST de autenticación", () => {
       const response = await currentUser(meRequest(sessionCookie(registered)?.value));
 
       expect(((await response.json()) as UserBody).role).toBe("ADMIN");
+    });
+  });
+
+  describe("PATCH /api/auth/me", () => {
+    function patchRequest(body: unknown, token?: string): NextRequest {
+      return new NextRequest("http://localhost/api/auth/me", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { cookie: `${sessionCookieName}=${token}` } : {}),
+        },
+        body: JSON.stringify(body),
+      });
+    }
+
+    const patch = (body: unknown, token?: string) =>
+      updateProfile(patchRequest(body, token), { params: Promise.resolve({}) });
+
+    async function signedUp() {
+      const { response, email, body } = await registerUser();
+      return { email, id: body.id, token: sessionCookie(response)?.value as string };
+    }
+
+    it("cambia el nombre sin pedir contraseña y responde 200", async () => {
+      const { email, id, token } = await signedUp();
+
+      const response = await patch({ name: "  Ana Nueva ", email }, token);
+
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({ id, email, name: "Ana Nueva", role: "USER" });
+    });
+
+    it("cambia el email con la contraseña actual y deja la sesión vigente", async () => {
+      const { id, token } = await signedUp();
+      const newMail = newEmail().toUpperCase();
+
+      const response = await patch(
+        { name: "Ana Pérez", email: newMail, currentPassword: password },
+        token,
+      );
+
+      expect(response.status).toBe(200);
+      expect(((await response.json()) as UserBody).email).toBe(newMail.toLowerCase());
+      const me = await currentUser(meRequest(token));
+      expect(((await me.json()) as UserBody).id).toBe(id);
+    });
+
+    it("cambia la contraseña: la nueva sirve para iniciar sesión y la vieja ya no", async () => {
+      const { email, token } = await signedUp();
+
+      const response = await patch(
+        { name: "Ana Pérez", email, currentPassword: password, newPassword: "clave-nueva-123" },
+        token,
+      );
+
+      expect(response.status).toBe(200);
+      const stored = await client.user.findUniqueOrThrow({ where: { email } });
+      expect(stored.passwordHash).not.toContain("clave-nueva-123");
+      expect(
+        (await login(postRequest("login", { email, password: "clave-nueva-123" }))).status,
+      ).toBe(200);
+      expect((await login(postRequest("login", { email, password }))).status).toBe(401);
+    });
+
+    it("responde 403 si falta o es incorrecta la contraseña actual y no cambia nada", async () => {
+      const { email, token } = await signedUp();
+      const target = newEmail();
+
+      const missing = await patch({ name: "Ana Pérez", email: target }, token);
+      const wrong = await patch(
+        { name: "Ana Pérez", email: target, currentPassword: "equivocada" },
+        token,
+      );
+
+      expect(missing.status).toBe(403);
+      expect(wrong.status).toBe(403);
+      expect(await client.user.findUnique({ where: { email } })).not.toBeNull();
+      expect(await client.user.findUnique({ where: { email: target } })).toBeNull();
+    });
+
+    it("responde 409 si el email es de otra cuenta", async () => {
+      const { token } = await signedUp();
+      const { email: takenEmail } = await registerUser();
+
+      const response = await patch(
+        { name: "Ana Pérez", email: takenEmail, currentPassword: password },
+        token,
+      );
+
+      expect(response.status).toBe(409);
+    });
+
+    it("ignora role e isActive enviados por el cliente", async () => {
+      const { email, id, token } = await signedUp();
+
+      const response = await patch(
+        { name: "Ana Pérez", email, role: "ADMIN", isActive: false },
+        token,
+      );
+
+      expect(response.status).toBe(200);
+      const stored = await client.user.findUniqueOrThrow({ where: { id } });
+      expect(stored.role).toBe("USER");
+      expect(stored.isActive).toBe(true);
+    });
+
+    it("responde 401 sin sesión y 400 con datos inválidos", async () => {
+      const { email, token } = await signedUp();
+
+      expect((await patch({ name: "Ana Pérez", email })).status).toBe(401);
+      const invalid = await patch({ name: "A", email: "x" }, token);
+      expect(invalid.status).toBe(400);
+      expect(((await invalid.json()) as { details: unknown[] }).details).toHaveLength(2);
     });
   });
 

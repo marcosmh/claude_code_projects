@@ -5,6 +5,7 @@ import {
   loginUser,
   logoutUser,
   registerUser,
+  updateProfile,
 } from "./auth-client";
 import { ApiRequestError } from "./properties-client";
 
@@ -103,5 +104,31 @@ describe("fetchCurrentUser", () => {
   it("lanza ante otros errores", async () => {
     stubFetch(new Response(null, { status: 500 }));
     await expect(fetchCurrentUser()).rejects.toMatchObject({ status: 500 });
+  });
+});
+
+describe("updateProfile", () => {
+  it("envía PATCH /api/auth/me con los datos y devuelve el usuario", async () => {
+    const fetchMock = stubFetch(Response.json(user));
+    const input = { name: "Ana", email: "ana@example.com" };
+
+    expect(await updateProfile(input)).toEqual(user);
+
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("/api/auth/me");
+    expect(init.method).toBe("PATCH");
+    expect(JSON.parse(init.body as string)).toEqual(input);
+  });
+
+  it("conserva el mensaje y el estado de la API al fallar", async () => {
+    stubFetch(
+      Response.json(
+        { message: "La contraseña actual no es correcta", status: 403 },
+        { status: 403 },
+      ),
+    );
+    const error = await updateProfile({ name: "Ana", email: "ana@example.com" }).catch((e) => e);
+    expect(error).toBeInstanceOf(ApiRequestError);
+    expect(error).toMatchObject({ status: 403, message: "La contraseña actual no es correcta" });
   });
 });
