@@ -148,11 +148,10 @@ Accept: application/json
 
 ### ------------------------------------------------------------
 ### Consultas (contacto)
-### Guarda la consulta en PostgreSQL y la notifica por Web3Forms.
-### La primera crea una fila real y envía un correo real.
+### Guarda la consulta en PostgreSQL. El correo (Web3Forms) lo envía el navegador, no la API.
 ### ------------------------------------------------------------
 
-### Enviar consulta (201; notificationSent=false si falla Web3Forms)
+### Enviar consulta (201; devuelve el id; con sesión queda asociada al usuario)
 POST {{baseUrl}}/api/inquiries
 Content-Type: application/json
 Accept: application/json
@@ -355,3 +354,8 @@ DELETE {{baseUrl}}/api/favorites/{{propertyId}}
 ### 404 — guardar una propiedad inexistente o no publicada
 PUT {{baseUrl}}/api/favorites/no-existe
 Accept: application/json
+
+### Propiedades que consulté (200; requiere sesión, 401 sin ella)
+GET {{baseUrl}}/api/inquiries/properties
+Accept: application/json
+

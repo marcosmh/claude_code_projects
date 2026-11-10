@@ -38,8 +38,8 @@ Proyecto de **Spec-Driven Development**. Las instrucciones completas están en `
 - Backend por capas: Route Handler → servicio → repositorio → Prisma; composición en `apps/backend/src/services/services.ts`.
 - Catálogo: búsqueda, filtros, orden y página viven en la URL. `operation` y `type` aceptan listas separadas por comas. Búsqueda y ubicación ignoran acentos y mayúsculas.
 - Errores de la API: `{ message, status, details? }`.
-- Los secretos (`DATABASE_URL`, `WEB3FORMS_ACCESS_KEY`, Cloudinary) existen solo en `apps/backend/.env.local`; nunca en el navegador. No leas ni imprimas archivos `.env*`.
-- Pruebas: Vitest. Las de integración del backend usan la base real y limpian sus datos; Web3Forms se mockea.
+- Los secretos (`DATABASE_URL`, `AUTH_SECRET`, Cloudinary) existen solo en `apps/backend/.env.local`; nunca en el navegador. Excepción: `NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY` (clave pública de Web3Forms, spec §31). No leas ni imprimas archivos `.env*`.
+- Pruebas: Vitest. Las de integración del backend usan la base real y limpian sus datos; el envío por Web3Forms (navegador) se mockea.
 - Si Prettier reformatea archivos que no tocaste, restáuralos con `git checkout -- <archivo>`; no mezcles ruido de formato en un cambio.
 - Al terminar de probar en el navegador, deja los puertos 3000/4000 como los encontraste o avisa de que siguen en uso.
 

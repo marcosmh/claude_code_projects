@@ -9,19 +9,23 @@ import {
   type ContactFormValues,
 } from "@/schemas/contact-form";
 import { submitInquiry } from "@portal/api-client";
+import { useInquiredProperties } from "@/hooks/useInquiredProperties";
+import { sendInquiryEmail } from "@/lib/web3forms";
 
 type ContactFormProps = {
   propertyId: string;
   propertyTitle: string;
 };
 
-type SubmissionState = "idle" | "sending" | "success" | "error";
+/** "saved": la consulta quedó guardada pero no se pudo enviar el aviso por correo. */
+type SubmissionState = "idle" | "sending" | "success" | "saved" | "error";
 
 const fieldClassName =
   "w-full rounded-md border border-foreground/20 bg-surface px-3 py-2 text-base focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring aria-[invalid=true]:border-danger";
 
 export function ContactForm({ propertyId, propertyTitle }: ContactFormProps) {
   const [submissionState, setSubmissionState] = useState<SubmissionState>("idle");
+  const { refresh: refreshInquiredProperties } = useInquiredProperties();
   const {
     register,
     handleSubmit,
@@ -35,15 +39,20 @@ export function ContactForm({ propertyId, propertyTitle }: ContactFormProps) {
   const sendInquiry = async (data: ContactFormData) => {
     setSubmissionState("sending");
     try {
+      // Primero se guarda en el servidor; el correo se envía desde el navegador (ver lib/web3forms).
       await submitInquiry({ propertyId, ...data });
-      reset();
-      setSubmissionState("success");
     } catch {
       setSubmissionState("error");
+      return;
     }
+    const wasEmailSent = await sendInquiryEmail({ propertyId, propertyTitle, ...data });
+    reset();
+    // Actualiza «Propiedades consultadas» de la cuenta si la persona tiene sesión.
+    void refreshInquiredProperties();
+    setSubmissionState(wasEmailSent ? "success" : "saved");
   };
 
-  if (submissionState === "success") {
+  if (submissionState === "success" || submissionState === "saved") {
     return (
       <section aria-labelledby="contact-title" className="mt-8">
         <h2 id="contact-title" className="text-xl font-semibold">
@@ -54,6 +63,12 @@ export function ContactForm({ propertyId, propertyTitle }: ContactFormProps) {
           <p className="mt-1 text-sm text-foreground/70">
             Recibimos tu mensaje sobre “{propertyTitle}”. Te responderemos pronto.
           </p>
+          {submissionState === "saved" && (
+            <p className="mt-2 text-sm">
+              Tu consulta quedó guardada, pero no pudimos enviar el aviso por correo. Si es urgente,
+              inténtalo de nuevo más tarde.
+            </p>
+          )}
           <button
             type="button"
             onClick={() => setSubmissionState("idle")}

@@ -614,3 +614,14 @@ Requisitos:
 
 - Con sesión iniciada, el header (escritorio y menú móvil) muestra un enlace con un corazón y la cantidad de propiedades guardadas como favoritas, que lleva a `/account`.
 - El contador se actualiza al guardar o quitar una propiedad, sin recargar. Los visitantes no lo ven.
+
+---
+
+## 31. Correo de las consultas desde el navegador (extensión)
+
+> Corrección solicitada tras comprobar que Web3Forms (plan gratuito) rechaza con 403 los envíos hechos desde un servidor («Pro plan is required»). Sustituye el envío desde el backend de la sección 13 del plan.
+
+- La consulta se guarda siempre en PostgreSQL mediante `POST /api/inquiries` (sin envío de correo en el backend).
+- Después, el navegador envía el aviso por correo a Web3Forms con la clave de acceso pública `NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY`. Esa clave solo permite enviar al correo con el que se registró en Web3Forms; es el uso previsto por el plan gratuito y constituye una excepción documentada a «no exponer secretos».
+- Si el correo no puede enviarse, la persona ve que su consulta quedó guardada pero que no se pudo enviar el aviso.
+- Las propiedades consultadas por el usuario aparecen en «Propiedades consultadas» de `/account`.

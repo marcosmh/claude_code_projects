@@ -4,37 +4,13 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import type { UserRole } from "@portal/shared-types";
 import { FavoritesSection } from "@/components/account/FavoritesSection";
+import { InquiredSection } from "@/components/account/InquiredSection";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 const roleLabels: Record<UserRole, string> = { USER: "Usuario", ADMIN: "Administrador" };
 
 const linkClassName =
   "font-semibold text-link hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
-
-function AccountSection({
-  id,
-  title,
-  emptyMessage,
-}: {
-  id: string;
-  title: string;
-  emptyMessage: string;
-}) {
-  return (
-    <section
-      aria-labelledby={id}
-      className="rounded-xl border border-foreground/10 bg-surface p-6 shadow-sm"
-    >
-      <h2 id={id} className="text-lg font-semibold">
-        {title}
-      </h2>
-      <p className="mt-2 text-foreground/70">{emptyMessage}</p>
-      <Link href="/properties" className={`${linkClassName} mt-3 inline-block text-sm`}>
-        Explorar propiedades
-      </Link>
-    </section>
-  );
-}
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -96,11 +72,7 @@ export function AccountOverview() {
 
       <FavoritesSection />
 
-      <AccountSection
-        id="account-inquiries-title"
-        title="Propiedades consultadas"
-        emptyMessage="Aún no has consultado ninguna propiedad."
-      />
+      <InquiredSection />
     </div>
   );
 }

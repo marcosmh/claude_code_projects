@@ -1,18 +1,14 @@
 import { NotFoundError } from "@/lib/errors";
-import type { InquiryNotifier } from "@/lib/integrations/web3forms";
 import type { InquiryRepository } from "@/repositories/inquiry-repository";
-import type { InquiryInput, InquiryResponseDto } from "@portal/shared-types";
-
-type InquiryServiceDependencies = {
-  repository: InquiryRepository;
-  notifier: InquiryNotifier;
-};
+import type { InquiryInput, InquiryResponseDto, PropertySummaryDto } from "@portal/shared-types";
+import { toSummaryDto } from "./property-service";
 
 /**
- * Registra una consulta: valida que la propiedad esté publicada, la persiste en PostgreSQL
- * y luego la notifica por Web3Forms. Persistir primero evita perder consultas si el envío falla.
+ * Registra consultas: valida que la propiedad esté publicada y las persiste en PostgreSQL.
+ * El aviso por correo (Web3Forms) lo envía el navegador, porque el plan gratuito rechaza
+ * las llamadas desde un servidor.
  */
-export function createInquiryService({ repository, notifier }: InquiryServiceDependencies) {
+export function createInquiryService(repository: InquiryRepository) {
   return {
     async submitInquiry(
       input: InquiryInput,
@@ -32,16 +28,13 @@ export function createInquiryService({ repository, notifier }: InquiryServiceDep
         ...(input.phone !== undefined && { phone: input.phone }),
       });
 
-      const notificationSent = await notifier.send({
-        name: input.name,
-        email: input.email,
-        message: input.message,
-        propertyId: input.propertyId,
-        propertyTitle,
-        ...(input.phone !== undefined && { phone: input.phone }),
-      });
+      return { id: inquiry.id };
+    },
 
-      return { id: inquiry.id, notificationSent };
+    /** Propiedades sobre las que la persona consultó («Propiedades consultadas»). */
+    async listInquiredProperties(userId: string): Promise<PropertySummaryDto[]> {
+      const records = await repository.listInquiredPropertiesByUser(userId);
+      return records.map(toSummaryDto);
     },
   };
 }

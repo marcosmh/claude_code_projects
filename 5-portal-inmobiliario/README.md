@@ -8,12 +8,12 @@ Implementado (Pasos 1–17 de `specs/portal-inmobiliario/tasks.md`):
 
 - API REST pública de propiedades, ubicaciones y consultas de contacto.
 - Landing, catálogo con tarjetas, búsqueda, filtros (sidebar colapsable), ordenamiento y paginación.
-- Detalle de propiedad con galería, mapa de Google Maps y formulario de contacto (Web3Forms).
+- Detalle de propiedad con galería, mapa de Google Maps y formulario de contacto (guarda la consulta y envía el aviso por Web3Forms desde el navegador).
 - Temas visuales: Claro, Oscuro y Smallville.
 - API REST de autenticación: registro, login, logout y usuario actual, con contraseñas en scrypt y sesión en cookie httpOnly.
 - Páginas `/login` y `/register`, y el header muestra «Ingresar» o el nombre con «Cerrar sesión» (Extra D).
 - Autorización USER/ADMIN: `withRole` protege endpoints y `proxy.ts` protege `/account` y `/admin` (403 en `/forbidden`, redirección a `/login?next=…`).
-- Página `/account` con información básica, enlace a `/account/edit` (edición de nombre, email y contraseña) y propiedades interesadas (tus favoritas) y consultadas (vacía hasta los Pasos siguientes).
+- Página `/account` con información básica, enlace a `/account/edit` (edición de nombre, email y contraseña) y propiedades interesadas (tus favoritas) y consultadas (propiedades sobre las que enviaste una consulta).
 - Favoritos (Paso 20): corazón en las tarjetas y en el detalle, y contador de favoritas en el header (Extra F); un visitante que lo pulsa va a iniciar sesión y vuelve a la página.
 
 Pendiente: **Paso 22 — Dashboard ADMIN** y el resto de usuarios y administración.
@@ -90,9 +90,9 @@ Para ver pgAdmin en desarrollo: `docker compose up -d` (puerto 5050; credenciale
 | `apps/backend/.env.local` | `DATABASE_URL` | Conexión a PostgreSQL |
 | | `AUTH_SECRET` | Firma de sesiones (mínimo 32 caracteres; p. ej. `openssl rand -base64 32`) |
 | | `CLOUDINARY_*` | Imágenes de propiedades |
-| | `WEB3FORMS_ACCESS_KEY` | Envío de consultas por correo |
 | `apps/frontend/.env.local` | `BACKEND_URL` | Destino del proxy `/api/**` |
 | | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Mapa del detalle |
+| | `NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY` | Clave de Web3Forms para el aviso por correo de las consultas (se envía desde el navegador; el plan gratuito rechaza envíos desde servidores) |
 | | `NEXT_PUBLIC_APP_URL` | URL pública de la aplicación |
 | `.env` (raíz) | `PGADMIN_DEFAULT_EMAIL`, `PGADMIN_DEFAULT_PASSWORD` | Solo pgAdmin |
 
@@ -117,7 +117,8 @@ Sirven en `/login`, en `resources/postman/postman-api.json` y en `resources/rest
 | GET | `/api/properties` | Listado paginado de propiedades publicadas |
 | GET | `/api/properties/{id}` | Detalle con imágenes y características |
 | GET | `/api/locations` | Ciudades y regiones disponibles |
-| POST | `/api/inquiries` | Registra una consulta (asociada al usuario si hay sesión) y notifica por Web3Forms |
+| POST | `/api/inquiries` | Registra una consulta en PostgreSQL (asociada al usuario si hay sesión); el correo lo envía el navegador con Web3Forms |
+| GET | `/api/inquiries/properties` | Propiedades sobre las que la sesión consultó (200; 401) |
 | POST | `/api/auth/register` | Crea una cuenta USER e inicia sesión (201; 409 si el email existe) |
 | POST | `/api/auth/login` | Inicia sesión (200; 401 credenciales incorrectas; 403 cuenta desactivada) |
 | POST | `/api/auth/logout` | Cierra la sesión borrando la cookie (204) |
@@ -145,7 +146,7 @@ Los errores devuelven `{ message, status, details? }`. Las colecciones de `resou
 
 ## Pruebas
 
-`pnpm test` ejecuta Vitest en todos los paquetes. Las pruebas de integración del backend usan la base de `DATABASE_URL` y limpian lo que crean; Web3Forms se mockea, así que no se envían correos.
+`pnpm test` ejecuta Vitest en todos los paquetes. Las pruebas de integración del backend usan la base de `DATABASE_URL` y limpian lo que crean; el correo se envía desde el navegador, así que las pruebas nunca envían correos.
 
 ## Documentos
 

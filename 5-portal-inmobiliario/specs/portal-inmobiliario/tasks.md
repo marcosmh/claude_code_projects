@@ -292,3 +292,8 @@
   - Enlace con corazón y cantidad de favoritas junto al nombre (escritorio y móvil), solo con sesión.
   - Se actualiza al guardar o quitar favoritas.
   - Pruebas, lint, typecheck y build pasan.
+
+- [x] **Extra G — Correo de consultas desde el navegador y propiedades consultadas**
+  - Quitar el envío por Web3Forms del backend (403 en plan gratuito) y enviarlo desde el navegador tras guardar.
+  - `GET /api/inquiries/properties` y sección «Propiedades consultadas» en `/account`.
+  - Pruebas, lint, typecheck y build pasan.

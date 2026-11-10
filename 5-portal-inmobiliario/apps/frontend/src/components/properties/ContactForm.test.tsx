@@ -7,9 +7,19 @@ import { ContactForm } from "./ContactForm";
 const submitInquiryMock = vi.hoisted(() => vi.fn());
 vi.mock("@portal/api-client", () => ({ submitInquiry: submitInquiryMock }));
 
+const sendInquiryEmailMock = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/web3forms", () => ({ sendInquiryEmail: sendInquiryEmailMock }));
+
+const refreshMock = vi.hoisted(() => vi.fn());
+vi.mock("@/hooks/useInquiredProperties", () => ({
+  useInquiredProperties: () => ({ properties: undefined, refresh: refreshMock }),
+}));
+
 afterEach(() => {
   cleanup();
   submitInquiryMock.mockReset();
+  sendInquiryEmailMock.mockReset().mockResolvedValue(true);
+  refreshMock.mockReset();
 });
 
 async function fillValidForm(user: ReturnType<typeof userEvent.setup>) {
@@ -21,7 +31,7 @@ async function fillValidForm(user: ReturnType<typeof userEvent.setup>) {
 
 describe("ContactForm", () => {
   it("envía los datos junto con el id de la propiedad y muestra el éxito", async () => {
-    submitInquiryMock.mockResolvedValue({ id: "i1", notificationSent: true });
+    submitInquiryMock.mockResolvedValue({ id: "i1" });
     const user = userEvent.setup();
     render(<ContactForm propertyId="p1" propertyTitle="Casa en Mérida" />);
     await fillValidForm(user);
@@ -41,7 +51,7 @@ describe("ContactForm", () => {
   });
 
   it("omite el teléfono cuando se deja vacío", async () => {
-    submitInquiryMock.mockResolvedValue({ id: "i1", notificationSent: true });
+    submitInquiryMock.mockResolvedValue({ id: "i1" });
     const user = userEvent.setup();
     render(<ContactForm propertyId="p1" propertyTitle="Casa" />);
     await user.type(screen.getByLabelText("Nombre"), "Ana Pérez");
@@ -76,7 +86,7 @@ describe("ContactForm", () => {
 
     const sendingButton = await screen.findByRole("button", { name: "Enviando…" });
     expect((sendingButton as HTMLButtonElement).disabled).toBe(true);
-    resolveSubmission({ id: "i1", notificationSent: true });
+    resolveSubmission({ id: "i1" });
     expect(await screen.findByText("¡Consulta enviada!")).toBeTruthy();
   });
 
@@ -90,18 +100,63 @@ describe("ContactForm", () => {
     expect(await screen.findByText(/No pudimos enviar tu consulta/)).toBeTruthy();
     expect((screen.getByLabelText("Nombre") as HTMLInputElement).value).toBe("Ana Pérez");
 
-    submitInquiryMock.mockResolvedValueOnce({ id: "i1", notificationSent: true });
+    submitInquiryMock.mockResolvedValueOnce({ id: "i1" });
     await user.click(screen.getByRole("button", { name: "Enviar consulta" }));
     expect(await screen.findByText("¡Consulta enviada!")).toBeTruthy();
   });
 
   it("permite enviar otra consulta tras el éxito", async () => {
-    submitInquiryMock.mockResolvedValue({ id: "i1", notificationSent: true });
+    submitInquiryMock.mockResolvedValue({ id: "i1" });
     const user = userEvent.setup();
     render(<ContactForm propertyId="p1" propertyTitle="Casa" />);
     await fillValidForm(user);
     await user.click(screen.getByRole("button", { name: "Enviar consulta" }));
     await user.click(await screen.findByRole("button", { name: "Enviar otra consulta" }));
     expect((screen.getByLabelText("Nombre") as HTMLInputElement).value).toBe("");
+  });
+
+  it("tras guardar envía el correo desde el navegador con el título de la propiedad", async () => {
+    submitInquiryMock.mockResolvedValue({ id: "i1" });
+    const user = userEvent.setup();
+    render(<ContactForm propertyId="p1" propertyTitle="Casa en Mérida" />);
+    await fillValidForm(user);
+    await user.click(screen.getByRole("button", { name: "Enviar consulta" }));
+
+    await screen.findByText("¡Consulta enviada!");
+    expect(sendInquiryEmailMock).toHaveBeenCalledWith({
+      propertyId: "p1",
+      propertyTitle: "Casa en Mérida",
+      name: "Ana Pérez",
+      email: "ana@example.com",
+      phone: "+52 55 1234 5678",
+      message: "Me interesa visitar la propiedad.",
+    });
+    expect(refreshMock).toHaveBeenCalledOnce();
+    expect(screen.queryByText(/no pudimos enviar el aviso por correo/)).toBeNull();
+  });
+
+  it("avisa que quedó guardada si falla el correo, sin mostrar error de envío", async () => {
+    submitInquiryMock.mockResolvedValue({ id: "i1" });
+    sendInquiryEmailMock.mockResolvedValue(false);
+    const user = userEvent.setup();
+    render(<ContactForm propertyId="p1" propertyTitle="Casa" />);
+    await fillValidForm(user);
+    await user.click(screen.getByRole("button", { name: "Enviar consulta" }));
+
+    expect(await screen.findByText(/no pudimos enviar el aviso por correo/)).toBeTruthy();
+    expect(screen.queryByText(/No pudimos enviar tu consulta/)).toBeNull();
+    expect(refreshMock).toHaveBeenCalledOnce();
+  });
+
+  it("si no se pudo guardar no envía correo ni refresca la lista", async () => {
+    submitInquiryMock.mockRejectedValue(new Error("fallo"));
+    const user = userEvent.setup();
+    render(<ContactForm propertyId="p1" propertyTitle="Casa" />);
+    await fillValidForm(user);
+    await user.click(screen.getByRole("button", { name: "Enviar consulta" }));
+
+    expect(await screen.findByText(/No pudimos enviar tu consulta/)).toBeTruthy();
+    expect(sendInquiryEmailMock).not.toHaveBeenCalled();
+    expect(refreshMock).not.toHaveBeenCalled();
   });
 });

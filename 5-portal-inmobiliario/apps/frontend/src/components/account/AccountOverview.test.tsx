@@ -19,6 +19,14 @@ vi.mock("./FavoritesSection", () => ({
   ),
 }));
 
+vi.mock("./InquiredSection", () => ({
+  InquiredSection: () => (
+    <section aria-label="Consultadas simuladas">
+      <h2>Propiedades consultadas</h2>
+    </section>
+  ),
+}));
+
 import { AccountOverview } from "./AccountOverview";
 
 afterEach(() => {

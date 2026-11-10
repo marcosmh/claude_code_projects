@@ -117,10 +117,10 @@ describe("submitInquiry", () => {
   it("hace POST con el cuerpo JSON y devuelve la respuesta", async () => {
     const fetchMock = vi
       .fn()
-      .mockResolvedValue(new Response(JSON.stringify({ id: "i1", notificationSent: true })));
+      .mockResolvedValue(new Response(JSON.stringify({ id: "i1" })));
     vi.stubGlobal("fetch", fetchMock);
 
-    expect(await submitInquiry(request)).toEqual({ id: "i1", notificationSent: true });
+    expect(await submitInquiry(request)).toEqual({ id: "i1" });
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).toBe("/api/inquiries");
     expect(init.method).toBe("POST");

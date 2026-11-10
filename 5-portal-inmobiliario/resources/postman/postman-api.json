@@ -1121,7 +1121,7 @@
     },
     {
       "name": "Consultas (contacto)",
-      "description": "POST /api/inquiries guarda la consulta en PostgreSQL y la notifica por Web3Forms. «Enviar consulta» crea una fila real y envía un correo real: ejecútala solo cuando quieras probarlo. Requiere haber ejecutado «Listar propiedades» (propertyId).",
+      "description": "POST /api/inquiries guarda la consulta en PostgreSQL (asociada al usuario si hay sesión). El correo por Web3Forms lo envía el navegador, no la API. Requiere haber ejecutado «Listar propiedades» (propertyId).",
       "item": [
         {
           "name": "Enviar consulta",
@@ -1156,7 +1156,7 @@
                 }
               }
             },
-            "description": "Persiste la consulta (nunca se pierde) y notifica por Web3Forms. Si el envío falla, responde 201 con notificationSent=false."
+            "description": "Persiste la consulta en PostgreSQL (asociada al usuario si hay sesión). El correo lo envía el navegador, no la API."
           },
           "event": [
             {
@@ -1166,7 +1166,7 @@
                 "exec": [
                   "pm.test(\"Status 201\", function () { pm.response.to.have.status(201); });",
                   "const body = pm.response.json();",
-                  "pm.test(\"Devuelve id y estado de la notificación\", function () { pm.expect(body).to.have.keys(\"id\", \"notificationSent\"); pm.expect(body.notificationSent).to.be.a(\"boolean\"); });"
+                  "pm.test(\"Devuelve solo el id\", function () { pm.expect(body).to.have.keys(\"id\"); pm.expect(body.id).to.be.a(\"string\"); });"
                 ]
               }
             }
@@ -1264,6 +1264,41 @@
                   "pm.test(\"Status 404\", function () { pm.response.to.have.status(404); });",
                   "const body = pm.response.json();",
                   "pm.test(\"Cuerpo de error estándar\", function () { pm.expect(body.status).to.eql(404); pm.expect(body.message).to.eql(\"Propiedad no encontrada\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Propiedades consultadas (requiere sesión)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/inquiries/properties",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "inquiries",
+                "properties"
+              ]
+            },
+            "description": "Usa la cookie de sesión de la carpeta Autenticación. Sin sesión responde 401."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200 o 401 sin sesión\", function () { pm.expect(pm.response.code).to.be.oneOf([200, 401]); });"
                 ]
               }
             }

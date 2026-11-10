@@ -20,9 +20,7 @@ export const inquiryInputSchema = z.object({
 
 export type InquiryInput = z.infer<typeof inquiryInputSchema>;
 
-/** Respuesta de POST /api/inquiries. La consulta siempre queda guardada. */
+/** Respuesta de POST /api/inquiries. La consulta queda guardada; el correo lo envía el navegador. */
 export type InquiryResponseDto = {
   id: string;
-  /** false cuando la consulta se guardó pero falló el envío por Web3Forms. */
-  notificationSent: boolean;
 };

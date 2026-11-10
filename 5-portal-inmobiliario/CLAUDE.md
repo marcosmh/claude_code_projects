@@ -43,7 +43,7 @@ La especificación es la fuente de verdad del proyecto.
 - Mantén separadas las responsabilidades de API, lógica de negocio y persistencia.
 - Utiliza Cloudinary para las imágenes de las propiedades.
 - Utiliza Google Maps para mostrar la ubicación de las propiedades.
-- Utiliza Web3Forms para el formulario de contacto.
+- Utiliza Web3Forms para el formulario de contacto. El plan gratuito rechaza envíos desde servidores: el correo se envía desde el navegador con `NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY` (clave pública por diseño, excepción documentada en spec §31) y la consulta se guarda siempre en el backend.
 - No expongas secretos al navegador.
 - Utiliza variables de entorno para credenciales y claves.
 
@@ -89,7 +89,7 @@ El proyecto es un monorepo (pnpm Workspaces + Turborepo): `apps/frontend`, `apps
 - Construir todo: `pnpm build`
 - Servidores de desarrollo: `pnpm dev` (frontend :3000 y backend :4000), `pnpm dev:frontend`, `pnpm dev:backend`
 - Base de datos (backend): `pnpm db:migrate`, `pnpm db:deploy`, `pnpm db:seed`, `pnpm db:seed:reset`, `pnpm db:studio`, `pnpm db:check`
-- Las pruebas de integración del backend usan la base de `DATABASE_URL` y limpian lo que crean; no envían correos (Web3Forms se mockea).
+- Las pruebas de integración del backend usan la base de `DATABASE_URL` y limpian lo que crean; no envían correos (el envío por Web3Forms ocurre en el navegador y se mockea en las pruebas del frontend).
 - Formato: `pnpm format` (Prettier). `lint-staged` formatea lo que se commitea.
 - Variables de entorno por aplicación: `apps/backend/.env.local`, `apps/frontend/.env.local` y `.env` en la raíz (solo pgAdmin). Hay un `.env.example` en cada una; los `.env` reales no se versionan.
 

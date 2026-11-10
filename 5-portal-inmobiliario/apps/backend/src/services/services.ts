@@ -1,7 +1,6 @@
 import "server-only";
 import { createAuthorizer } from "@/lib/auth/authorizer";
 import { hashPassword, spendVerificationTime, verifyPassword } from "@/lib/auth/password";
-import { web3FormsNotifier } from "@/lib/integrations/web3forms";
 import { favoriteRepository } from "@/repositories/favorite-repository";
 import { inquiryRepository } from "@/repositories/inquiry-repository";
 import { propertyRepository } from "@/repositories/property-repository";
@@ -13,10 +12,7 @@ import { createPropertyService } from "./property-service";
 
 // Raíz de composición: conecta los servicios con sus repositorios e integraciones reales.
 export const propertyService = createPropertyService(propertyRepository);
-export const inquiryService = createInquiryService({
-  repository: inquiryRepository,
-  notifier: web3FormsNotifier,
-});
+export const inquiryService = createInquiryService(inquiryRepository);
 export const authService = createAuthService({
   repository: userRepository,
   passwordHasher: { hash: hashPassword, verify: verifyPassword, spendVerificationTime },

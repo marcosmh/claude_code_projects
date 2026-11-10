@@ -1,15 +1,12 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { NextRequest } from "next/server";
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { PrismaClient } from "@/generated/prisma/client";
 import { POST as register } from "@/app/api/auth/register/route";
 import { sessionCookieName } from "@/lib/auth/session";
 
-// Nunca se llama a Web3Forms de verdad durante las pruebas.
-const sendNotification = vi.hoisted(() => vi.fn());
-vi.mock("@/lib/integrations/web3forms", () => ({ web3FormsNotifier: { send: sendNotification } }));
-
 import { POST as createInquiry } from "./route";
+import { GET as listInquiredProperties } from "./properties/route";
 
 const databaseUrl = process.env.DATABASE_URL;
 const testRunIdentifier = `inquiry-test-${Date.now()}`;
@@ -58,8 +55,6 @@ describe.skipIf(!databaseUrl)("API REST de consultas", () => {
     draftId = (await client.property.create({ data: propertyData("borrador", false) })).id;
   });
 
-  beforeEach(() => sendNotification.mockReset().mockResolvedValue(true));
-
   afterAll(async () => {
     // Las consultas se eliminan en cascada con la propiedad.
     await client.property.deleteMany({ where: { title: { startsWith: testRunIdentifier } } });
@@ -68,10 +63,10 @@ describe.skipIf(!databaseUrl)("API REST de consultas", () => {
 
   it("POST /api/inquiries guarda la consulta y responde 201", async () => {
     const response = await createInquiry(buildRequest({ ...validBody, propertyId: publishedId }));
-    const body = (await response.json()) as { id: string; notificationSent: boolean };
+    const body = (await response.json()) as { id: string };
 
     expect(response.status).toBe(201);
-    expect(body.notificationSent).toBe(true);
+    expect(body).toEqual({ id: expect.any(String) });
     const stored = await client.inquiry.findUnique({ where: { id: body.id } });
     expect(stored).toMatchObject({
       propertyId: publishedId,
@@ -166,34 +161,12 @@ describe.skipIf(!databaseUrl)("API REST de consultas", () => {
     });
   });
 
-  it("envía a Web3Forms el id y el título de la propiedad", async () => {
-    await createInquiry(buildRequest({ ...validBody, propertyId: publishedId }));
-    expect(sendNotification).toHaveBeenCalledWith(
-      expect.objectContaining({
-        propertyId: publishedId,
-        propertyTitle: `${testRunIdentifier} publicada`,
-        email: "ana@example.com",
-      }),
-    );
-  });
-
-  it("conserva la consulta aunque falle Web3Forms", async () => {
-    sendNotification.mockResolvedValue(false);
-    const response = await createInquiry(buildRequest({ ...validBody, propertyId: publishedId }));
-    const body = (await response.json()) as { id: string; notificationSent: boolean };
-
-    expect(response.status).toBe(201);
-    expect(body.notificationSent).toBe(false);
-    expect(await client.inquiry.findUnique({ where: { id: body.id } })).not.toBeNull();
-  });
-
   it("responde 404 y no guarda nada para propiedades no publicadas o inexistentes", async () => {
     for (const propertyId of [draftId, "id-inexistente"]) {
       const response = await createInquiry(buildRequest({ ...validBody, propertyId }));
       expect(response.status).toBe(404);
     }
     expect(await client.inquiry.count({ where: { propertyId: draftId } })).toBe(0);
-    expect(sendNotification).not.toHaveBeenCalled();
   });
 
   it("responde 400 con datos inválidos y detalla los campos", async () => {
@@ -211,5 +184,75 @@ describe.skipIf(!databaseUrl)("API REST de consultas", () => {
   it("responde 400 si el cuerpo no es JSON", async () => {
     const response = await createInquiry(buildRequest("{no-json", true));
     expect(response.status).toBe(400);
+  });
+  describe("GET /api/inquiries/properties", () => {
+    let counter = 0;
+
+    async function newSession() {
+      vi.stubEnv("AUTH_SECRET", "t".repeat(48));
+      const response = await register(
+        new NextRequest("http://localhost/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: "Ana Pérez",
+            email: `${testRunIdentifier}-lista-${++counter}@example.com`,
+            password: "clave-segura-1",
+          }),
+        }),
+      );
+      const token = /portal_session=([^;]+)/.exec(response.headers.get("set-cookie") ?? "")?.[1];
+      return token as string;
+    }
+
+    const list = (token?: string) =>
+      listInquiredProperties(
+        new NextRequest("http://localhost/api/inquiries/properties", {
+          headers: token ? { cookie: `${sessionCookieName}=${token}` } : {},
+        }),
+        { params: Promise.resolve({}) },
+      );
+
+    const inquire = (propertyId: string, token?: string) =>
+      createInquiry(buildRequest({ ...validBody, propertyId }, false, token));
+
+    afterAll(async () => {
+      await client.user.deleteMany({
+        where: { email: { startsWith: `${testRunIdentifier}-lista` } },
+      });
+    });
+
+    it("responde 401 sin sesión", async () => {
+      expect((await list()).status).toBe(401);
+    });
+
+    it("empieza vacío y lista la propiedad consultada, sin repetirla", async () => {
+      const token = await newSession();
+      expect(await (await list(token)).json()).toEqual([]);
+
+      await inquire(publishedId, token);
+      await inquire(publishedId, token);
+
+      const properties = (await (await list(token)).json()) as { id: string }[];
+      expect(properties.map((property) => property.id)).toEqual([publishedId]);
+    });
+
+    it("no incluye consultas de visitantes ni de otros usuarios", async () => {
+      const token = await newSession();
+      const otherToken = await newSession();
+      await inquire(publishedId);
+      await inquire(publishedId, otherToken);
+
+      expect(await (await list(token)).json()).toEqual([]);
+    });
+
+    it("no lista una propiedad que dejó de estar publicada", async () => {
+      const token = await newSession();
+      await inquire(publishedId, token);
+      await client.property.update({ where: { id: publishedId }, data: { isPublished: false } });
+
+      expect(await (await list(token)).json()).toEqual([]);
+      await client.property.update({ where: { id: publishedId }, data: { isPublished: true } });
+    });
   });
 });

@@ -450,3 +450,9 @@ Decisiones que concretan la sección 10 de este plan:
 - `authorizer.authenticateOptional(request)` devuelve el usuario de la sesión o `null` si no hay sesión válida (cookie ausente, manipulada, expirada o cuenta inactiva); nunca falla por eso, porque la consulta sigue siendo pública. Cualquier otro error se propaga.
 - `POST /api/inquiries` guarda `userId` con el usuario autenticado y `null` para visitantes. El `userId` jamás se lee del cuerpo de la solicitud. Si el usuario se elimina, `Inquiry.userId` queda en `null` (`onDelete: SetNull`) y la consulta se conserva.
 - Fuera de alcance: listar las consultas del usuario («Propiedades consultadas») y su gestión por el ADMIN (Pasos posteriores).
+
+## 29. Correo desde el navegador y propiedades consultadas (extensión)
+
+- Backend: `InquiryService` deja de recibir el notificador; `POST /api/inquiries` solo valida, persiste y devuelve `{ id }`. Se elimina `lib/integrations/web3forms.ts` y `WEB3FORMS_ACCESS_KEY` del backend.
+- Frontend: `lib/web3forms.ts` (`sendInquiryEmail`) hace el `POST` a `https://api.web3forms.com/submit` con `NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY` (asunto, nombre, email como respuesta, teléfono, mensaje, id y título de la propiedad). `ContactForm` guarda primero y luego envía; si el correo falla muestra «consulta guardada, aviso no enviado». Sin clave configurada no intenta enviar.
+- `GET /api/inquiries/properties` (`withRole("USER")`): propiedades publicadas sobre las que el usuario consultó, sin repetir, la consulta más reciente primero (`PropertySummaryDto[]`). Hook `useInquiredProperties` (SWR) y sección «Propiedades consultadas» en `/account` con las tarjetas; el formulario de contacto refresca esa lista al guardar.
