@@ -29,6 +29,16 @@
       "key": "authPassword",
       "value": "clave-segura-1",
       "type": "string"
+    },
+    {
+      "key": "adminPropertyId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "inquiryId",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -1288,9 +1298,19 @@
                 "api",
                 "inquiries",
                 "mine"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "q",
+                  "value": "visita"
+                }
               ]
             },
-            "description": "Usa la cookie de sesión de la carpeta Autenticación. Sin sesión responde 401."
+            "description": "Consultas de la sesión, 6 por página; q busca en título o mensaje. Guarda inquiryId de la primera. Sin sesión responde 401."
           },
           "event": [
             {
@@ -1298,7 +1318,49 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status 200 o 401 sin sesión\", function () { pm.expect(pm.response.code).to.be.oneOf([200, 401]); });"
+                  "pm.test(\"Status 200 o 401 sin sesión\", function () { pm.expect(pm.response.code).to.be.oneOf([200, 401]); });",
+                  "if (pm.response.code === 200) { const items = pm.response.json().items; if (items.length) { pm.collectionVariables.set(\"inquiryId\", items[0].id); } }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "400 — página de consultas inválida",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/inquiries/mine?page=0",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "inquiries",
+                "mine"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                }
+              ]
+            },
+            "description": "Requiere sesión; page=0 responde 400."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400 o 401 sin sesión\", function () { pm.expect(pm.response.code).to.be.oneOf([400, 401]); });"
                 ]
               }
             }
@@ -1334,6 +1396,41 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Status 204, 401 o 404\", function () { pm.expect(pm.response.code).to.be.oneOf([204, 401, 404]); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "404 — eliminar consulta inexistente",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/inquiries/no-existe",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "inquiries",
+                "no-existe"
+              ]
+            },
+            "description": "Requiere sesión; una consulta inexistente responde 404."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404 o 401 sin sesión\", function () { pm.expect(pm.response.code).to.be.oneOf([404, 401]); });"
                 ]
               }
             }
@@ -2231,6 +2328,313 @@
                 "exec": [
                   "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });",
                   "pm.test(\"Es una cuenta del seed\", function () { pm.expect(pm.response.json().email).to.be.oneOf([\"admin@portal.mx\",\"usuario@portal.mx\"]); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Administración (requiere ADMIN)",
+      "item": [
+        {
+          "name": "Indicadores del panel",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "dashboard"
+              ]
+            },
+            "description": "200 con sesión ADMIN; 403 para USER; 401 sin sesión."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status esperado\", function () { pm.expect(pm.response.code).to.be.oneOf([200, 403, 401]); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar propiedades (con borradores)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/properties?page=1&pageSize=10&status=all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "properties"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10"
+                },
+                {
+                  "key": "status",
+                  "value": "all"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status esperado\", function () { pm.expect(pm.response.code).to.be.oneOf([200, 401, 403]); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear propiedad",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/properties",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "properties"
+              ]
+            },
+            "description": "Requiere sesión ADMIN (carpeta Cuentas de ejemplo: admin@portal.mx).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Casa de prueba en Querétaro\",\n  \"description\": \"Casa de dos niveles con jardín, creada desde Postman.\",\n  \"operation\": \"SALE\",\n  \"type\": \"HOUSE\",\n  \"price\": 3200000,\n  \"currency\": \"MXN\",\n  \"usableArea\": 140,\n  \"totalArea\": 200,\n  \"bedrooms\": 3,\n  \"bathrooms\": 2,\n  \"parkingSpots\": 2,\n  \"age\": 5,\n  \"address\": \"Av. Paseo Villas Las Joya 1011\",\n  \"commune\": \"Villas Las Joya\",\n  \"city\": \"Querétaro\",\n  \"region\": \"Querétaro\",\n  \"isPublished\": false,\n  \"isFeatured\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", function () { pm.response.to.have.status(201); });",
+                  "pm.collectionVariables.set(\"adminPropertyId\", pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Obtener propiedad",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/properties/{{adminPropertyId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "properties",
+                "{{adminPropertyId}}"
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Actualizar propiedad",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/properties/{{adminPropertyId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "properties",
+                "{{adminPropertyId}}"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Casa de prueba editada\",\n  \"description\": \"Casa de dos niveles con jardín, creada desde Postman.\",\n  \"operation\": \"SALE\",\n  \"type\": \"HOUSE\",\n  \"price\": 3200000,\n  \"currency\": \"MXN\",\n  \"usableArea\": 140,\n  \"totalArea\": 200,\n  \"bedrooms\": 3,\n  \"bathrooms\": 2,\n  \"parkingSpots\": 2,\n  \"age\": 5,\n  \"address\": \"Av. Paseo Villas Las Joya 1011\",\n  \"commune\": \"Villas Las Joya\",\n  \"city\": \"Querétaro\",\n  \"region\": \"Querétaro\",\n  \"isPublished\": true,\n  \"isFeatured\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "400 — datos inválidos",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/properties",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "properties"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"x\",\n  \"price\": -1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400\", function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Eliminar propiedad (borrado lógico)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/properties/{{adminPropertyId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "properties",
+                "{{adminPropertyId}}"
+              ]
+            },
+            "description": "Marca deletedAt, despublica y oculta la propiedad; no borra filas. 204; repetirlo responde 404."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 204\", function () { pm.response.to.have.status(204); });"
                 ]
               }
             }

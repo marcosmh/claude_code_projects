@@ -36,7 +36,7 @@ export function toSummaryDto(record: PropertySummaryRecord): PropertySummaryDto 
   };
 }
 
-function toDetailDto(record: PropertyDetailRecord): PropertyDetailDto {
+export function toDetailDto(record: PropertyDetailRecord): PropertyDetailDto {
   return {
     id: record.id,
     title: record.title,

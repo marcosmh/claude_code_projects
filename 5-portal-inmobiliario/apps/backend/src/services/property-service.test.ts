@@ -35,6 +35,7 @@ function buildSummaryRecord(
     isFeatured: false,
     createdAt: baseDate,
     updatedAt: baseDate,
+    deletedAt: null,
     images: [{ url: "https://example.com/main.jpg" }],
     ...overrides,
   };

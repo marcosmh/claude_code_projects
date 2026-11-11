@@ -14,9 +14,9 @@ La especificación es la fuente de verdad del proyecto.
 
 ## Estado actual
 
-- Pasos **1–22** de `tasks.md` completados: fundamentos, API REST pública, landing, catálogo con tarjetas, búsqueda, filtros, ordenamiento, detalle, galería, Google Maps, contacto con Web3Forms y API REST de registro/login (`/api/auth/*`) y autorización USER/ADMIN (`withRole`, `proxy.ts`) cuenta de usuario (`/account`) consultas asociadas al usuario, favoritos (`/api/favorites`) y su contador en el header (Extra F).
+- Pasos **1–23** de `tasks.md` completados: fundamentos, API REST pública, landing, catálogo con tarjetas, búsqueda, filtros, ordenamiento, detalle, galería, Google Maps, contacto con Web3Forms y API REST de registro/login (`/api/auth/*`) y autorización USER/ADMIN (`withRole`, `proxy.ts`) cuenta de usuario (`/account`) consultas asociadas al usuario, favoritos (`/api/favorites`) su contador en el header (Extra F), el panel `/admin` y el CRUD REST de propiedades (`/api/admin/properties`, solo ADMIN).
 - Extras registrados fuera de la secuencia: **A** temas visuales (Claro, Oscuro, Smallville), **B** monorepo, **C** filtros en sidebar lateral colapsable y **D** interfaz de acceso (`/login`, `/register`, sesión en el header y cuentas de ejemplo del seed) y **E** edición de la cuenta (`PATCH /api/auth/me` y página `/account/edit`).
-- Siguiente tarea pendiente: **Paso 23 — CRUD REST de propiedades**. No avanzar sin que el usuario lo pida.
+- Siguiente tarea pendiente: **Paso 24 — Interfaz de administración**. No avanzar sin que el usuario lo pida.
 - Cualquier mejora que no esté en `tasks.md` se registra primero en `spec.md`/`plan.md` y como "Extra" en `tasks.md`.
 
 ## Flujo de desarrollo

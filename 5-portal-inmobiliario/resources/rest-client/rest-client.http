@@ -355,10 +355,92 @@ DELETE {{baseUrl}}/api/favorites/{{propertyId}}
 PUT {{baseUrl}}/api/favorites/no-existe
 Accept: application/json
 
-### Consultas que envié (200; requiere sesión, 401 sin ella)
+### Consultas que envié: 6 por página; "q" busca en título o mensaje (200; 400 si page < 1; 401 sin sesión)
+# @name myInquiries
 GET {{baseUrl}}/api/inquiries/mine?page=1&q=visita
+Accept: application/json
+
+###
+@inquiryId = {{myInquiries.response.body.$.items[0].id}}
+
+### 400 — página inválida
+GET {{baseUrl}}/api/inquiries/mine?page=0
 Accept: application/json
 
 ### Eliminar una consulta propia (204; 404 si no existe o es de otra persona)
 DELETE {{baseUrl}}/api/inquiries/{{inquiryId}}
 
+### 404 — eliminar una consulta que no existe
+DELETE {{baseUrl}}/api/inquiries/no-existe
+
+### ------------------------------------------------------------
+### Administración — requiere sesión ADMIN (inicia sesión con admin@portal.mx
+### antes; un USER recibe 403 y un visitante 401)
+### ------------------------------------------------------------
+
+### Indicadores del panel
+GET {{baseUrl}}/api/admin/dashboard
+Accept: application/json
+
+### Listar propiedades con borradores (status: all | published | draft)
+GET {{baseUrl}}/api/admin/properties?page=1&pageSize=10&status=all&search=casa
+Accept: application/json
+
+### Crear una propiedad (201); no se envían latitud ni longitud
+# @name createAdminProperty
+POST {{baseUrl}}/api/admin/properties
+Content-Type: application/json
+
+{
+  "title": "Casa de prueba en Querétaro",
+  "description": "Casa de dos niveles con jardín, creada desde REST Client.",
+  "operation": "SALE",
+  "type": "HOUSE",
+  "price": 3200000,
+  "currency": "MXN",
+  "usableArea": 140,
+  "totalArea": 200,
+  "bedrooms": 3,
+  "bathrooms": 2,
+  "parkingSpots": 2,
+  "age": 5,
+  "address": "Av. Paseo Villas Las Joya 1011",
+  "commune": "Villas Las Joya",
+  "city": "Querétaro",
+  "region": "Querétaro",
+  "isPublished": false,
+  "isFeatured": false
+}
+
+###
+@adminPropertyId = {{createAdminProperty.response.body.$.id}}
+
+### Obtener la propiedad creada (cualquier estado)
+GET {{baseUrl}}/api/admin/properties/{{adminPropertyId}}
+Accept: application/json
+
+### Actualizar y publicar (PUT reemplaza los campos editables)
+PUT {{baseUrl}}/api/admin/properties/{{adminPropertyId}}
+Content-Type: application/json
+
+{
+  "title": "Casa de prueba en Querétaro (editada)",
+  "description": "Casa de dos niveles con jardín, editada desde REST Client.",
+  "operation": "SALE",
+  "type": "HOUSE",
+  "price": 3100000,
+  "address": "Av. Paseo Villas Las Joya 1011",
+  "commune": "Villas Las Joya",
+  "city": "Querétaro",
+  "region": "Querétaro",
+  "isPublished": true
+}
+
+### 400 — datos inválidos (precio y título)
+POST {{baseUrl}}/api/admin/properties
+Content-Type: application/json
+
+{ "title": "x", "price": -1 }
+
+### Borrado lógico de la propiedad creada (204): se despublica y oculta, la fila se conserva; después 404
+DELETE {{baseUrl}}/api/admin/properties/{{adminPropertyId}}

@@ -16,7 +16,9 @@ Implementado (Pasos 1–17 de `specs/portal-inmobiliario/tasks.md`):
 - Página `/account` con información básica, enlace a `/account/edit` (edición de nombre, email y contraseña) y propiedades interesadas (tus favoritas) y consultadas (lista compacta de tus consultas, con opción de eliminar).
 - Favoritos (Paso 20): corazón en las tarjetas y en el detalle, y contador de favoritas en el header (Extra F); un visitante que lo pulsa va a iniciar sesión y vuelve a la página.
 
-Pendiente: **Paso 23 — CRUD REST de propiedades** y el resto de la administración.
+Panel `/admin` con indicadores (Paso 22) y CRUD REST de propiedades solo para ADMIN (Paso 23).
+
+Pendiente: **Paso 24 — Interfaz de administración** y el resto de la administración.
 
 ## Estructura
 
@@ -124,6 +126,12 @@ Sirven en `/login`, en `resources/postman/postman-api.json` y en `resources/rest
 | POST | `/api/auth/login` | Inicia sesión (200; 401 credenciales incorrectas; 403 cuenta desactivada) |
 | POST | `/api/auth/logout` | Cierra la sesión borrando la cookie (204) |
 | GET | `/api/auth/me` | Usuario de la sesión actual (200; 401 sin sesión válida) |
+| GET | `/api/admin/dashboard` | Indicadores del panel (solo ADMIN: 200; 401; 403) |
+| GET | `/api/admin/properties` | Lista paginada con borradores (`page`, `pageSize`, `search`, `status`=all/published/draft) (solo ADMIN) |
+| POST | `/api/admin/properties` | Crea una propiedad (201; 400; solo ADMIN) |
+| GET | `/api/admin/properties/{id}` | Propiedad en cualquier estado (200; 404; solo ADMIN) |
+| PUT | `/api/admin/properties/{id}` | Reemplaza los campos editables (200; 400; 404; solo ADMIN) |
+| DELETE | `/api/admin/properties/{id}` | Borrado lógico: marca `deletedAt`, despublica y oculta la propiedad sin borrar filas (204; 404; solo ADMIN) |
 | PATCH | `/api/auth/me` | Actualiza nombre, email y contraseña propios (200; 400, 401, 403 sin contraseña actual, 409 email repetido) |
 | GET | `/api/favorites` | Favoritas de la sesión (200; 401) |
 | PUT | `/api/favorites/{propertyId}` | Guarda una propiedad sin duplicar (200; 401; 404) |

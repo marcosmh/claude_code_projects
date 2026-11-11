@@ -12,7 +12,7 @@ export const summaryInclude = {
   },
 } satisfies Prisma.PropertyInclude;
 
-const detailInclude = {
+export const detailInclude = {
   images: { orderBy: { position: "asc" } },
   features: { orderBy: { name: "asc" } },
 } satisfies Prisma.PropertyInclude;
@@ -73,7 +73,7 @@ function containsPattern(text: string): string {
  * Condiciones de texto (búsqueda libre y ubicación) que requieren unaccent + ILIKE,
  * que Prisma no expresa de forma nativa. Todas deben cumplirse.
  */
-function buildTextConditions(filters: PropertyFilters): Prisma.Sql[] {
+export function buildTextConditions(filters: PropertyFilters): Prisma.Sql[] {
   const searchConditions = splitSearchTerms(filters.searchText ?? "").map((term) => {
     const pattern = containsPattern(term);
     return Prisma.sql`(

@@ -16,7 +16,7 @@ export const adminRepository: AdminRepository = {
       users,
       inquiries,
     ] = await Promise.all([
-      database.property.count(),
+      database.property.count({ where: { deletedAt: null } }),
       database.property.count({ where: { isPublished: true } }),
       database.property.count({ where: { isPublished: true, operation: "SALE" } }),
       database.property.count({ where: { isPublished: true, operation: "RENT" } }),

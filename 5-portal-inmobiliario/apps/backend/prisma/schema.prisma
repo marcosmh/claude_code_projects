@@ -74,6 +74,8 @@ model Property {
   isFeatured  Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  // Borrado lógico: no nulo = eliminada por un administrador (no se borra ninguna fila).
+  deletedAt   DateTime?
 
   images    PropertyImage[]
   features  Feature[]
@@ -83,6 +85,7 @@ model Property {
   @@index([isPublished, operation, type])
   @@index([isPublished, createdAt])
   @@index([isPublished, isFeatured])
+  @@index([deletedAt])
   @@index([price])
   @@index([commune])
   @@index([city])

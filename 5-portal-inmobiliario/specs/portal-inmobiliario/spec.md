@@ -656,3 +656,20 @@ Requisitos:
 - Al iniciar sesión, un ADMIN va a `/admin` salvo que llegue desde una ruta protegida (`?next=`), que se respeta. Un USER sigue yendo a la página principal o a su `next`.
 - Un ADMIN conserva todas las funciones de USER (cuenta, favoritos, consultas) y el header le añade el enlace «Administración». Un USER no ve ese enlace.
 - Indicadores (conteos reales desde PostgreSQL): total de propiedades, publicadas, publicadas en venta, publicadas en arriendo, usuarios y consultas.
+
+## 36. CRUD REST de propiedades para ADMIN (Paso 23)
+
+- Los endpoints `/api/admin/properties` son exclusivos de ADMIN (401 sin sesión, 403 para USER), también en el backend.
+- **Listar** (`GET`): incluye propiedades no publicadas; paginado; admite búsqueda por texto (título, descripción, colonia, ciudad y estado, sin acentos ni mayúsculas) y filtro de estado (`all`, `published`, `draft`).
+- **Crear** (`POST`, 201), **obtener** (`GET /{id}`, cualquier estado), **actualizar** (`PUT /{id}`, reemplaza los campos editables) y **eliminar** (`DELETE /{id}`, 204). 404 si la propiedad no existe.
+- Campos: título, descripción, operación, tipo, precio, moneda (MXN por defecto), superficie útil y total, dormitorios, baños, estacionamientos, antigüedad, dirección, colonia, ciudad, estado, publicada y destacada. No se aceptan latitud ni longitud. La superficie útil no puede superar la total.
+- Imágenes y características se administran en los Pasos 26–28, no en este paso. Eliminar una propiedad es un borrado lógico (ver §37).
+
+## 37. Borrado lógico de propiedades (extensión)
+
+> Solicitado por el usuario: eliminar una propiedad no debe destruir su información.
+
+- `DELETE /api/admin/properties/{id}` marca la propiedad como eliminada (`deletedAt` con la fecha) y la despublica y desmarca como destacada; no borra ninguna fila. Responde 204.
+- Una propiedad eliminada deja de aparecer en el catálogo, el detalle, las ubicaciones, los favoritos y las consultas de los usuarios, y no cuenta en los indicadores del panel. Sus imágenes, favoritos y consultas se conservan en la base de datos (y en Cloudinary).
+- Para ADMIN una propiedad eliminada no existe: no se lista, y obtenerla, actualizarla o eliminarla de nuevo responde 404.
+- Restaurar propiedades queda fuera de este alcance.

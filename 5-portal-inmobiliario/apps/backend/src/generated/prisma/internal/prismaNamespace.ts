@@ -940,7 +940,8 @@ export const PropertyScalarFieldEnum = {
   isPublished: 'isPublished',
   isFeatured: 'isFeatured',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  deletedAt: 'deletedAt'
 } as const
 
 export type PropertyScalarFieldEnum = (typeof PropertyScalarFieldEnum)[keyof typeof PropertyScalarFieldEnum]

@@ -479,3 +479,16 @@ Decisiones que concretan la sección 10 de este plan:
 - Backend: `GET /api/admin/dashboard` (`withRole("ADMIN")`, `Cache-Control: no-store`) → `adminService.getDashboard()` → `adminRepository.countIndicators()` (conteos Prisma en paralelo). Venta/arriendo cuentan propiedades publicadas.
 - api-client: `fetchAdminDashboard`. Frontend: `app/admin/page.tsx` + `AdminDashboard` (SWR, tarjetas de indicadores con estados de carga/error) y enlace «Administración» en `AccountControls` solo para ADMIN.
 - `resolvePostLoginPath(role, next)` en `lib/route-access.ts`: ADMIN sin `next` → `/admin`; en otro caso `sanitizeNextPath(next)`. `LoginForm` lo usa.
+
+## 34. CRUD REST de propiedades (Paso 23)
+
+- Contratos (`@portal/shared-types`, `property-admin.ts`): `propertyInputSchema` (Zod; `price` > 0, textos recortados con límites, enteros ≥ 0, `usableArea ≤ totalArea`), `adminPropertyListQuerySchema` (`page`, `pageSize` por defecto 10 y máximo 50, `search`, `status`), `AdminPropertyDto` (detalle + `isPublished`) y `AdminPropertyListItemDto` (resumen + `isPublished`, `updatedAt`).
+- Backend: `adminPropertyRepository` (`findPage`, `findById`, `create`, `update`, `remove`; búsqueda `unaccent` + `ILIKE` reutilizando `buildTextConditions`) → `createAdminPropertyService` → Route Handlers `app/api/admin/properties/route.ts` (GET, POST) y `[id]/route.ts` (GET, PUT, DELETE) con `withRole("ADMIN")` y `parseJsonBody`.
+- api-client: funciones `fetchAdminProperties`, `fetchAdminProperty`, `createAdminProperty`, `updateAdminProperty`, `deleteAdminProperty` para la interfaz del Paso 24.
+- Fuera de alcance: interfaz (Paso 24), formulario (25), Cloudinary (26–27) y características (28).
+
+## 35. Borrado lógico de propiedades (extensión)
+
+- Esquema: `Property.deletedAt DateTime?` con índice y migración aditiva `add_property_deleted_at`.
+- `adminPropertyRepository.remove` hace `updateMany({ where: { id, deletedAt: null }, data: { deletedAt: now, isPublished: false, isFeatured: false } })`; `findPage`, `findById`, `update` y `remove` filtran `deletedAt: null`.
+- Las rutas públicas, favoritos y consultas ya exigen `isPublished = true`, por lo que excluyen las eliminadas sin más cambios. `adminRepository.countIndicators` cuenta `totalProperties` con `deletedAt: null`.

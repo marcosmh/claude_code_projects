@@ -147,13 +147,13 @@
   - [x] Restringir a ADMIN.
   - [x] ADMIN va a `/admin` al iniciar sesión y ve el enlace «Administración».
 
-- [ ] **Paso 23 — CRUD REST de propiedades**
-  - Listar.
-  - Crear.
-  - Obtener.
-  - Actualizar.
-  - Eliminar.
-  - Proteger endpoints.
+- [x] **Paso 23 — CRUD REST de propiedades**
+  - [x] Listar (con borradores, paginado, búsqueda y filtro de estado).
+  - [x] Crear.
+  - [x] Obtener.
+  - [x] Actualizar.
+  - [x] Eliminar.
+  - [x] Proteger endpoints (solo ADMIN).
 
 - [ ] **Paso 24 — Interfaz de administración**
   - `/admin/properties`.
@@ -311,4 +311,9 @@
 
 - [x] **Extra J — Modal de confirmación al eliminar**
   - Modal «Sí, eliminar» / «No, cancelar» en lugar de `window.confirm`.
+  - Pruebas, lint, typecheck y build pasan.
+
+- [x] **Extra K — Borrado lógico de propiedades**
+  - Columna `deletedAt` y migración; `DELETE` marca en lugar de borrar.
+  - Excluir eliminadas del catálogo, favoritos, consultas, indicadores y administración.
   - Pruebas, lint, typecheck y build pasan.

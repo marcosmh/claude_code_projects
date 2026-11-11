@@ -68,6 +68,7 @@ export type PropertyMinAggregateOutputType = {
   isFeatured: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
+  deletedAt: Date | null
 }
 
 export type PropertyMaxAggregateOutputType = {
@@ -92,6 +93,7 @@ export type PropertyMaxAggregateOutputType = {
   isFeatured: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
+  deletedAt: Date | null
 }
 
 export type PropertyCountAggregateOutputType = {
@@ -116,6 +118,7 @@ export type PropertyCountAggregateOutputType = {
   isFeatured: number
   createdAt: number
   updatedAt: number
+  deletedAt: number
   _all: number
 }
 
@@ -162,6 +165,7 @@ export type PropertyMinAggregateInputType = {
   isFeatured?: true
   createdAt?: true
   updatedAt?: true
+  deletedAt?: true
 }
 
 export type PropertyMaxAggregateInputType = {
@@ -186,6 +190,7 @@ export type PropertyMaxAggregateInputType = {
   isFeatured?: true
   createdAt?: true
   updatedAt?: true
+  deletedAt?: true
 }
 
 export type PropertyCountAggregateInputType = {
@@ -210,6 +215,7 @@ export type PropertyCountAggregateInputType = {
   isFeatured?: true
   createdAt?: true
   updatedAt?: true
+  deletedAt?: true
   _all?: true
 }
 
@@ -321,6 +327,7 @@ export type PropertyGroupByOutputType = {
   isFeatured: boolean
   createdAt: Date
   updatedAt: Date
+  deletedAt: Date | null
   _count: PropertyCountAggregateOutputType | null
   _avg: PropertyAvgAggregateOutputType | null
   _sum: PropertySumAggregateOutputType | null
@@ -368,6 +375,7 @@ export type PropertyWhereInput = {
   isFeatured?: Prisma.BoolFilter<"Property"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Property"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Property"> | Date | string
+  deletedAt?: Prisma.DateTimeNullableFilter<"Property"> | Date | string | null
   images?: Prisma.PropertyImageListRelationFilter
   features?: Prisma.FeatureListRelationFilter
   favorites?: Prisma.FavoriteListRelationFilter
@@ -396,6 +404,7 @@ export type PropertyOrderByWithRelationInput = {
   isFeatured?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   images?: Prisma.PropertyImageOrderByRelationAggregateInput
   features?: Prisma.FeatureOrderByRelationAggregateInput
   favorites?: Prisma.FavoriteOrderByRelationAggregateInput
@@ -427,6 +436,7 @@ export type PropertyWhereUniqueInput = Prisma.AtLeast<{
   isFeatured?: Prisma.BoolFilter<"Property"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Property"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Property"> | Date | string
+  deletedAt?: Prisma.DateTimeNullableFilter<"Property"> | Date | string | null
   images?: Prisma.PropertyImageListRelationFilter
   features?: Prisma.FeatureListRelationFilter
   favorites?: Prisma.FavoriteListRelationFilter
@@ -455,6 +465,7 @@ export type PropertyOrderByWithAggregationInput = {
   isFeatured?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.PropertyCountOrderByAggregateInput
   _avg?: Prisma.PropertyAvgOrderByAggregateInput
   _max?: Prisma.PropertyMaxOrderByAggregateInput
@@ -487,6 +498,7 @@ export type PropertyScalarWhereWithAggregatesInput = {
   isFeatured?: Prisma.BoolWithAggregatesFilter<"Property"> | boolean
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Property"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Property"> | Date | string
+  deletedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Property"> | Date | string | null
 }
 
 export type PropertyCreateInput = {
@@ -511,6 +523,7 @@ export type PropertyCreateInput = {
   isFeatured?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
+  deletedAt?: Date | string | null
   images?: Prisma.PropertyImageCreateNestedManyWithoutPropertyInput
   features?: Prisma.FeatureCreateNestedManyWithoutPropertiesInput
   favorites?: Prisma.FavoriteCreateNestedManyWithoutPropertyInput
@@ -539,6 +552,7 @@ export type PropertyUncheckedCreateInput = {
   isFeatured?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
+  deletedAt?: Date | string | null
   images?: Prisma.PropertyImageUncheckedCreateNestedManyWithoutPropertyInput
   features?: Prisma.FeatureUncheckedCreateNestedManyWithoutPropertiesInput
   favorites?: Prisma.FavoriteUncheckedCreateNestedManyWithoutPropertyInput
@@ -567,6 +581,7 @@ export type PropertyUpdateInput = {
   isFeatured?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   images?: Prisma.PropertyImageUpdateManyWithoutPropertyNestedInput
   features?: Prisma.FeatureUpdateManyWithoutPropertiesNestedInput
   favorites?: Prisma.FavoriteUpdateManyWithoutPropertyNestedInput
@@ -595,6 +610,7 @@ export type PropertyUncheckedUpdateInput = {
   isFeatured?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   images?: Prisma.PropertyImageUncheckedUpdateManyWithoutPropertyNestedInput
   features?: Prisma.FeatureUncheckedUpdateManyWithoutPropertiesNestedInput
   favorites?: Prisma.FavoriteUncheckedUpdateManyWithoutPropertyNestedInput
@@ -623,6 +639,7 @@ export type PropertyCreateManyInput = {
   isFeatured?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
+  deletedAt?: Date | string | null
 }
 
 export type PropertyUpdateManyMutationInput = {
@@ -647,6 +664,7 @@ export type PropertyUpdateManyMutationInput = {
   isFeatured?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type PropertyUncheckedUpdateManyInput = {
@@ -671,6 +689,7 @@ export type PropertyUncheckedUpdateManyInput = {
   isFeatured?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type PropertyCountOrderByAggregateInput = {
@@ -695,6 +714,7 @@ export type PropertyCountOrderByAggregateInput = {
   isFeatured?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  deletedAt?: Prisma.SortOrder
 }
 
 export type PropertyAvgOrderByAggregateInput = {
@@ -729,6 +749,7 @@ export type PropertyMaxOrderByAggregateInput = {
   isFeatured?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  deletedAt?: Prisma.SortOrder
 }
 
 export type PropertyMinOrderByAggregateInput = {
@@ -753,6 +774,7 @@ export type PropertyMinOrderByAggregateInput = {
   isFeatured?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  deletedAt?: Prisma.SortOrder
 }
 
 export type PropertySumOrderByAggregateInput = {
@@ -814,6 +836,10 @@ export type NullableIntFieldUpdateOperationsInput = {
   decrement?: number
   multiply?: number
   divide?: number
+}
+
+export type NullableDateTimeFieldUpdateOperationsInput = {
+  set?: Date | string | null
 }
 
 export type PropertyCreateNestedOneWithoutImagesInput = {
@@ -918,6 +944,7 @@ export type PropertyCreateWithoutImagesInput = {
   isFeatured?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
+  deletedAt?: Date | string | null
   features?: Prisma.FeatureCreateNestedManyWithoutPropertiesInput
   favorites?: Prisma.FavoriteCreateNestedManyWithoutPropertyInput
   inquiries?: Prisma.InquiryCreateNestedManyWithoutPropertyInput
@@ -945,6 +972,7 @@ export type PropertyUncheckedCreateWithoutImagesInput = {
   isFeatured?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
+  deletedAt?: Date | string | null
   features?: Prisma.FeatureUncheckedCreateNestedManyWithoutPropertiesInput
   favorites?: Prisma.FavoriteUncheckedCreateNestedManyWithoutPropertyInput
   inquiries?: Prisma.InquiryUncheckedCreateNestedManyWithoutPropertyInput
@@ -988,6 +1016,7 @@ export type PropertyUpdateWithoutImagesInput = {
   isFeatured?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   features?: Prisma.FeatureUpdateManyWithoutPropertiesNestedInput
   favorites?: Prisma.FavoriteUpdateManyWithoutPropertyNestedInput
   inquiries?: Prisma.InquiryUpdateManyWithoutPropertyNestedInput
@@ -1015,6 +1044,7 @@ export type PropertyUncheckedUpdateWithoutImagesInput = {
   isFeatured?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   features?: Prisma.FeatureUncheckedUpdateManyWithoutPropertiesNestedInput
   favorites?: Prisma.FavoriteUncheckedUpdateManyWithoutPropertyNestedInput
   inquiries?: Prisma.InquiryUncheckedUpdateManyWithoutPropertyNestedInput
@@ -1042,6 +1072,7 @@ export type PropertyCreateWithoutFeaturesInput = {
   isFeatured?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
+  deletedAt?: Date | string | null
   images?: Prisma.PropertyImageCreateNestedManyWithoutPropertyInput
   favorites?: Prisma.FavoriteCreateNestedManyWithoutPropertyInput
   inquiries?: Prisma.InquiryCreateNestedManyWithoutPropertyInput
@@ -1069,6 +1100,7 @@ export type PropertyUncheckedCreateWithoutFeaturesInput = {
   isFeatured?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
+  deletedAt?: Date | string | null
   images?: Prisma.PropertyImageUncheckedCreateNestedManyWithoutPropertyInput
   favorites?: Prisma.FavoriteUncheckedCreateNestedManyWithoutPropertyInput
   inquiries?: Prisma.InquiryUncheckedCreateNestedManyWithoutPropertyInput
@@ -1120,6 +1152,7 @@ export type PropertyScalarWhereInput = {
   isFeatured?: Prisma.BoolFilter<"Property"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Property"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Property"> | Date | string
+  deletedAt?: Prisma.DateTimeNullableFilter<"Property"> | Date | string | null
 }
 
 export type PropertyCreateWithoutFavoritesInput = {
@@ -1144,6 +1177,7 @@ export type PropertyCreateWithoutFavoritesInput = {
   isFeatured?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
+  deletedAt?: Date | string | null
   images?: Prisma.PropertyImageCreateNestedManyWithoutPropertyInput
   features?: Prisma.FeatureCreateNestedManyWithoutPropertiesInput
   inquiries?: Prisma.InquiryCreateNestedManyWithoutPropertyInput
@@ -1171,6 +1205,7 @@ export type PropertyUncheckedCreateWithoutFavoritesInput = {
   isFeatured?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
+  deletedAt?: Date | string | null
   images?: Prisma.PropertyImageUncheckedCreateNestedManyWithoutPropertyInput
   features?: Prisma.FeatureUncheckedCreateNestedManyWithoutPropertiesInput
   inquiries?: Prisma.InquiryUncheckedCreateNestedManyWithoutPropertyInput
@@ -1214,6 +1249,7 @@ export type PropertyUpdateWithoutFavoritesInput = {
   isFeatured?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   images?: Prisma.PropertyImageUpdateManyWithoutPropertyNestedInput
   features?: Prisma.FeatureUpdateManyWithoutPropertiesNestedInput
   inquiries?: Prisma.InquiryUpdateManyWithoutPropertyNestedInput
@@ -1241,6 +1277,7 @@ export type PropertyUncheckedUpdateWithoutFavoritesInput = {
   isFeatured?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   images?: Prisma.PropertyImageUncheckedUpdateManyWithoutPropertyNestedInput
   features?: Prisma.FeatureUncheckedUpdateManyWithoutPropertiesNestedInput
   inquiries?: Prisma.InquiryUncheckedUpdateManyWithoutPropertyNestedInput
@@ -1268,6 +1305,7 @@ export type PropertyCreateWithoutInquiriesInput = {
   isFeatured?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
+  deletedAt?: Date | string | null
   images?: Prisma.PropertyImageCreateNestedManyWithoutPropertyInput
   features?: Prisma.FeatureCreateNestedManyWithoutPropertiesInput
   favorites?: Prisma.FavoriteCreateNestedManyWithoutPropertyInput
@@ -1295,6 +1333,7 @@ export type PropertyUncheckedCreateWithoutInquiriesInput = {
   isFeatured?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
+  deletedAt?: Date | string | null
   images?: Prisma.PropertyImageUncheckedCreateNestedManyWithoutPropertyInput
   features?: Prisma.FeatureUncheckedCreateNestedManyWithoutPropertiesInput
   favorites?: Prisma.FavoriteUncheckedCreateNestedManyWithoutPropertyInput
@@ -1338,6 +1377,7 @@ export type PropertyUpdateWithoutInquiriesInput = {
   isFeatured?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   images?: Prisma.PropertyImageUpdateManyWithoutPropertyNestedInput
   features?: Prisma.FeatureUpdateManyWithoutPropertiesNestedInput
   favorites?: Prisma.FavoriteUpdateManyWithoutPropertyNestedInput
@@ -1365,6 +1405,7 @@ export type PropertyUncheckedUpdateWithoutInquiriesInput = {
   isFeatured?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   images?: Prisma.PropertyImageUncheckedUpdateManyWithoutPropertyNestedInput
   features?: Prisma.FeatureUncheckedUpdateManyWithoutPropertiesNestedInput
   favorites?: Prisma.FavoriteUncheckedUpdateManyWithoutPropertyNestedInput
@@ -1392,6 +1433,7 @@ export type PropertyUpdateWithoutFeaturesInput = {
   isFeatured?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   images?: Prisma.PropertyImageUpdateManyWithoutPropertyNestedInput
   favorites?: Prisma.FavoriteUpdateManyWithoutPropertyNestedInput
   inquiries?: Prisma.InquiryUpdateManyWithoutPropertyNestedInput
@@ -1419,6 +1461,7 @@ export type PropertyUncheckedUpdateWithoutFeaturesInput = {
   isFeatured?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   images?: Prisma.PropertyImageUncheckedUpdateManyWithoutPropertyNestedInput
   favorites?: Prisma.FavoriteUncheckedUpdateManyWithoutPropertyNestedInput
   inquiries?: Prisma.InquiryUncheckedUpdateManyWithoutPropertyNestedInput
@@ -1446,6 +1489,7 @@ export type PropertyUncheckedUpdateManyWithoutFeaturesInput = {
   isFeatured?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 
@@ -1528,6 +1572,7 @@ export type PropertySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   isFeatured?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  deletedAt?: boolean
   images?: boolean | Prisma.Property$imagesArgs<ExtArgs>
   features?: boolean | Prisma.Property$featuresArgs<ExtArgs>
   favorites?: boolean | Prisma.Property$favoritesArgs<ExtArgs>
@@ -1557,6 +1602,7 @@ export type PropertySelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   isFeatured?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  deletedAt?: boolean
 }, ExtArgs["result"]["property"]>
 
 export type PropertySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -1581,6 +1627,7 @@ export type PropertySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   isFeatured?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  deletedAt?: boolean
 }, ExtArgs["result"]["property"]>
 
 export type PropertySelectScalar = {
@@ -1605,9 +1652,10 @@ export type PropertySelectScalar = {
   isFeatured?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  deletedAt?: boolean
 }
 
-export type PropertyOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "description" | "operation" | "type" | "price" | "currency" | "usableArea" | "totalArea" | "bedrooms" | "bathrooms" | "parkingSpots" | "age" | "address" | "commune" | "city" | "region" | "isPublished" | "isFeatured" | "createdAt" | "updatedAt", ExtArgs["result"]["property"]>
+export type PropertyOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "description" | "operation" | "type" | "price" | "currency" | "usableArea" | "totalArea" | "bedrooms" | "bathrooms" | "parkingSpots" | "age" | "address" | "commune" | "city" | "region" | "isPublished" | "isFeatured" | "createdAt" | "updatedAt" | "deletedAt", ExtArgs["result"]["property"]>
 export type PropertyInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   images?: boolean | Prisma.Property$imagesArgs<ExtArgs>
   features?: boolean | Prisma.Property$featuresArgs<ExtArgs>
@@ -1648,6 +1696,7 @@ export type $PropertyPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     isFeatured: boolean
     createdAt: Date
     updatedAt: Date
+    deletedAt: Date | null
   }, ExtArgs["result"]["property"]>
   composites: {}
 }
@@ -2096,6 +2145,7 @@ export interface PropertyFieldRefs {
   readonly isFeatured: Prisma.FieldRef<"Property", 'Boolean'>
   readonly createdAt: Prisma.FieldRef<"Property", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Property", 'DateTime'>
+  readonly deletedAt: Prisma.FieldRef<"Property", 'DateTime'>
 }
     
 

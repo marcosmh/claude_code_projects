@@ -1,12 +1,14 @@
 import "server-only";
 import { createAuthorizer } from "@/lib/auth/authorizer";
 import { hashPassword, spendVerificationTime, verifyPassword } from "@/lib/auth/password";
+import { adminPropertyRepository } from "@/repositories/admin-property-repository";
 import { adminRepository } from "@/repositories/admin-repository";
 import { favoriteRepository } from "@/repositories/favorite-repository";
 import { inquiryRepository } from "@/repositories/inquiry-repository";
 import { propertyRepository } from "@/repositories/property-repository";
 import { userRepository } from "@/repositories/user-repository";
 import { createAdminService } from "./admin-service";
+import { createAdminPropertyService } from "./admin-property-service";
 import { createAuthService } from "./auth-service";
 import { createFavoriteService } from "./favorite-service";
 import { createInquiryService } from "./inquiry-service";
@@ -22,3 +24,4 @@ export const authService = createAuthService({
 export const authorizer = createAuthorizer(authService);
 export const favoriteService = createFavoriteService(favoriteRepository);
 export const adminService = createAdminService(adminRepository);
+export const adminPropertyService = createAdminPropertyService(adminPropertyRepository);
