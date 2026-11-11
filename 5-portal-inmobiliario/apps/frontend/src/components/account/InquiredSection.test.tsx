@@ -29,7 +29,6 @@ afterEach(() => {
   state.inquiries = undefined;
   state.remove.mockReset();
   state.totalPages = 1;
-  vi.restoreAllMocks();
 });
 
 const inquiry = (id: string, title: string): UserInquiryDto => ({
@@ -72,38 +71,42 @@ describe("InquiredSection", () => {
     expect(screen.getAllByTestId("thumbnail")).toHaveLength(2);
   });
 
-  it("elimina la consulta tras confirmar", async () => {
+  const openDialog = () =>
+    fireEvent.click(
+      screen.getByRole("button", { name: "Eliminar consulta sobre Casa en Coyoacán" }),
+    );
+
+  it("elimina la consulta solo tras pulsar «Sí, eliminar» en el modal", async () => {
     state.inquiries = [inquiry("1", "Casa en Coyoacán")];
     state.remove.mockResolvedValue(undefined);
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     render(<InquiredSection />);
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Eliminar consulta sobre Casa en Coyoacán" }),
-    );
+    openDialog();
+    expect(state.remove).not.toHaveBeenCalled();
+    expect(screen.getByRole("alertdialog").textContent).toContain("Casa en Coyoacán");
+
+    fireEvent.click(screen.getByRole("button", { name: "Sí, eliminar" }));
     await waitFor(() => expect(state.remove).toHaveBeenCalledWith("1"));
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
   });
 
-  it("no elimina si la persona cancela la confirmación", () => {
+  it("no elimina si la persona pulsa «No, cancelar»", () => {
     state.inquiries = [inquiry("1", "Casa en Coyoacán")];
-    vi.spyOn(window, "confirm").mockReturnValue(false);
     render(<InquiredSection />);
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Eliminar consulta sobre Casa en Coyoacán" }),
-    );
+    openDialog();
+    fireEvent.click(screen.getByRole("button", { name: "No, cancelar" }));
     expect(state.remove).not.toHaveBeenCalled();
+    expect(screen.queryByRole("alertdialog")).toBeNull();
   });
 
   it("avisa si la API falla al eliminar", async () => {
     state.inquiries = [inquiry("1", "Casa en Coyoacán")];
     state.remove.mockRejectedValue(new Error("falló"));
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     render(<InquiredSection />);
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Eliminar consulta sobre Casa en Coyoacán" }),
-    );
+    openDialog();
+    fireEvent.click(screen.getByRole("button", { name: "Sí, eliminar" }));
     expect((await screen.findByRole("alert")).textContent).toContain("No se pudo eliminar");
   });
 

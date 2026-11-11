@@ -642,3 +642,10 @@ Requisitos:
 - Un campo de búsqueda filtra por título de la propiedad o texto del mensaje (sin distinguir mayúsculas ni acentos). Al buscar se vuelve a la página 1.
 - La paginación y la búsqueda se resuelven en el backend y siempre sobre las consultas del usuario autenticado (`userId` de la sesión); nunca se ven ni gestionan consultas ajenas.
 - Si al eliminar queda vacía la página actual, se retrocede a la anterior.
+
+## 34. Confirmación visual al eliminar (extensión)
+
+> Solicitada por el usuario: evitar eliminaciones por error con una interfaz clara.
+
+- Al pulsar la papelera de una consulta se abre un modal (en lugar del cuadro nativo del navegador) con el título de la propiedad, el aviso «Esta acción no se puede deshacer.» y dos acciones diferenciadas: «Sí, eliminar» (peligro) y «No, cancelar».
+- El foco inicia en «No, cancelar»; Esc, clic fuera o «No, cancelar» cierran sin borrar. Es accesible (`role="dialog"`, `aria-modal`, foco atrapado y devuelto al icono).

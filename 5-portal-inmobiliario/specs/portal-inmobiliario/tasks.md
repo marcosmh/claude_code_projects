@@ -307,3 +307,7 @@
   - `GET /api/inquiries/mine` con `page`, `pageSize` y `q` (título o mensaje), solo del usuario autenticado.
   - Buscador y paginación en «Propiedades consultadas».
   - Pruebas, lint, typecheck y build pasan.
+
+- [x] **Extra J — Modal de confirmación al eliminar**
+  - Modal «Sí, eliminar» / «No, cancelar» en lugar de `window.confirm`.
+  - Pruebas, lint, typecheck y build pasan.

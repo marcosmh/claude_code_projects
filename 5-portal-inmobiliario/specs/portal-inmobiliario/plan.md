@@ -468,3 +468,7 @@ Decisiones que concretan la sección 10 de este plan:
 - `GET /api/inquiries/mine?page=1&pageSize=6&q=texto` (`withRole("USER")`) responde `PaginatedResponse<UserInquiryDto>`. Esquema Zod `userInquiryListQuerySchema` en `@portal/shared-types` (`page` ≥ 1, `pageSize` 1–50, por defecto 6, `q` ≤ 100 caracteres); parámetros inválidos → 400.
 - Repositorio: `findPageByUser({ userId, skip, take, searchText })` con `unaccent` + `ILIKE` sobre el título de la propiedad y el mensaje, siempre con `userId` y propiedad publicada en la condición; devuelve registros y total.
 - api-client: `fetchUserInquiries(query)` y `buildUserInquiriesUrl`. Hook `useUserInquiries({ page, searchText })` (SWR con la URL como clave, `keepPreviousData`). `InquiredSection` guarda página y búsqueda en estado local (con retardo al escribir) y muestra paginación propia con botones.
+
+## 32. Confirmación visual al eliminar (extensión)
+
+- Componente reutilizable `components/ui/ConfirmDialog.tsx` (`title`, `description`, `confirmLabel`, `cancelLabel`, `isBusy`, `onConfirm`, `onCancel`), sin dependencias nuevas. `InquiredSection` lo abre con la consulta seleccionada y elimina solo al confirmar.

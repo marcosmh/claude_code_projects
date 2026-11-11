@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useUserInquiries } from "@/hooks/useUserInquiries";
 
 const SEARCH_DELAY_MS = 300;
@@ -16,6 +17,9 @@ export function InquiredSection() {
   const [searchText, setSearchText] = useState("");
   const [page, setPage] = useState(1);
   const { inquiries, totalPages = 1, remove } = useUserInquiries({ page, searchText });
+  const [pendingDeletion, setPendingDeletion] = useState<{ id: string; title: string } | null>(
+    null,
+  );
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -28,8 +32,9 @@ export function InquiredSection() {
     return () => clearTimeout(timer);
   }, [searchInput]);
 
-  async function handleDelete(inquiryId: string, propertyTitle: string) {
-    if (!window.confirm(`¿Eliminar tu consulta sobre «${propertyTitle}»?`)) return;
+  async function confirmDeletion() {
+    if (!pendingDeletion) return;
+    const inquiryId = pendingDeletion.id;
     setDeletingId(inquiryId);
     setErrorMessage(null);
     try {
@@ -40,6 +45,7 @@ export function InquiredSection() {
       setErrorMessage("No se pudo eliminar la consulta. Inténtalo de nuevo.");
     } finally {
       setDeletingId(null);
+      setPendingDeletion(null);
     }
   }
 
@@ -127,7 +133,7 @@ export function InquiredSection() {
               </div>
               <button
                 type="button"
-                onClick={() => void handleDelete(inquiry.id, inquiry.propertyTitle)}
+                onClick={() => setPendingDeletion({ id: inquiry.id, title: inquiry.propertyTitle })}
                 disabled={deletingId === inquiry.id}
                 aria-label={`Eliminar consulta sobre ${inquiry.propertyTitle}`}
                 title="Eliminar consulta"
@@ -179,6 +185,17 @@ export function InquiredSection() {
             Siguiente →
           </button>
         </nav>
+      )}
+      {pendingDeletion && (
+        <ConfirmDialog
+          title="¿Deseas eliminar esta consulta?"
+          description={`Se eliminará tu consulta sobre «${pendingDeletion.title}». Esta acción no se puede deshacer.`}
+          confirmLabel="Sí, eliminar"
+          cancelLabel="No, cancelar"
+          isBusy={deletingId !== null}
+          onConfirm={() => void confirmDeletion()}
+          onCancel={() => setPendingDeletion(null)}
+        />
       )}
     </section>
   );
