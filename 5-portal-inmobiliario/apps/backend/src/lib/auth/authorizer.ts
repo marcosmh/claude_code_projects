@@ -37,10 +37,18 @@ export function createAuthorizer(authService: CurrentUserSource) {
       }
     },
 
-    /** Usuario autenticado con al menos el rol pedido. 401 sin sesión; 403 si el rol no alcanza. */
-    async requireRole(request: NextRequest, requiredRole: UserRole): Promise<AuthUserDto> {
+    /**
+     * Usuario autenticado con al menos el rol pedido (o exactamente ese rol con `exact`, para
+     * recursos de usuario final que un ADMIN no usa). 401 sin sesión; 403 si el rol no alcanza.
+     */
+    async requireRole(
+      request: NextRequest,
+      requiredRole: UserRole,
+      options: { exact?: boolean } = {},
+    ): Promise<AuthUserDto> {
       const user = await this.authenticate(request);
-      if (!hasRole(user.role, requiredRole)) {
+      const allowed = options.exact ? user.role === requiredRole : hasRole(user.role, requiredRole);
+      if (!allowed) {
         throw new ForbiddenError("No tienes permiso para realizar esta acción");
       }
       return user;

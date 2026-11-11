@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { SWRConfig } from "swr";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const session = vi.hoisted(() => ({ user: null as { id: string } | null }));
+const session = vi.hoisted(() => ({ user: null as { id: string; role?: string } | null }));
 vi.mock("@/hooks/useCurrentUser", () => ({ useCurrentUser: () => ({ user: session.user }) }));
 
 const api = vi.hoisted(() => ({
@@ -35,7 +35,7 @@ describe("useFavorites", () => {
   });
 
   it("con sesión carga las favoritas y sabe cuáles están guardadas", async () => {
-    session.user = { id: "u1" };
+    session.user = { id: "u1", role: "USER" };
     api.fetchFavorites.mockResolvedValue([{ id: "p1" }]);
     const { result } = renderHook(() => useFavorites(), { wrapper });
 
@@ -45,7 +45,7 @@ describe("useFavorites", () => {
   });
 
   it("guarda una propiedad nueva y vuelve a consultar la lista", async () => {
-    session.user = { id: "u1" };
+    session.user = { id: "u1", role: "USER" };
     api.fetchFavorites.mockResolvedValueOnce([]).mockResolvedValue([{ id: "p2" }]);
     api.addFavorite.mockResolvedValue({ id: "p2" });
     const { result } = renderHook(() => useFavorites(), { wrapper });
@@ -59,7 +59,7 @@ describe("useFavorites", () => {
   });
 
   it("quita una propiedad que ya era favorita", async () => {
-    session.user = { id: "u1" };
+    session.user = { id: "u1", role: "USER" };
     api.fetchFavorites.mockResolvedValueOnce([{ id: "p1" }]).mockResolvedValue([]);
     api.removeFavorite.mockResolvedValue(undefined);
     const { result } = renderHook(() => useFavorites(), { wrapper });
@@ -69,5 +69,12 @@ describe("useFavorites", () => {
 
     expect(api.removeFavorite).toHaveBeenCalledWith("p1");
     await waitFor(() => expect(result.current.isFavorite("p1")).toBe(false));
+  });
+
+  it("un ADMIN no consulta favoritos y se identifica como administrador", () => {
+    session.user = { id: "a1", role: "ADMIN" };
+    const { result } = renderHook(() => useFavorites(), { wrapper });
+    expect(result.current.isAdmin).toBe(true);
+    expect(api.fetchFavorites).not.toHaveBeenCalled();
   });
 });

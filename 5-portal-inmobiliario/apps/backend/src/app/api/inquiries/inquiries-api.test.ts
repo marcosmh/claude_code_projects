@@ -239,6 +239,20 @@ describe.skipIf(!databaseUrl)("API REST de consultas", () => {
       });
     });
 
+    it("un ADMIN no usa consultas propias: 403 al listar y al eliminar", async () => {
+      const token = await newSession();
+      await inquire(publishedId, token);
+      const [created] = (await (await list(token)).json()) as { id: string }[];
+      await client.user.updateMany({
+        where: { email: { startsWith: `${testRunIdentifier}-lista` } },
+        data: { role: "ADMIN" },
+      });
+
+      expect((await listPage(token)).status).toBe(403);
+      expect((await remove(created.id, token)).status).toBe(403);
+      expect(await client.inquiry.count({ where: { id: created.id } })).toBe(1);
+    });
+
     it("responde 401 sin sesión", async () => {
       expect((await list()).status).toBe(401);
     });

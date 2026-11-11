@@ -105,3 +105,47 @@ describe.each(Object.entries(themes))("contraste del tema %s", (_themeName, toke
     expect(ratio).toBeGreaterThanOrEqual(INTERFACE_MINIMUM);
   });
 });
+
+const adminThemes: Record<string, Tokens> = {
+  Claro: extractTokens(".admin-area"),
+  Oscuro: extractTokens(':root[data-theme="dark"] .admin-area'),
+  Smallville: extractTokens(':root[data-theme="smallville"] .admin-area'),
+};
+
+describe.each(Object.entries(adminThemes))("área de administración, tema %s", (_name, admin) => {
+  const ratio = (foregroundToken: string, backgroundToken: string) =>
+    contrastRatio(toRgb(admin[foregroundToken]), toRgb(admin[backgroundToken]));
+
+  it.each([
+    ["foreground", "background"],
+    ["foreground", "surface"],
+    ["primary-foreground", "primary"],
+    ["link", "surface"],
+    ["link", "background"],
+    ["danger", "surface"],
+    ["badge-foreground", "badge"],
+    ["success", "success-surface"],
+    ["warning", "warning-surface"],
+    ["sidebar-foreground", "sidebar"],
+    ["sidebar-muted", "sidebar"],
+    ["sidebar-ring", "sidebar"],
+  ])("%s sobre %s cumple AA (4.5:1)", (foregroundToken, backgroundToken) => {
+    expect(ratio(foregroundToken, backgroundToken)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("el texto atenuado (70 %) sigue legible sobre el fondo y la tarjeta", () => {
+    for (const background of ["background", "surface"]) {
+      const blended = blend(admin.foreground, admin[background], 0.7);
+      expect(contrastRatio(blended, toRgb(admin[background]))).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it("el texto del menú sobre el elemento activo cumple AA", () => {
+    expect(ratio("sidebar-foreground", "sidebar-active")).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("el anillo de foco es visible sobre el fondo y la tarjeta (3:1)", () => {
+    expect(ratio("ring", "background")).toBeGreaterThanOrEqual(3);
+    expect(ratio("ring", "surface")).toBeGreaterThanOrEqual(3);
+  });
+});

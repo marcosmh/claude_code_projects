@@ -74,7 +74,7 @@ describe("AccountControls sin sesión", () => {
 
 describe("AccountControls con sesión", () => {
   it("muestra el nombre y Cerrar sesión en lugar de Ingresar", () => {
-    session.user = { id: "u1", name: "Ana Pérez" };
+    session.user = { id: "u1", name: "Ana Pérez", role: "USER" };
     render(<AccountControls variant="desktop" />);
 
     expect(screen.getByText("Ana Pérez")).toBeTruthy();
@@ -94,11 +94,10 @@ describe("AccountControls con sesión", () => {
     expect(screen.getByRole("link", { name: "Administración" }).getAttribute("href")).toBe(
       "/admin",
     );
-    expect(screen.getByRole("link", { name: /Mi cuenta/ }).getAttribute("href")).toBe("/account");
   });
 
   it("cierra la sesión, limpia el usuario y vuelve al inicio", async () => {
-    session.user = { id: "u1", name: "Ana Pérez" };
+    session.user = { id: "u1", name: "Ana Pérez", role: "USER" };
     logoutUserMock.mockResolvedValue(undefined);
     const onNavigate = vi.fn();
     render(<AccountControls variant="mobile" onNavigate={onNavigate} />);
@@ -112,7 +111,7 @@ describe("AccountControls con sesión", () => {
   });
 
   it("mantiene la sesión si falla el cierre", async () => {
-    session.user = { id: "u1", name: "Ana Pérez" };
+    session.user = { id: "u1", name: "Ana Pérez", role: "USER" };
     logoutUserMock.mockRejectedValue(new Error("red"));
     render(<AccountControls variant="desktop" />);
 
@@ -127,7 +126,7 @@ describe("AccountControls con sesión", () => {
 
 describe("AccountControls contador de favoritas", () => {
   it("muestra la cantidad de favoritas con un enlace a /account", () => {
-    session.user = { id: "u1", name: "Ana Pérez" };
+    session.user = { id: "u1", name: "Ana Pérez", role: "USER" };
     favoritesState.favorites = [{ id: "p1" }, { id: "p2" }, { id: "p3" }];
     render(<AccountControls variant="desktop" />);
 
@@ -137,14 +136,14 @@ describe("AccountControls contador de favoritas", () => {
   });
 
   it("muestra 0 cuando no hay favoritas", () => {
-    session.user = { id: "u1", name: "Ana Pérez" };
+    session.user = { id: "u1", name: "Ana Pérez", role: "USER" };
     favoritesState.favorites = [];
     render(<AccountControls variant="mobile" />);
     expect(screen.getByRole("link", { name: "Mis favoritas: 0" })).toBeTruthy();
   });
 
   it("no lo muestra mientras carga la lista ni a los visitantes", () => {
-    session.user = { id: "u1", name: "Ana Pérez" };
+    session.user = { id: "u1", name: "Ana Pérez", role: "USER" };
     favoritesState.favorites = undefined;
     const { unmount } = render(<AccountControls variant="desktop" />);
     expect(screen.queryByRole("link", { name: /Mis favoritas/ })).toBeNull();
@@ -154,5 +153,32 @@ describe("AccountControls contador de favoritas", () => {
     favoritesState.favorites = [{ id: "p1" }];
     render(<AccountControls variant="desktop" />);
     expect(screen.queryByRole("link", { name: /Mis favoritas/ })).toBeNull();
+  });
+});
+
+describe("AccountControls con un ADMIN (spec §38)", () => {
+  const admin = { id: "a1", name: "Admin Demo", role: "ADMIN" };
+
+  it("muestra solo Administración y Cerrar sesión, sin favoritos ni Mi cuenta", () => {
+    session.user = admin;
+    favoritesState.favorites = [{ id: "p1" }];
+    render(<AccountControls variant="desktop" />);
+
+    expect(screen.getByRole("link", { name: "Administración" }).getAttribute("href")).toBe(
+      "/admin",
+    );
+    expect(screen.getByText("Admin Demo")).toBeTruthy();
+    expect(screen.queryByRole("link", { name: /Mis favoritas/ })).toBeNull();
+    expect(screen.queryByRole("link", { name: /Mi cuenta/ })).toBeNull();
+    expect(screen.getByRole("button", { name: "Cerrar sesión" })).toBeTruthy();
+  });
+
+  it("al cerrar sesión vuelve a /login", async () => {
+    session.user = admin;
+    logoutUserMock.mockResolvedValue(undefined);
+    render(<AccountControls variant="desktop" />);
+
+    await userEvent.setup().click(screen.getByRole("button", { name: "Cerrar sesión" }));
+    await waitFor(() => expect(navigation.push).toHaveBeenCalledWith("/login"));
   });
 });

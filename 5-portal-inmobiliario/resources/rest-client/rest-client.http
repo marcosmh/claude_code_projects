@@ -337,7 +337,7 @@ GET {{baseUrl}}/api/auth/me
 Accept: application/json
 
 ### ------------------------------------------------------------
-### Favoritos — requieren sesión (inicia sesión antes, p. ej. con usuario@portal.mx)
+### Favoritos — solo rol USER (inicia sesión con usuario@portal.mx; 401 sin sesión, 403 con ADMIN)
 ### ------------------------------------------------------------
 
 ### Listar mis favoritos (200; 401 sin sesión)
@@ -355,7 +355,7 @@ DELETE {{baseUrl}}/api/favorites/{{propertyId}}
 PUT {{baseUrl}}/api/favorites/no-existe
 Accept: application/json
 
-### Consultas que envié: 6 por página; "q" busca en título o mensaje (200; 400 si page < 1; 401 sin sesión)
+### Consultas que envié (solo USER; 403 con ADMIN): 6 por página; "q" busca en título o mensaje (200; 400 si page < 1; 401 sin sesión)
 # @name myInquiries
 GET {{baseUrl}}/api/inquiries/mine?page=1&q=visita
 Accept: application/json
@@ -444,3 +444,47 @@ Content-Type: application/json
 
 ### Borrado lógico de la propiedad creada (204): se despublica y oculta, la fila se conserva; después 404
 DELETE {{baseUrl}}/api/admin/properties/{{adminPropertyId}}
+
+### ------------------------------------------------------------
+### ADMIN sin funciones de usuario final (403) — spec §38
+### Favoritos y consultas propias exigen exactamente el rol USER.
+### Ejecuta en orden; al final vuelve a iniciar sesión como usuario.
+### ------------------------------------------------------------
+
+### 1. Login administrador
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "admin@portal.mx",
+  "password": "Admin1234!"
+}
+
+### 403 — listar favoritos con sesión ADMIN
+GET {{baseUrl}}/api/favorites
+Accept: application/json
+
+### 403 — guardar favorito con sesión ADMIN
+PUT {{baseUrl}}/api/favorites/{{propertyId}}
+Accept: application/json
+
+### 403 — quitar favorito con sesión ADMIN
+DELETE {{baseUrl}}/api/favorites/{{propertyId}}
+
+### 403 — mis consultas con sesión ADMIN
+GET {{baseUrl}}/api/inquiries/mine
+Accept: application/json
+
+### 403 — eliminar consulta propia con sesión ADMIN
+DELETE {{baseUrl}}/api/inquiries/no-existe
+
+### 2. Login usuario (restaurar sesión)
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "usuario@portal.mx",
+  "password": "Usuario1234!"
+}

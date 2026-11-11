@@ -45,7 +45,7 @@ export function AccountControls({ variant, onNavigate }: AccountControlsProps) {
       }
       await setUser(null);
       onNavigate?.();
-      router.push("/");
+      router.push(user.role === "ADMIN" ? "/login" : "/");
     };
 
     return (
@@ -63,7 +63,7 @@ export function AccountControls({ variant, onNavigate }: AccountControlsProps) {
             Administración
           </Link>
         )}
-        {favorites !== undefined && (
+        {user.role === "USER" && favorites !== undefined && (
           <Link
             href="/account"
             onClick={onNavigate}
@@ -89,19 +89,25 @@ export function AccountControls({ variant, onNavigate }: AccountControlsProps) {
             <span aria-hidden="true">{favorites.length}</span>
           </Link>
         )}
-        <Link
-          href="/account"
-          aria-current={isNavigationItemActive(currentPathname, "/account") ? "page" : undefined}
-          title={user.name}
-          onClick={onNavigate}
-          className={cn(
-            "max-w-24 truncate rounded-md xl:max-w-40 text-sm font-medium hover:underline",
-            focusClassName,
-          )}
-        >
-          <span className="sr-only">Mi cuenta: </span>
-          {user.name}
-        </Link>
+        {user.role === "ADMIN" ? (
+          <span title={user.name} className="max-w-24 truncate text-sm font-medium xl:max-w-40">
+            {user.name}
+          </span>
+        ) : (
+          <Link
+            href="/account"
+            aria-current={isNavigationItemActive(currentPathname, "/account") ? "page" : undefined}
+            title={user.name}
+            onClick={onNavigate}
+            className={cn(
+              "max-w-24 truncate rounded-md xl:max-w-40 text-sm font-medium hover:underline",
+              focusClassName,
+            )}
+          >
+            <span className="sr-only">Mi cuenta: </span>
+            {user.name}
+          </Link>
+        )}
         <button
           type="button"
           onClick={signOut}

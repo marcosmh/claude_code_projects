@@ -26,6 +26,9 @@ describe("buildAdminPropertiesUrl", () => {
       "/api/admin/properties?page=2&search=casa&status=draft",
     );
     expect(buildAdminPropertiesUrl()).toBe("/api/admin/properties?page=1");
+    expect(buildAdminPropertiesUrl({ pageSize: 5, status: "published" })).toBe(
+      "/api/admin/properties?page=1&pageSize=5&status=published",
+    );
   });
 });
 

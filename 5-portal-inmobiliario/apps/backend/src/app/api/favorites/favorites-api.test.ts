@@ -90,6 +90,16 @@ describe.skipIf(!databaseUrl)("API REST de favoritos", () => {
     expect((await del(publishedId)).status).toBe(401);
   });
 
+  it("un ADMIN no usa favoritos: 403 en las tres operaciones y no se guarda nada", async () => {
+    const { token, userId } = await createSession();
+    await client.user.update({ where: { id: userId }, data: { role: "ADMIN" } });
+
+    expect((await list(token)).status).toBe(403);
+    expect((await put(publishedId, token)).status).toBe(403);
+    expect((await del(publishedId, token)).status).toBe(403);
+    expect(await client.favorite.count({ where: { userId } })).toBe(0);
+  });
+
   it("empieza vacío, guarda una propiedad y la lista", async () => {
     const { token } = await createSession();
     expect(await (await list(token)).json()).toEqual([]);

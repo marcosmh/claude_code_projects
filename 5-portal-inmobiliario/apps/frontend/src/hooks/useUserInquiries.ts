@@ -18,11 +18,15 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
 export function useUserInquiries(query: UserInquiriesQuery = {}) {
   const { user } = useCurrentUser();
   const { mutate: mutateMatching } = useSWRConfig();
-  const { data } = useSWR(user ? buildUserInquiriesUrl(query) : null, fetchUserInquiries, {
-    revalidateOnFocus: false,
-    shouldRetryOnError: false,
-    keepPreviousData: true,
-  });
+  const { data } = useSWR(
+    user?.role === "USER" ? buildUserInquiriesUrl(query) : null,
+    fetchUserInquiries,
+    {
+      revalidateOnFocus: false,
+      shouldRetryOnError: false,
+      keepPreviousData: true,
+    },
+  );
 
   const refresh = () =>
     mutateMatching((key) => typeof key === "string" && key.startsWith(userInquiriesUrl));

@@ -10,6 +10,7 @@ export const adminPropertiesUrl = "/api/admin/properties";
 
 export type AdminPropertiesQuery = {
   page?: number;
+  pageSize?: number;
   search?: string;
   status?: "all" | "published" | "draft";
 };
@@ -17,10 +18,12 @@ export type AdminPropertiesQuery = {
 /** URL de la lista de administración; sirve también como clave de caché de SWR. */
 export function buildAdminPropertiesUrl({
   page = 1,
+  pageSize,
   search,
   status = "all",
 }: AdminPropertiesQuery = {}): string {
   const params = new URLSearchParams({ page: String(page) });
+  if (pageSize !== undefined) params.set("pageSize", String(pageSize));
   if (search && search.trim() !== "") params.set("search", search.trim());
   if (status !== "all") params.set("status", status);
   return `${adminPropertiesUrl}?${params.toString()}`;

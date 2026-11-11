@@ -492,3 +492,11 @@ Decisiones que concretan la sección 10 de este plan:
 - Esquema: `Property.deletedAt DateTime?` con índice y migración aditiva `add_property_deleted_at`.
 - `adminPropertyRepository.remove` hace `updateMany({ where: { id, deletedAt: null }, data: { deletedAt: now, isPublished: false, isFeatured: false } })`; `findPage`, `findById`, `update` y `remove` filtran `deletedAt: null`.
 - Las rutas públicas, favoritos y consultas ya exigen `isPublished = true`, por lo que excluyen las eliminadas sin más cambios. `adminRepository.countIndicators` cuenta `totalProperties` con `deletedAt: null`.
+
+## 36. Área de administración independiente (extensión)
+
+- Rutas: el portal pasa al grupo `app/(portal)/` con su layout (Header, contenido, Footer); `app/admin/` tiene su propio layout. El layout raíz solo conserva `<html>`, `<body>` y el enlace de salto.
+- Estilos: clase `.admin-area` en `globals.css` que redefine los tokens de color (pizarra/índigo, contraste AA) y añade `--sidebar*`, con una variante para `data-theme="dark"` y otra para `"smallville"`. La barra superior incluye `ThemeSwitcher` y el botón de colapsar (en la barra lateral lo tapaba el indicador de desarrollo de Next).
+- Componentes (`components/admin/`): `AdminShell` (estado colapsado persistido en `localStorage` con `try/catch`, panel móvil), `AdminSidebar` + `adminNavigation` (lista de módulos con `href` o `null` si no existe aún), `AdminTopBar`, `AdminDashboard` (indicadores + `RecentPropertiesTable`).
+- Autorización: `protectedRoutes` indica si un rol superior también accede (`allowHigherRoles`); `/account` lo desactiva y el `proxy.ts` redirige al ADMIN a `/admin`. Backend: `withRole(rol, handler, { exact: true })` y `authorizer.requireRole(..., { exact: true })` para favoritos y consultas propias.
+- `useFavorites` y `useUserInquiries` no consultan para un ADMIN; `FavoriteButton` no se muestra a un ADMIN; `AccountControls` muestra a un ADMIN solo «Administración» y «Cerrar sesión».

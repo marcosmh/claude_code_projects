@@ -44,7 +44,9 @@ Puede realizar todas las acciones públicas y además:
 
 ### ADMIN
 
-Puede realizar las acciones anteriores y además:
+> Actualizado por la sección 38: el ADMIN usa solo el área de administración y no las funciones de usuario final (cuenta, favoritos, consultas propias).
+
+Puede:
 
 - acceder al panel administrativo;
 - crear propiedades;
@@ -654,7 +656,7 @@ Requisitos:
 
 - `/admin` es el panel de administración, exclusivo de ADMIN (el `proxy.ts` ya redirige a visitantes a `/login` y responde 403 a USER; el backend lo valida también).
 - Al iniciar sesión, un ADMIN va a `/admin` salvo que llegue desde una ruta protegida (`?next=`), que se respeta. Un USER sigue yendo a la página principal o a su `next`.
-- Un ADMIN conserva todas las funciones de USER (cuenta, favoritos, consultas) y el header le añade el enlace «Administración». Un USER no ve ese enlace.
+- ~~Un ADMIN conserva todas las funciones de USER~~ (reemplazado por la sección 38).
 - Indicadores (conteos reales desde PostgreSQL): total de propiedades, publicadas, publicadas en venta, publicadas en arriendo, usuarios y consultas.
 
 ## 36. CRUD REST de propiedades para ADMIN (Paso 23)
@@ -673,3 +675,17 @@ Requisitos:
 - Una propiedad eliminada deja de aparecer en el catálogo, el detalle, las ubicaciones, los favoritos y las consultas de los usuarios, y no cuenta en los indicadores del panel. Sus imágenes, favoritos y consultas se conservan en la base de datos (y en Cloudinary).
 - Para ADMIN una propiedad eliminada no existe: no se lista, y obtenerla, actualizarla o eliminarla de nuevo responde 404.
 - Restaurar propiedades queda fuera de este alcance.
+
+## 38. Área de administración independiente (extensión)
+
+> Solicitada por el usuario: dos experiencias claramente diferenciadas, la del usuario final y la del administrador.
+
+**Diseño**
+- Las rutas `/admin/**` usan un layout propio, sin el header ni el pie del portal: barra lateral izquierda colapsable (iconos solos cuando se colapsa; en móvil es un panel que se abre desde un botón), barra superior con el nombre de la persona y «Cerrar sesión», paleta corporativa propia con una variante por cada tema del selector (Claro, Oscuro y Smallville), selector de tema en la barra superior e iconografía de gestión. El botón de colapsar la barra lateral está en la barra superior.
+- Menú: Dashboard, Administrar usuarios, Administrar propiedades, Administrar consultas, Reportes y estadísticas, Configuración del sistema y Auditoría y logs. Solo el Dashboard existe hoy; los módulos aún no construidos aparecen deshabilitados con la etiqueta «Próximamente» y se activan al implementarse (Pasos 24, 29 y 30; los demás no están planificados).
+- El Dashboard muestra los indicadores y una tabla de propiedades recientes con filtro de estado.
+
+**Restricciones del rol ADMIN**
+- Un ADMIN no usa funciones de usuario final: `/account/**` lo redirige a `/admin`; la API de favoritos y de consultas propias responde 403 a un ADMIN; el header del portal no le muestra favoritos ni «Mi cuenta» (solo «Administración» y «Cerrar sesión») y las tarjetas no le muestran el corazón de favoritos.
+- Tras iniciar sesión (o cerrar sesión) el ADMIN va a `/admin` (y a `/login` al salir).
+- La API de identidad (`/api/auth/me`) sigue disponible para todos los roles.

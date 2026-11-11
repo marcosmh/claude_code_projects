@@ -7,9 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function AdminPage() {
-  return (
-    <main id="main-content" tabIndex={-1} className="flex-1 px-4 py-12 focus:outline-none sm:px-6">
-      <AdminDashboard />
-    </main>
-  );
+  return <AdminDashboard />;
 }

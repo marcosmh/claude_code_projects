@@ -1131,7 +1131,7 @@
     },
     {
       "name": "Consultas (contacto)",
-      "description": "POST /api/inquiries guarda la consulta en PostgreSQL (asociada al usuario si hay sesión). El correo por Web3Forms lo envía el navegador, no la API. Requiere haber ejecutado «Listar propiedades» (propertyId).",
+      "description": "POST /api/inquiries guarda la consulta en PostgreSQL (asociada al usuario si hay sesión). El correo por Web3Forms lo envía el navegador, no la API. Requiere haber ejecutado «Listar propiedades» (propertyId). «Mis consultas» y «Eliminar consulta propia» son solo para el rol USER: 401 sin sesión y 403 con sesión ADMIN.",
       "item": [
         {
           "name": "Enviar consulta",
@@ -1960,7 +1960,7 @@
     },
     {
       "name": "Favoritos (requiere sesión)",
-      "description": "Usan la cookie de sesión de la carpeta Autenticación (termina con una sesión iniciada). Si no hay sesión, responden 401.",
+      "description": "Solo para el rol USER. Usan la cookie de sesión de la carpeta Autenticación (inicia sesión como usuario@portal.mx). Sin sesión responden 401; con una sesión ADMIN responden 403 (el administrador no usa favoritos; ver «ADMIN sin funciones de usuario final»).",
       "item": [
         {
           "name": "Guardar propiedad",
@@ -2882,6 +2882,282 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Status 400\", function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "ADMIN sin funciones de usuario final (403)",
+      "description": "El rol ADMIN no usa favoritos ni consultas propias (spec §38): estos endpoints exigen exactamente USER. Ejecuta la carpeta en orden; el último paso restaura la sesión de usuario.",
+      "item": [
+        {
+          "name": "1. Login administrador",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Inicia sesión; la cookie queda en el cliente.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@portal.mx\",\n  \"password\": \"Admin1234!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "403 — listar favoritos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/favorites",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "favorites"
+              ]
+            },
+            "description": "ADMIN no puede usar favoritos."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 403\", function () { pm.response.to.have.status(403); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "403 — guardar favorito",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/favorites/{{propertyId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "favorites",
+                "{{propertyId}}"
+              ]
+            },
+            "description": "ADMIN no puede guardar favoritos."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 403\", function () { pm.response.to.have.status(403); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "403 — quitar favorito",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/favorites/{{propertyId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "favorites",
+                "{{propertyId}}"
+              ]
+            },
+            "description": "ADMIN no puede quitar favoritos."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 403\", function () { pm.response.to.have.status(403); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "403 — mis consultas",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/inquiries/mine",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "inquiries",
+                "mine"
+              ]
+            },
+            "description": "ADMIN no tiene consultas propias."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 403\", function () { pm.response.to.have.status(403); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "403 — eliminar consulta propia",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/inquiries/{{inquiryId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "inquiries",
+                "{{inquiryId}}"
+              ]
+            },
+            "description": "ADMIN no puede eliminar consultas propias."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 403\", function () { pm.response.to.have.status(403); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2. Login usuario (restaurar sesión)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Inicia sesión; la cookie queda en el cliente.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"usuario@portal.mx\",\n  \"password\": \"Usuario1234!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });"
                 ]
               }
             }

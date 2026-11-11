@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import type { ReactNode } from "react";
 import useSWR from "swr";
 import { adminDashboardUrl, fetchAdminDashboard } from "@portal/api-client";
 import type { AdminDashboardDto } from "@portal/shared-types";
+import { RecentPropertiesTable } from "./RecentPropertiesTable";
 
 type Indicator = { key: keyof AdminDashboardDto; label: string; icon: ReactNode };
 
@@ -98,26 +98,12 @@ export function AdminDashboard() {
     data && data.totalProperties > 0 ? data.publishedProperties / data.totalProperties : null;
 
   return (
-    <div className="mx-auto w-full max-w-5xl">
+    <div className="mx-auto w-full max-w-6xl">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-balance text-3xl font-bold">Panel de administración</h1>
+          <h1 className="text-balance text-3xl font-bold">Dashboard</h1>
           <p className="mt-2 text-foreground/70">Resumen general del portal.</p>
         </div>
-        <nav aria-label="Accesos rápidos" className="flex flex-wrap gap-2">
-          <Link
-            href="/properties"
-            className={`rounded-md border border-foreground/20 px-4 py-2 text-sm font-semibold transition-colors hover:bg-foreground/5 ${focusClassName}`}
-          >
-            Ver catálogo
-          </Link>
-          <Link
-            href="/account"
-            className={`rounded-md border border-foreground/20 px-4 py-2 text-sm font-semibold transition-colors hover:bg-foreground/5 ${focusClassName}`}
-          >
-            Mi cuenta
-          </Link>
-        </nav>
       </header>
 
       {error ? (
@@ -153,9 +139,11 @@ export function AdminDashboard() {
                     key={key}
                     className="rounded-xl border border-foreground/10 bg-surface p-5 shadow-sm"
                   >
-                    <div className="flex items-center justify-between gap-2 text-foreground/60">
+                    <div className="flex items-start justify-between gap-3">
                       <dt className="min-w-0 text-sm font-medium text-foreground/70">{label}</dt>
-                      {icon}
+                      <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-badge text-badge-foreground">
+                        {icon}
+                      </span>
                     </div>
                     <dd className="mt-3 text-3xl font-bold tabular-nums">
                       {data === undefined ? (
@@ -191,6 +179,8 @@ export function AdminDashboard() {
           ))}
         </div>
       )}
+
+      <RecentPropertiesTable />
     </div>
   );
 }

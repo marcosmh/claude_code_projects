@@ -19,7 +19,7 @@ type FavoriteButtonProps = {
 export function FavoriteButton({ propertyId, propertyTitle, className }: FavoriteButtonProps) {
   const router = useRouter();
   const currentPathname = usePathname();
-  const { isSignedIn, isFavorite, toggleFavorite } = useFavorites();
+  const { isSignedIn, isAdmin, isFavorite, toggleFavorite } = useFavorites();
   const [isSaving, setIsSaving] = useState(false);
   const [hasFailed, setHasFailed] = useState(false);
   const isSaved = isFavorite(propertyId);
@@ -39,6 +39,9 @@ export function FavoriteButton({ propertyId, propertyTitle, className }: Favorit
       setIsSaving(false);
     }
   };
+
+  // Un ADMIN no usa favoritos: el corazón no se muestra.
+  if (isAdmin) return null;
 
   return (
     <>

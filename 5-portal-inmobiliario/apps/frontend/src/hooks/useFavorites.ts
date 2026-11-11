@@ -10,7 +10,8 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
  */
 export function useFavorites() {
   const { user } = useCurrentUser();
-  const { data, mutate } = useSWR(user ? favoritesUrl : null, fetchFavorites, {
+  // Un ADMIN no usa favoritos (spec §38): no se consultan.
+  const { data, mutate } = useSWR(user?.role === "USER" ? favoritesUrl : null, fetchFavorites, {
     revalidateOnFocus: false,
     shouldRetryOnError: false,
   });
@@ -19,6 +20,7 @@ export function useFavorites() {
 
   return {
     isSignedIn: Boolean(user),
+    isAdmin: user?.role === "ADMIN",
     favorites: data,
     isFavorite: (propertyId: string) => favoriteIds.has(propertyId),
     /** Guarda o quita la propiedad y refresca la lista compartida. Lanza si la API falla. */

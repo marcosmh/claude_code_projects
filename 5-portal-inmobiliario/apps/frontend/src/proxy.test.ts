@@ -60,11 +60,18 @@ describe("proxy", () => {
     expect(response.headers.get("x-middleware-rewrite")).toBe("http://localhost:3000/forbidden");
   });
 
-  it("un ADMIN entra a /admin y también a /account", async () => {
+  it("un ADMIN entra a /admin", async () => {
     backendResponds(admin);
-    for (const path of ["/admin", "/account"]) {
+    const response = await proxy(request("/admin"));
+    expect(response.headers.get("x-middleware-next")).toBe("1");
+  });
+
+  it("un ADMIN en /account (usuario final) vuelve a /admin", async () => {
+    backendResponds(admin);
+    for (const path of ["/account", "/account/edit"]) {
       const response = await proxy(request(path));
-      expect(response.headers.get("x-middleware-next")).toBe("1");
+      expect(response.status).toBe(307);
+      expect(response.headers.get("location")).toBe("http://localhost:3000/admin");
     }
   });
 

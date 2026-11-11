@@ -1,22 +1,38 @@
-import type { UserRole } from "@portal/shared-types";
+import { hasRole, type UserRole } from "@portal/shared-types";
 
-export type RouteAccessRule = { prefix: string; role: UserRole };
+export type RouteAccessRule = {
+  prefix: string;
+  role: UserRole;
+  /** Si es false, solo ese rol exacto entra (un ADMIN no usa las páginas de usuario final). */
+  allowHigherRoles: boolean;
+};
 
 /**
  * Páginas que exigen sesión y un rol mínimo. El matcher de `src/proxy.ts` debe listar los mismos
  * prefijos (Next exige que sea una constante); una prueba comprueba que coinciden.
  */
 export const protectedRoutes: readonly RouteAccessRule[] = [
-  { prefix: "/account", role: "USER" },
-  { prefix: "/admin", role: "ADMIN" },
+  { prefix: "/account", role: "USER", allowHigherRoles: false },
+  { prefix: "/admin", role: "ADMIN", allowHigherRoles: true },
 ];
 
-/** Rol mínimo para abrir la ruta, o null si es pública. Coincide con el prefijo y sus subrutas. */
-export function findRequiredRole(pathname: string): UserRole | null {
-  const rule = protectedRoutes.find(
-    ({ prefix }) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+/** Regla de acceso de la ruta, o null si es pública. Coincide con el prefijo y sus subrutas. */
+export function findRouteRule(pathname: string): RouteAccessRule | null {
+  return (
+    protectedRoutes.find(
+      ({ prefix }) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+    ) ?? null
   );
-  return rule?.role ?? null;
+}
+
+/** Rol necesario para abrir la ruta, o null si es pública. */
+export function findRequiredRole(pathname: string): UserRole | null {
+  return findRouteRule(pathname)?.role ?? null;
+}
+
+/** true si el rol de la persona puede abrir una ruta con esa regla. */
+export function canAccessRoute(userRole: UserRole, rule: RouteAccessRule): boolean {
+  return rule.allowHigherRoles ? hasRole(userRole, rule.role) : userRole === rule.role;
 }
 
 /**

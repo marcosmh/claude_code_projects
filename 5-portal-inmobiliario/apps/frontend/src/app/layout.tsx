@@ -1,8 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
-import { Footer } from "@/components/layout/Footer";
-import { Header } from "@/components/layout/Header";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
@@ -47,16 +44,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         >
           Saltar al contenido
         </a>
-        {/* usePathname() es dato de runtime en rutas dinámicas (/properties/[id]). */}
-        <Suspense
-          fallback={
-            <div className="h-[65px] border-b border-foreground/10 bg-surface" aria-hidden="true" />
-          }
-        >
-          <Header />
-        </Suspense>
-        <div className="flex flex-1 flex-col">{children}</div>
-        <Footer />
+        {children}
       </body>
     </html>
   );

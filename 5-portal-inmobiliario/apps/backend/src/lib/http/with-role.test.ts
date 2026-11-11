@@ -17,6 +17,9 @@ const userResource = withRole("USER", async (_request, { user }) =>
 const adminResource = withRole("ADMIN", async (_request, { user }) =>
   Response.json({ recurso: "admin", correo: user.email }),
 );
+const exactUserResource = withRole("USER", async () => Response.json({ recurso: "solo-usuario" }), {
+  exact: true,
+});
 const failingResource = withRole("USER", async () => {
   throw new NotFoundError("Propiedad no encontrada");
 });
@@ -101,6 +104,15 @@ describe.skipIf(!databaseUrl)("autorización de Route Handlers con withRole", ()
     expect(adminResponse.status).toBe(200);
     expect(await adminResponse.json()).toMatchObject({ recurso: "admin" });
     expect((await userResource(requestWith(token), noParams)).status).toBe(200);
+  });
+
+  it("con { exact: true } un USER entra y un ADMIN recibe 403", async () => {
+    const user = await createSession();
+    const admin = await createSession({ role: "ADMIN" });
+
+    expect((await exactUserResource(requestWith(user.token), noParams)).status).toBe(200);
+    expect((await exactUserResource(requestWith(admin.token), noParams)).status).toBe(403);
+    expect((await exactUserResource(requestWith(), noParams)).status).toBe(401);
   });
 
   it("el cambio de rol en la base surte efecto sin volver a iniciar sesión", async () => {

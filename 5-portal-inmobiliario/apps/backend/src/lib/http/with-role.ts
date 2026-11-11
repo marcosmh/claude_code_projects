@@ -13,14 +13,17 @@ type AuthorizedHandler<Params> = (
  * Responde 401 sin sesión y 403 si el rol no alcanza; el handler recibe el usuario ya verificado.
  *
  *   export const GET = withRole("ADMIN", async (request, { user }) => Response.json(...));
+ *
+ * Con `{ exact: true }` solo entra ese rol (favoritos y consultas propias: un ADMIN recibe 403).
  */
 export function withRole<Params = Record<string, never>>(
   requiredRole: UserRole,
   handler: AuthorizedHandler<Params>,
+  options: { exact?: boolean } = {},
 ) {
   return async (request: NextRequest, context: { params: Promise<Params> }): Promise<Response> => {
     try {
-      const user = await authorizer.requireRole(request, requiredRole);
+      const user = await authorizer.requireRole(request, requiredRole, options);
       return await handler(request, { user, params: context.params });
     } catch (error) {
       return domainErrorResponse(error, `${request.method} ${new URL(request.url).pathname}`);

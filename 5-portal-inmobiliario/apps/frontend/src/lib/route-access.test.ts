@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { config } from "@/proxy";
 import {
   buildLoginPath,
+  canAccessRoute,
+  findRouteRule,
   findRequiredRole,
   protectedRoutes,
   resolvePostLoginPath,
@@ -80,5 +82,24 @@ describe("matcher del proxy", () => {
   it("cubre exactamente los prefijos protegidos", () => {
     const expected = protectedRoutes.map(({ prefix }) => `${prefix}/:path*`).sort();
     expect([...config.matcher].sort()).toEqual(expected);
+  });
+});
+
+describe("canAccessRoute (spec §38)", () => {
+  it("/account es solo de USER: un ADMIN no entra", () => {
+    const rule = findRouteRule("/account/edit");
+    expect(rule).not.toBeNull();
+    expect(canAccessRoute("USER", rule!)).toBe(true);
+    expect(canAccessRoute("ADMIN", rule!)).toBe(false);
+  });
+
+  it("/admin es de ADMIN: un USER no entra", () => {
+    const rule = findRouteRule("/admin");
+    expect(canAccessRoute("ADMIN", rule!)).toBe(true);
+    expect(canAccessRoute("USER", rule!)).toBe(false);
+  });
+
+  it("las rutas públicas no tienen regla", () => {
+    expect(findRouteRule("/properties")).toBeNull();
   });
 });

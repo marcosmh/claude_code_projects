@@ -317,3 +317,9 @@
   - Columna `deletedAt` y migración; `DELETE` marca en lugar de borrar.
   - Excluir eliminadas del catálogo, favoritos, consultas, indicadores y administración.
   - Pruebas, lint, typecheck y build pasan.
+
+- [x] **Extra L — Área de administración independiente**
+  - Layout propio con sidebar colapsable y paleta corporativa; menú de módulos (los no construidos, deshabilitados).
+  - Dashboard con indicadores y tabla de propiedades recientes.
+  - ADMIN sin funciones de usuario final (redirección de `/account`, 403 en favoritos y consultas propias, header sin cuenta ni favoritos).
+  - Pruebas, lint, typecheck y build pasan.

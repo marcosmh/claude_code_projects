@@ -9,6 +9,9 @@ const swr = vi.hoisted(() => ({
   isValidating: false,
 }));
 vi.mock("swr", () => ({ default: () => swr }));
+vi.mock("./RecentPropertiesTable", () => ({
+  RecentPropertiesTable: () => <section aria-label="Tabla de propiedades" />,
+}));
 vi.mock("@portal/api-client", () => ({
   adminDashboardUrl: "/api/admin/dashboard",
   fetchAdminDashboard: vi.fn(),
@@ -38,7 +41,7 @@ describe("AdminDashboard", () => {
     };
     render(<AdminDashboard />);
 
-    expect(screen.getByRole("heading", { level: 1, name: "Panel de administración" })).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1, name: "Dashboard" })).toBeTruthy();
     expect(screen.getAllByRole("term")).toHaveLength(6);
     expect(valueOf("Total de propiedades")?.textContent).toBe("12");
     expect(valueOf("Usuarios")?.textContent).toMatch(/1\D?500/);
@@ -75,12 +78,10 @@ describe("AdminDashboard", () => {
     expect(screen.getByRole("img", { name: /75\s?% de las propiedades/ })).toBeTruthy();
   });
 
-  it("ofrece accesos rápidos al catálogo y a la cuenta", () => {
+  it("no ofrece enlaces a funciones de usuario final", () => {
     render(<AdminDashboard />);
-    expect(screen.getByRole("link", { name: "Ver catálogo" }).getAttribute("href")).toBe(
-      "/properties",
-    );
-    expect(screen.getByRole("link", { name: "Mi cuenta" }).getAttribute("href")).toBe("/account");
+    expect(screen.queryByRole("link", { name: "Mi cuenta" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Ver catálogo" })).toBeNull();
   });
 
   it("permite reintentar cuando falla la carga", () => {
