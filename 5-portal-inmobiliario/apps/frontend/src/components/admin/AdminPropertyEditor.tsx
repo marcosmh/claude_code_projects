@@ -4,6 +4,7 @@ import Link from "next/link";
 import useSWR from "swr";
 import { ApiRequestError, fetchAdminProperty } from "@portal/api-client";
 import { AdminPageHeader } from "./AdminPageHeader";
+import { PropertyForm } from "./PropertyForm";
 
 type AdminPropertyEditorProps = {
   /** Id de la propiedad a editar; sin id es la página de creación. */
@@ -13,10 +14,7 @@ type AdminPropertyEditorProps = {
 const backLinkClassName =
   "font-semibold underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
 
-/**
- * Página de creación o edición de una propiedad. La edición carga la propiedad (cualquier estado);
- * el formulario de campos llega en el Paso 25.
- */
+/** Página de creación o edición de una propiedad; la edición carga la propiedad (cualquier estado). */
 export function AdminPropertyEditor({ propertyId }: AdminPropertyEditorProps) {
   const isEditing = propertyId !== undefined;
   const { data, error } = useSWR(
@@ -39,10 +37,7 @@ export function AdminPropertyEditor({ propertyId }: AdminPropertyEditorProps) {
           { label: title },
         ]}
       />
-      <section
-        aria-label={title}
-        className="mt-6 rounded-xl border border-foreground/10 bg-surface p-6 shadow-sm"
-      >
+      <div className="mt-6">
         {error ? (
           <p role="alert" className="text-sm">
             {isNotFound
@@ -57,19 +52,9 @@ export function AdminPropertyEditor({ propertyId }: AdminPropertyEditorProps) {
             Cargando propiedad…
           </p>
         ) : (
-          <div className="text-sm">
-            <p className="text-foreground/70">
-              El formulario de {isEditing ? "edición" : "creación"} estará disponible en el
-              siguiente paso del proyecto (Paso 25).
-            </p>
-            <p className="mt-4">
-              <Link href="/admin/properties" className={backLinkClassName}>
-                ← Volver al listado
-              </Link>
-            </p>
-          </div>
+          <PropertyForm key={data?.id ?? "new"} property={data} />
         )}
-      </section>
+      </div>
     </div>
   );
 }

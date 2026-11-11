@@ -702,3 +702,10 @@ Requisitos:
 - `/admin/properties`: lista paginada (10 por página) de propiedades de cualquier estado, con búsqueda por texto, filtro de estado (Todas, Publicadas, Borradores), enlace «Nueva propiedad», acción «Editar» y «Eliminar» con modal de confirmación (borrado lógico, spec §34).
 - `/admin/properties/new` y `/admin/properties/{id}/edit`: páginas con su cabecera, migas de pan y enlace de regreso al listado. La edición carga la propiedad (404 → mensaje «no encontrada»). El formulario de campos se construye en el Paso 25; hasta entonces ambas páginas lo anuncian.
 - El módulo «Administrar propiedades» del menú lateral queda activo.
+
+## 41. Formulario de propiedad (Paso 25)
+
+- `/admin/properties/new` y `/admin/properties/{id}/edit` muestran el mismo formulario (React Hook Form + Zod). Secciones: información general (título, descripción, operación, tipo), precio y moneda (MXN/USD), características (superficie útil y total, dormitorios, baños, estacionamientos, antigüedad), ubicación (dirección, colonia, ciudad, estado) y publicación (publicada, destacada).
+- Las reglas son las de `propertyInputSchema` (las mismas que valida la API); los campos numéricos opcionales pueden quedar vacíos. No hay latitud ni longitud manual (spec §6).
+- Crear usa `POST /api/admin/properties` y editar `PUT /api/admin/properties/{id}`; al guardar vuelve al listado. Si la API responde error se muestra el mensaje sin perder lo escrito.
+- Las imágenes y las etiquetas de características se administran en los Pasos 26–28, no en este formulario.

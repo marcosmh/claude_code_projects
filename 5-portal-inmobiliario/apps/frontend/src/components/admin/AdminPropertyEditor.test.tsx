@@ -26,6 +26,11 @@ vi.mock("@portal/api-client", () => {
 });
 
 import { ApiRequestError } from "@portal/api-client";
+vi.mock("./PropertyForm", () => ({
+  PropertyForm: ({ property }: { property?: { id: string } }) => (
+    <form aria-label={property ? "form-edicion" : "form-nuevo"} />
+  ),
+}));
 import { AdminPropertyEditor } from "./AdminPropertyEditor";
 
 afterEach(() => {
@@ -39,7 +44,7 @@ describe("AdminPropertyEditor", () => {
     render(<AdminPropertyEditor />);
     expect(swr.key).toBeNull();
     expect(screen.getByRole("heading", { level: 1, name: "Nueva propiedad" })).toBeTruthy();
-    expect(screen.getByRole("link", { name: "← Volver al listado" })).toBeTruthy();
+    expect(screen.getByRole("form", { name: "form-nuevo" })).toBeTruthy();
   });
 
   it("la edición carga la propiedad y muestra su título", () => {
@@ -48,6 +53,7 @@ describe("AdminPropertyEditor", () => {
     expect(swr.key).toEqual(["admin-property", "p1"]);
     expect(screen.getByRole("heading", { level: 1, name: "Editar propiedad" })).toBeTruthy();
     expect(screen.getByText("Casa en Polanco")).toBeTruthy();
+    expect(screen.getByRole("form", { name: "form-edicion" })).toBeTruthy();
   });
 
   it("indica que carga y que la propiedad no existe", () => {

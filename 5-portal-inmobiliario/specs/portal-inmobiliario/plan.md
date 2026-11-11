@@ -512,3 +512,9 @@ Decisiones que concretan la sección 10 de este plan:
 - Rutas: `app/admin/properties/page.tsx`, `new/page.tsx` y `[id]/edit/page.tsx` (`params` asíncrono dentro de `Suspense`).
 - Componentes (`components/admin/`): `AdminPropertiesList` (SWR con `buildAdminPropertiesUrl`, búsqueda, estado, paginación, `ConfirmDialog`), `AdminPageHeader` (título + migas) y `AdminPropertyEditor` (carga `fetchAdminProperty`; marcador del formulario del Paso 25).
 - `adminNavigation`: `properties.href = "/admin/properties"`.
+
+## 39. Formulario de propiedad (Paso 25)
+
+- `schemas/property-form.ts`: esquema del formulario con valores de texto (los `input` HTML) que se transforman a números y se validan con `propertyInputSchema` (`transform` + `pipe`); `propertyToFormValues` rellena la edición.
+- `components/admin/PropertyForm.tsx` (RHF + `zodResolver`) y `property-form-fields.tsx` (select, textarea y checkbox accesibles). `AdminPropertyEditor` lo monta (crear sin datos; editar con la propiedad cargada).
+- Al guardar se invalidan las cachés SWR de administración y se navega a `/admin/properties`.

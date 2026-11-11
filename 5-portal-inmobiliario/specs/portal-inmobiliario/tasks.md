@@ -161,7 +161,7 @@
   - `/admin/properties/{id}/edit`.
   - Pruebas, lint, typecheck y build pasan (el formulario de campos es el Paso 25).
 
-- [ ] **Paso 25 — Formulario de propiedad**
+- [x] **Paso 25 — Formulario de propiedad**
   - Título y descripción.
   - Operación y tipo.
   - Precio.
@@ -172,6 +172,8 @@
   - Características.
   - Publicada/destacada.
   - No agregar latitud/longitud manual.
+  - Mismo formulario para crear y editar; validación con `propertyInputSchema`. Las etiquetas de características se administran en el Paso 28.
+  - Pruebas, lint, typecheck y build pasan.
 
 - [ ] **Paso 26 — Subida a Cloudinary**
   - Configurar Cloudinary.

@@ -2,12 +2,15 @@ import { z } from "zod";
 import { propertyTypeValues } from "./property-list-query";
 import type { PropertyDetailDto, PropertySummaryDto } from "./property";
 
-const requiredText = (label: string, maximum: number) =>
-  z
-    .string({ error: `${label} es obligatorio` })
+const requiredText = (label: string, maximum: number) => {
+  // Concordancia de género: «La ciudad es obligatoria», «El título es obligatorio».
+  const required = `${label} es ${label.startsWith("La ") ? "obligatoria" : "obligatorio"}`;
+  return z
+    .string({ error: required })
     .trim()
-    .min(1, `${label} es obligatorio`)
+    .min(1, required)
     .max(maximum, `Máximo ${maximum} caracteres`);
+};
 
 /** Número opcional: ausente o null se guardan como null. */
 const optionalNumber = (schema: z.ZodNumber) =>

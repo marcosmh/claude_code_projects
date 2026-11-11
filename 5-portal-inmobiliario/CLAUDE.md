@@ -14,9 +14,9 @@ La especificación es la fuente de verdad del proyecto.
 
 ## Estado actual
 
-- Pasos **1–24** de `tasks.md` completados: fundamentos, API REST pública, landing, catálogo con tarjetas, búsqueda, filtros, ordenamiento, detalle, galería, Google Maps, contacto con Web3Forms y API REST de registro/login (`/api/auth/*`) y autorización USER/ADMIN (`withRole`, `proxy.ts`) cuenta de usuario (`/account`) consultas asociadas al usuario, favoritos (`/api/favorites`) su contador en el header (Extra F), el panel `/admin` y el CRUD REST de propiedades (`/api/admin/properties`, solo ADMIN) y la interfaz `/admin/properties` (listado, nueva y editar).
+- Pasos **1–25** de `tasks.md` completados: fundamentos, API REST pública, landing, catálogo con tarjetas, búsqueda, filtros, ordenamiento, detalle, galería, Google Maps, contacto con Web3Forms y API REST de registro/login (`/api/auth/*`) y autorización USER/ADMIN (`withRole`, `proxy.ts`) cuenta de usuario (`/account`) consultas asociadas al usuario, favoritos (`/api/favorites`) su contador en el header (Extra F), el panel `/admin` y el CRUD REST de propiedades (`/api/admin/properties`, solo ADMIN) y la interfaz `/admin/properties` (listado, nueva y editar) con su formulario.
 - Extras registrados fuera de la secuencia: **A** temas visuales (Claro, Oscuro, Smallville), **B** monorepo, **C** filtros en sidebar lateral colapsable y **D** interfaz de acceso (`/login`, `/register`, sesión en el header y cuentas de ejemplo del seed) **E** edición de la cuenta (`PATCH /api/auth/me` y página `/account/edit`), **K** borrado lógico de propiedades, **M** punto de entrada según rol (`/` → `/admin` o `/portal`) y **L** área de administración independiente (layout propio con sidebar, ADMIN sin funciones de usuario final: spec §38).
-- Siguiente tarea pendiente: **Paso 25 — Formulario de propiedad**. No avanzar sin que el usuario lo pida.
+- Siguiente tarea pendiente: **Paso 26 — Subida a Cloudinary**. No avanzar sin que el usuario lo pida.
 - Cualquier mejora que no esté en `tasks.md` se registra primero en `spec.md`/`plan.md` y como "Extra" en `tasks.md`.
 
 ## Flujo de desarrollo
