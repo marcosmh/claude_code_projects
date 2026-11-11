@@ -27,7 +27,7 @@ export function Header() {
           <span translate="no">Portal Inmobiliario</span>
         </Link>
 
-        <div className="hidden items-center gap-2 md:flex">
+        <div className="hidden items-center gap-2 lg:flex">
           <nav aria-label="Navegación principal">
             <ul className="flex items-center gap-1">
               {headerMenuItems.map((item) => {
@@ -59,7 +59,7 @@ export function Header() {
           aria-controls="mobile-navigation"
           aria-label={isMobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
           onClick={() => setIsMobileMenuOpen((wasOpen) => !wasOpen)}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-md hover:bg-foreground/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring md:hidden"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-md hover:bg-foreground/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring lg:hidden"
         >
           <svg
             aria-hidden="true"
@@ -83,7 +83,7 @@ export function Header() {
         id="mobile-navigation"
         aria-label="Navegación móvil"
         hidden={!isMobileMenuOpen}
-        className="border-t border-foreground/10 md:hidden"
+        className="border-t border-foreground/10 lg:hidden"
       >
         <ul className="flex flex-col px-4 py-2 sm:px-6">
           {headerMenuItems.map((item) => {

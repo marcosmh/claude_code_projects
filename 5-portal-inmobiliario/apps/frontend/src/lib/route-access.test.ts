@@ -4,6 +4,7 @@ import {
   buildLoginPath,
   findRequiredRole,
   protectedRoutes,
+  resolvePostLoginPath,
   sanitizeNextPath,
 } from "./route-access";
 
@@ -45,6 +46,22 @@ describe("sanitizeNextPath", () => {
     ]) {
       expect(sanitizeNextPath(unsafe)).toBe("/");
     }
+  });
+});
+
+describe("resolvePostLoginPath", () => {
+  it("lleva al ADMIN al panel cuando no pidió otra ruta", () => {
+    expect(resolvePostLoginPath("ADMIN", null)).toBe("/admin");
+    expect(resolvePostLoginPath("ADMIN", "//malo.example")).toBe("/admin");
+  });
+
+  it("respeta la ruta pedida, también para ADMIN", () => {
+    expect(resolvePostLoginPath("ADMIN", "/account")).toBe("/account");
+    expect(resolvePostLoginPath("USER", "/account")).toBe("/account");
+  });
+
+  it("lleva al USER a la página principal por defecto", () => {
+    expect(resolvePostLoginPath("USER", null)).toBe("/");
   });
 });
 

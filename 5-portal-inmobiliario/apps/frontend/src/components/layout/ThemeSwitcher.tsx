@@ -137,7 +137,7 @@ export function ThemeSwitcher({
         )}
       >
         <ThemeSwatch background={currentOption.swatch} />
-        <span className={showLabels ? undefined : "sr-only lg:not-sr-only"}>
+        <span className={showLabels ? undefined : "sr-only xl:not-sr-only"}>
           {currentOption.label}
         </span>
         <svg

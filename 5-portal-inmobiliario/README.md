@@ -16,7 +16,7 @@ Implementado (Pasos 1–17 de `specs/portal-inmobiliario/tasks.md`):
 - Página `/account` con información básica, enlace a `/account/edit` (edición de nombre, email y contraseña) y propiedades interesadas (tus favoritas) y consultadas (lista compacta de tus consultas, con opción de eliminar).
 - Favoritos (Paso 20): corazón en las tarjetas y en el detalle, y contador de favoritas en el header (Extra F); un visitante que lo pulsa va a iniciar sesión y vuelve a la página.
 
-Pendiente: **Paso 22 — Dashboard ADMIN** y el resto de usuarios y administración.
+Pendiente: **Paso 23 — CRUD REST de propiedades** y el resto de la administración.
 
 ## Estructura
 

@@ -10,7 +10,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 const session = vi.hoisted(() => ({
-  user: null as { id: string; name: string } | null | undefined,
+  user: null as { id: string; name: string; role?: string } | null | undefined,
   isLoading: false,
   setUser: vi.fn(),
 }));
@@ -81,6 +81,20 @@ describe("AccountControls con sesión", () => {
     expect(screen.getByRole("link", { name: /Ana Pérez/ }).getAttribute("href")).toBe("/account");
     expect(screen.getByRole("button", { name: "Cerrar sesión" })).toBeTruthy();
     expect(screen.queryByRole("link", { name: "Ingresar" })).toBeNull();
+  });
+
+  it("muestra el enlace Administración solo a un ADMIN", () => {
+    session.user = { id: "u1", name: "Ana", role: "USER" };
+    const { unmount } = render(<AccountControls variant="desktop" />);
+    expect(screen.queryByRole("link", { name: "Administración" })).toBeNull();
+    unmount();
+
+    session.user = { id: "a1", name: "Admin", role: "ADMIN" };
+    render(<AccountControls variant="desktop" />);
+    expect(screen.getByRole("link", { name: "Administración" }).getAttribute("href")).toBe(
+      "/admin",
+    );
+    expect(screen.getByRole("link", { name: /Mi cuenta/ }).getAttribute("href")).toBe("/account");
   });
 
   it("cierra la sesión, limpia el usuario y vuelve al inicio", async () => {

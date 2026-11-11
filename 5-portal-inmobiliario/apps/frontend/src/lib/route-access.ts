@@ -35,3 +35,12 @@ export function buildLoginPath(nextPath?: string): string {
   const safeNextPath = sanitizeNextPath(nextPath);
   return safeNextPath === "/" ? "/login" : `/login?next=${encodeURIComponent(safeNextPath)}`;
 }
+
+/**
+ * A dónde ir tras iniciar sesión: un ADMIN sin ruta pedida entra al panel de administración;
+ * en cualquier otro caso se respeta la ruta pedida (saneada) o la página principal.
+ */
+export function resolvePostLoginPath(role: UserRole, requestedPath: string | null): string {
+  const safePath = sanitizeNextPath(requestedPath);
+  return role === "ADMIN" && safePath === "/" ? "/admin" : safePath;
+}

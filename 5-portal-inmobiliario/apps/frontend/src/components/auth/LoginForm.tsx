@@ -7,7 +7,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { ApiRequestError, loginUser } from "@portal/api-client";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
-import { sanitizeNextPath } from "@/lib/route-access";
+import { resolvePostLoginPath, sanitizeNextPath } from "@/lib/route-access";
 import { loginFormSchema, type LoginFormData, type LoginFormValues } from "@/schemas/auth-forms";
 import { AlreadySignedIn } from "./AlreadySignedIn";
 import { AuthCard } from "./AuthCard";
@@ -18,7 +18,8 @@ const linkClassName =
 
 export function LoginForm() {
   const router = useRouter();
-  const nextPath = sanitizeNextPath(useSearchParams().get("next"));
+  const requestedPath = useSearchParams().get("next");
+  const nextPath = sanitizeNextPath(requestedPath);
   const { user, setUser } = useCurrentUser();
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const {
@@ -35,7 +36,7 @@ export function LoginForm() {
     try {
       const signedInUser = await loginUser(data);
       await setUser(signedInUser);
-      router.push(nextPath);
+      router.push(resolvePostLoginPath(signedInUser.role, requestedPath));
     } catch (error) {
       // 401 (credenciales) y 403 (cuenta desactivada) traen un mensaje claro de la API.
       const isClientError = error instanceof ApiRequestError && error.status < 500;

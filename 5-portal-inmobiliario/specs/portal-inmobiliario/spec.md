@@ -649,3 +649,10 @@ Requisitos:
 
 - Al pulsar la papelera de una consulta se abre un modal (en lugar del cuadro nativo del navegador) con el título de la propiedad, el aviso «Esta acción no se puede deshacer.» y dos acciones diferenciadas: «Sí, eliminar» (peligro) y «No, cancelar».
 - El foco inicia en «No, cancelar»; Esc, clic fuera o «No, cancelar» cierran sin borrar. Es accesible (`role="dialog"`, `aria-modal`, foco atrapado y devuelto al icono).
+
+## 35. Navegación por rol y panel de administración (Paso 22)
+
+- `/admin` es el panel de administración, exclusivo de ADMIN (el `proxy.ts` ya redirige a visitantes a `/login` y responde 403 a USER; el backend lo valida también).
+- Al iniciar sesión, un ADMIN va a `/admin` salvo que llegue desde una ruta protegida (`?next=`), que se respeta. Un USER sigue yendo a la página principal o a su `next`.
+- Un ADMIN conserva todas las funciones de USER (cuenta, favoritos, consultas) y el header le añade el enlace «Administración». Un USER no ve ese enlace.
+- Indicadores (conteos reales desde PostgreSQL): total de propiedades, publicadas, publicadas en venta, publicadas en arriendo, usuarios y consultas.

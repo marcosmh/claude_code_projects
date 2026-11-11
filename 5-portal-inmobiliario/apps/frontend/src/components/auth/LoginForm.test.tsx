@@ -138,4 +138,14 @@ describe("LoginForm", () => {
     await user.click(screen.getByRole("button", { name: "Ingresar" }));
     await waitFor(() => expect(push).toHaveBeenCalledWith("/"));
   });
+
+  it("lleva a un ADMIN al panel de administración si no venía de otra ruta", async () => {
+    loginUserMock.mockResolvedValue({ id: "a1", email: "a@x.mx", name: "Admin", role: "ADMIN" });
+    const user = userEvent.setup();
+    render(<LoginForm />);
+    await user.type(screen.getByLabelText("Email"), "a@x.mx");
+    await user.type(screen.getByLabelText("Contraseña"), "Admin1234!");
+    await user.click(screen.getByRole("button", { name: "Ingresar" }));
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/admin"));
+  });
 });

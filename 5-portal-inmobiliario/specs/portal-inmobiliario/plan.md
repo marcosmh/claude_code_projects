@@ -472,3 +472,10 @@ Decisiones que concretan la sección 10 de este plan:
 ## 32. Confirmación visual al eliminar (extensión)
 
 - Componente reutilizable `components/ui/ConfirmDialog.tsx` (`title`, `description`, `confirmLabel`, `cancelLabel`, `isBusy`, `onConfirm`, `onCancel`), sin dependencias nuevas. `InquiredSection` lo abre con la consulta seleccionada y elimina solo al confirmar.
+
+## 33. Panel de administración (Paso 22)
+
+- Contrato: `AdminDashboardDto { totalProperties, publishedProperties, propertiesForSale, propertiesForRent, users, inquiries }` en `@portal/shared-types`.
+- Backend: `GET /api/admin/dashboard` (`withRole("ADMIN")`, `Cache-Control: no-store`) → `adminService.getDashboard()` → `adminRepository.countIndicators()` (conteos Prisma en paralelo). Venta/arriendo cuentan propiedades publicadas.
+- api-client: `fetchAdminDashboard`. Frontend: `app/admin/page.tsx` + `AdminDashboard` (SWR, tarjetas de indicadores con estados de carga/error) y enlace «Administración» en `AccountControls` solo para ADMIN.
+- `resolvePostLoginPath(role, next)` en `lib/route-access.ts`: ADMIN sin `next` → `/admin`; en otro caso `sanitizeNextPath(next)`. `LoginForm` lo usa.

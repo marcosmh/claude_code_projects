@@ -141,10 +141,11 @@
 
 ## Fase 4 — Administración
 
-- [ ] **Paso 22 — Dashboard ADMIN**
-  - Crear `/admin`.
-  - Mostrar indicadores.
-  - Restringir a ADMIN.
+- [x] **Paso 22 — Dashboard ADMIN**
+  - [x] Crear `/admin`.
+  - [x] Mostrar indicadores.
+  - [x] Restringir a ADMIN.
+  - [x] ADMIN va a `/admin` al iniciar sesión y ve el enlace «Administración».
 
 - [ ] **Paso 23 — CRUD REST de propiedades**
   - Listar.

@@ -50,6 +50,19 @@ export function AccountControls({ variant, onNavigate }: AccountControlsProps) {
 
     return (
       <div className={cn("flex items-center gap-3", isMobile && "justify-between")}>
+        {user.role === "ADMIN" && (
+          <Link
+            href="/admin"
+            onClick={onNavigate}
+            aria-current={isNavigationItemActive(currentPathname, "/admin") ? "page" : undefined}
+            className={cn(
+              "whitespace-nowrap rounded-md px-2 py-1 text-sm font-semibold text-link hover:underline",
+              focusClassName,
+            )}
+          >
+            Administración
+          </Link>
+        )}
         {favorites !== undefined && (
           <Link
             href="/account"
@@ -82,7 +95,7 @@ export function AccountControls({ variant, onNavigate }: AccountControlsProps) {
           title={user.name}
           onClick={onNavigate}
           className={cn(
-            "max-w-40 truncate rounded-md text-sm font-medium hover:underline",
+            "max-w-24 truncate rounded-md xl:max-w-40 text-sm font-medium hover:underline",
             focusClassName,
           )}
         >
@@ -93,7 +106,7 @@ export function AccountControls({ variant, onNavigate }: AccountControlsProps) {
           type="button"
           onClick={signOut}
           className={cn(
-            "inline-flex items-center rounded-md border border-foreground/20 px-4 text-sm font-semibold hover:bg-foreground/5",
+            "inline-flex items-center whitespace-nowrap rounded-md border border-foreground/20 px-4 text-sm font-semibold hover:bg-foreground/5",
             isMobile ? "h-11" : "h-10",
             focusClassName,
           )}
