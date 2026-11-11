@@ -6,7 +6,8 @@ import { POST as register } from "@/app/api/auth/register/route";
 import { sessionCookieName } from "@/lib/auth/session";
 
 import { POST as createInquiry } from "./route";
-import { GET as listInquiredProperties } from "./properties/route";
+import { GET as listMine } from "./mine/route";
+import { DELETE as deleteInquiry } from "./[inquiryId]/route";
 
 const databaseUrl = process.env.DATABASE_URL;
 const testRunIdentifier = `inquiry-test-${Date.now()}`;
@@ -205,12 +206,28 @@ describe.skipIf(!databaseUrl)("API REST de consultas", () => {
       return token as string;
     }
 
-    const list = (token?: string) =>
-      listInquiredProperties(
-        new NextRequest("http://localhost/api/inquiries/properties", {
+    const listPage = (token?: string, search = "") =>
+      listMine(
+        new NextRequest(`http://localhost/api/inquiries/mine${search}`, {
           headers: token ? { cookie: `${sessionCookieName}=${token}` } : {},
         }),
         { params: Promise.resolve({}) },
+      );
+
+    const list = async (token?: string) => {
+      const response = await listPage(token);
+      return response.status === 200
+        ? Response.json(((await response.json()) as { items: unknown[] }).items)
+        : response;
+    };
+
+    const remove = (inquiryId: string, token?: string) =>
+      deleteInquiry(
+        new NextRequest(`http://localhost/api/inquiries/${inquiryId}`, {
+          method: "DELETE",
+          headers: token ? { cookie: `${sessionCookieName}=${token}` } : {},
+        }),
+        { params: Promise.resolve({ inquiryId }) },
       );
 
     const inquire = (propertyId: string, token?: string) =>
@@ -226,15 +243,24 @@ describe.skipIf(!databaseUrl)("API REST de consultas", () => {
       expect((await list()).status).toBe(401);
     });
 
-    it("empieza vacío y lista la propiedad consultada, sin repetirla", async () => {
+    it("empieza vacío y lista cada consulta con asunto y mensaje", async () => {
       const token = await newSession();
       expect(await (await list(token)).json()).toEqual([]);
 
       await inquire(publishedId, token);
       await inquire(publishedId, token);
 
-      const properties = (await (await list(token)).json()) as { id: string }[];
-      expect(properties.map((property) => property.id)).toEqual([publishedId]);
+      const inquiries = (await (await list(token)).json()) as {
+        propertyId: string;
+        subject: string;
+        message: string;
+      }[];
+      expect(inquiries).toHaveLength(2);
+      expect(inquiries[0]).toMatchObject({
+        propertyId: publishedId,
+        subject: `Nueva consulta: ${testRunIdentifier} publicada`,
+        message: validBody.message,
+      });
     });
 
     it("no incluye consultas de visitantes ni de otros usuarios", async () => {
@@ -253,6 +279,77 @@ describe.skipIf(!databaseUrl)("API REST de consultas", () => {
 
       expect(await (await list(token)).json()).toEqual([]);
       await client.property.update({ where: { id: publishedId }, data: { isPublished: true } });
+    });
+
+    it("elimina una consulta propia (204) y deja de listarse", async () => {
+      const token = await newSession();
+      await inquire(publishedId, token);
+      const [created] = (await (await list(token)).json()) as { id: string }[];
+
+      expect((await remove(created.id, token)).status).toBe(204);
+      expect(await (await list(token)).json()).toEqual([]);
+    });
+
+    it("responde 401 sin sesión y 404 con la consulta de otra persona o inexistente", async () => {
+      const token = await newSession();
+      const otherToken = await newSession();
+      await inquire(publishedId, token);
+      const [created] = (await (await list(token)).json()) as { id: string }[];
+
+      expect((await remove(created.id)).status).toBe(401);
+      expect((await remove(created.id, otherToken)).status).toBe(404);
+      expect((await remove("no-existe", token)).status).toBe(404);
+      expect(await (await list(token)).json()).toHaveLength(1);
+    });
+
+    it("pagina de 6 en 6 y cuenta el total", async () => {
+      const token = await newSession();
+      for (let index = 0; index < 8; index++) await inquire(publishedId, token);
+
+      const first = (await (await listPage(token)).json()) as {
+        items: unknown[];
+        total: number;
+        totalPages: number;
+      };
+      expect(first).toMatchObject({ total: 8, totalPages: 2 });
+      expect(first.items).toHaveLength(6);
+
+      const second = (await (await listPage(token, "?page=2")).json()) as { items: unknown[] };
+      expect(second.items).toHaveLength(2);
+    });
+
+    it("busca por título o mensaje, sin acentos, solo entre las consultas propias", async () => {
+      const token = await newSession();
+      const otherToken = await newSession();
+      await createInquiry(
+        buildRequest(
+          { ...validBody, propertyId: publishedId, message: "Quiero información de renta" },
+          false,
+          token,
+        ),
+      );
+      await inquire(publishedId, token);
+      await createInquiry(
+        buildRequest(
+          { ...validBody, propertyId: publishedId, message: "Quiero información de renta" },
+          false,
+          otherToken,
+        ),
+      );
+
+      const byMessage = (await (await listPage(token, "?q=INFORMACION")).json()) as {
+        total: number;
+      };
+      expect(byMessage.total).toBe(1);
+      const byTitle = (await (await listPage(token, "?q=publicada")).json()) as { total: number };
+      expect(byTitle.total).toBe(2);
+      const none = (await (await listPage(token, "?q=zzzz")).json()) as { total: number };
+      expect(none.total).toBe(0);
+    });
+
+    it("rechaza parámetros inválidos con 400", async () => {
+      const token = await newSession();
+      expect((await listPage(token, "?page=0")).status).toBe(400);
     });
   });
 });

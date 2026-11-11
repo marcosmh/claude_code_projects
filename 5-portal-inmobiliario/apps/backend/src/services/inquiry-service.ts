@@ -1,7 +1,13 @@
 import { NotFoundError } from "@/lib/errors";
 import type { InquiryRepository } from "@/repositories/inquiry-repository";
-import type { InquiryInput, InquiryResponseDto, PropertySummaryDto } from "@portal/shared-types";
-import { toSummaryDto } from "./property-service";
+import {
+  buildInquirySubject,
+  type InquiryInput,
+  type InquiryResponseDto,
+  type PaginatedResponse,
+  type UserInquiryListQuery,
+  type UserInquiryDto,
+} from "@portal/shared-types";
 
 /**
  * Registra consultas: valida que la propiedad esté publicada y las persiste en PostgreSQL.
@@ -31,10 +37,40 @@ export function createInquiryService(repository: InquiryRepository) {
       return { id: inquiry.id };
     },
 
-    /** Propiedades sobre las que la persona consultó («Propiedades consultadas»). */
-    async listInquiredProperties(userId: string): Promise<PropertySummaryDto[]> {
-      const records = await repository.listInquiredPropertiesByUser(userId);
-      return records.map(toSummaryDto);
+    /** Página de consultas enviadas por la persona («Propiedades consultadas»), la más reciente primero. */
+    async listUserInquiries(
+      userId: string,
+      query: UserInquiryListQuery,
+    ): Promise<PaginatedResponse<UserInquiryDto>> {
+      const { records, total } = await repository.findPageByUser({
+        userId,
+        skip: (query.page - 1) * query.pageSize,
+        take: query.pageSize,
+        ...(query.q !== undefined && query.q !== "" && { searchText: query.q }),
+      });
+      return {
+        items: records.map((record) => ({
+          id: record.id,
+          propertyId: record.property.id,
+          propertyTitle: record.property.title,
+          propertyImageUrl: record.property.images[0]?.url ?? null,
+          subject: buildInquirySubject(record.property.title),
+          message: record.message,
+          createdAt: record.createdAt.toISOString(),
+        })),
+        page: query.page,
+        pageSize: query.pageSize,
+        total,
+        totalPages: Math.ceil(total / query.pageSize),
+      };
+    },
+
+    /** Elimina una consulta propia; 404 si no existe o es de otra persona. */
+    async deleteUserInquiry(userId: string, inquiryId: string): Promise<void> {
+      const deleted = await repository.deleteByIdAndUser(inquiryId, userId);
+      if (!deleted) {
+        throw new NotFoundError("Consulta no encontrada");
+      }
     },
   };
 }

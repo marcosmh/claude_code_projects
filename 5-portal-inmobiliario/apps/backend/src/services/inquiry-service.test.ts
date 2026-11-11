@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { NotFoundError } from "@/lib/errors";
-import type { InquiryRepository } from "@/repositories/inquiry-repository";
-import type { PropertySummaryRecord } from "@/repositories/property-repository";
+import type { InquiryRepository, UserInquiryRecord } from "@/repositories/inquiry-repository";
 import { createInquiryService } from "./inquiry-service";
 
 const input = {
@@ -12,31 +11,30 @@ const input = {
   message: "Me interesa visitar la propiedad.",
 };
 
-function buildRecord(id: string): PropertySummaryRecord {
+function buildRecord(id: string, imageUrl: string | null = null): UserInquiryRecord {
   return {
     id,
-    title: `Propiedad ${id}`,
-    operation: "SALE",
-    type: "HOUSE",
-    price: { toNumber: () => 1500000 },
-    currency: "MXN",
-    usableArea: null,
-    bedrooms: null,
-    bathrooms: null,
-    commune: "Roma Norte",
-    city: "Ciudad de México",
-    region: "Ciudad de México",
-    isFeatured: false,
+    propertyId: `p-${id}`,
+    userId: "u1",
+    name: "Ana",
+    email: "ana@example.com",
+    phone: null,
+    message: `Mensaje ${id}`,
     createdAt: new Date("2026-01-01T00:00:00Z"),
-    images: [],
-  } as unknown as PropertySummaryRecord;
+    property: {
+      id: `p-${id}`,
+      title: `Propiedad ${id}`,
+      images: imageUrl ? [{ url: imageUrl }] : [],
+    },
+  } as UserInquiryRecord;
 }
 
 function buildRepository(overrides: Partial<InquiryRepository> = {}): InquiryRepository {
   return {
     findPublishedPropertyTitle: vi.fn().mockResolvedValue("Casa en Mérida"),
     create: vi.fn().mockResolvedValue({ id: "inq-1" }),
-    listInquiredPropertiesByUser: vi.fn().mockResolvedValue([]),
+    findPageByUser: vi.fn().mockResolvedValue({ records: [], total: 0 }),
+    deleteByIdAndUser: vi.fn().mockResolvedValue(true),
     ...overrides,
   };
 }
@@ -81,17 +79,59 @@ describe("submitInquiry", () => {
   });
 });
 
-describe("listInquiredProperties", () => {
-  it("devuelve las propiedades consultadas como resúmenes", async () => {
+describe("listUserInquiries", () => {
+  it("devuelve la página con título, imagen, asunto, mensaje y totales", async () => {
     const repository = buildRepository({
-      listInquiredPropertiesByUser: vi
-        .fn()
-        .mockResolvedValue([buildRecord("p2"), buildRecord("p1")]),
+      findPageByUser: vi.fn().mockResolvedValue({
+        records: [buildRecord("2", "https://img.example/2.jpg"), buildRecord("1")],
+        total: 8,
+      }),
     });
-    const properties = await createInquiryService(repository).listInquiredProperties("u1");
+    const result = await createInquiryService(repository).listUserInquiries("u1", {
+      page: 2,
+      pageSize: 6,
+      q: "casa",
+    });
 
-    expect(repository.listInquiredPropertiesByUser).toHaveBeenCalledWith("u1");
-    expect(properties.map((property) => property.id)).toEqual(["p2", "p1"]);
-    expect(properties[0]).toMatchObject({ price: 1500000, primaryImageUrl: null });
+    expect(repository.findPageByUser).toHaveBeenCalledWith({
+      userId: "u1",
+      skip: 6,
+      take: 6,
+      searchText: "casa",
+    });
+    expect(result).toMatchObject({ page: 2, pageSize: 6, total: 8, totalPages: 2 });
+    expect(result.items).toEqual([
+      {
+        id: "2",
+        propertyId: "p-2",
+        propertyTitle: "Propiedad 2",
+        propertyImageUrl: "https://img.example/2.jpg",
+        subject: "Nueva consulta: Propiedad 2",
+        message: "Mensaje 2",
+        createdAt: "2026-01-01T00:00:00.000Z",
+      },
+      expect.objectContaining({ id: "1", propertyImageUrl: null }),
+    ]);
+  });
+
+  it("no envía texto de búsqueda cuando viene vacío", async () => {
+    const repository = buildRepository();
+    await createInquiryService(repository).listUserInquiries("u1", { page: 1, pageSize: 6, q: "" });
+    expect(repository.findPageByUser).toHaveBeenCalledWith({ userId: "u1", skip: 0, take: 6 });
+  });
+});
+
+describe("deleteUserInquiry", () => {
+  it("elimina la consulta propia", async () => {
+    const repository = buildRepository();
+    await createInquiryService(repository).deleteUserInquiry("u1", "i1");
+    expect(repository.deleteByIdAndUser).toHaveBeenCalledWith("i1", "u1");
+  });
+
+  it("lanza NotFoundError si no existe o es de otra persona", async () => {
+    const repository = buildRepository({ deleteByIdAndUser: vi.fn().mockResolvedValue(false) });
+    await expect(
+      createInquiryService(repository).deleteUserInquiry("u1", "i1"),
+    ).rejects.toBeInstanceOf(NotFoundError);
   });
 });

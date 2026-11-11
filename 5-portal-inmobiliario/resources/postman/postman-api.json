@@ -1270,7 +1270,7 @@
           ]
         },
         {
-          "name": "Propiedades consultadas (requiere sesión)",
+          "name": "Mis consultas",
           "request": {
             "method": "GET",
             "header": [
@@ -1280,14 +1280,14 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/inquiries/properties",
+              "raw": "{{baseUrl}}/api/inquiries/mine?page=1&q=visita",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
                 "inquiries",
-                "properties"
+                "mine"
               ]
             },
             "description": "Usa la cookie de sesión de la carpeta Autenticación. Sin sesión responde 401."
@@ -1299,6 +1299,41 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Status 200 o 401 sin sesión\", function () { pm.expect(pm.response.code).to.be.oneOf([200, 401]); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Eliminar consulta propia",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/inquiries/{{inquiryId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "inquiries",
+                "{{inquiryId}}"
+              ]
+            },
+            "description": "Usa la cookie de sesión. 204 si es tuya; 404 si no existe o es de otra persona; 401 sin sesión."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 204, 401 o 404\", function () { pm.expect(pm.response.code).to.be.oneOf([204, 401, 404]); });"
                 ]
               }
             }

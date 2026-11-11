@@ -456,3 +456,15 @@ Decisiones que concretan la sección 10 de este plan:
 - Backend: `InquiryService` deja de recibir el notificador; `POST /api/inquiries` solo valida, persiste y devuelve `{ id }`. Se elimina `lib/integrations/web3forms.ts` y `WEB3FORMS_ACCESS_KEY` del backend.
 - Frontend: `lib/web3forms.ts` (`sendInquiryEmail`) hace el `POST` a `https://api.web3forms.com/submit` con `NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY` (asunto, nombre, email como respuesta, teléfono, mensaje, id y título de la propiedad). `ContactForm` guarda primero y luego envía; si el correo falla muestra «consulta guardada, aviso no enviado». Sin clave configurada no intenta enviar.
 - `GET /api/inquiries/properties` (`withRole("USER")`): propiedades publicadas sobre las que el usuario consultó, sin repetir, la consulta más reciente primero (`PropertySummaryDto[]`). Hook `useInquiredProperties` (SWR) y sección «Propiedades consultadas» en `/account` con las tarjetas; el formulario de contacto refresca esa lista al guardar.
+
+## 30. Lista compacta de consultas y eliminación (extensión)
+
+- Contrato (`@portal/shared-types`): `UserInquiryDto { id, propertyId, propertyTitle, propertyImageUrl, subject, message, createdAt }` y `buildInquirySubject(title)` (compartido por el correo y la lista).
+- Backend: `GET /api/inquiries/mine` (`withRole("USER")`, reemplaza a `/api/inquiries/properties`) devuelve las consultas del usuario, la más reciente primero; `DELETE /api/inquiries/[inquiryId]` (`withRole("USER")`, 204; 404 si no existe o pertenece a otro usuario). Repositorio: `listByUser` y `deleteByIdAndUser`.
+- api-client: `fetchUserInquiries`, `deleteInquiry`. Frontend: hook `useUserInquiries` (reemplaza a `useInquiredProperties`) y `InquiredSection` como lista compacta con eliminación y confirmación.
+
+## 31. Paginación y búsqueda de consultas (extensión)
+
+- `GET /api/inquiries/mine?page=1&pageSize=6&q=texto` (`withRole("USER")`) responde `PaginatedResponse<UserInquiryDto>`. Esquema Zod `userInquiryListQuerySchema` en `@portal/shared-types` (`page` ≥ 1, `pageSize` 1–50, por defecto 6, `q` ≤ 100 caracteres); parámetros inválidos → 400.
+- Repositorio: `findPageByUser({ userId, skip, take, searchText })` con `unaccent` + `ILIKE` sobre el título de la propiedad y el mensaje, siempre con `userId` y propiedad publicada en la condición; devuelve registros y total.
+- api-client: `fetchUserInquiries(query)` y `buildUserInquiriesUrl`. Hook `useUserInquiries({ page, searchText })` (SWR con la URL como clave, `keepPreviousData`). `InquiredSection` guarda página y búsqueda en estado local (con retardo al escribir) y muestra paginación propia con botones.

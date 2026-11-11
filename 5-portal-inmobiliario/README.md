@@ -13,7 +13,7 @@ Implementado (Pasos 1–17 de `specs/portal-inmobiliario/tasks.md`):
 - API REST de autenticación: registro, login, logout y usuario actual, con contraseñas en scrypt y sesión en cookie httpOnly.
 - Páginas `/login` y `/register`, y el header muestra «Ingresar» o el nombre con «Cerrar sesión» (Extra D).
 - Autorización USER/ADMIN: `withRole` protege endpoints y `proxy.ts` protege `/account` y `/admin` (403 en `/forbidden`, redirección a `/login?next=…`).
-- Página `/account` con información básica, enlace a `/account/edit` (edición de nombre, email y contraseña) y propiedades interesadas (tus favoritas) y consultadas (propiedades sobre las que enviaste una consulta).
+- Página `/account` con información básica, enlace a `/account/edit` (edición de nombre, email y contraseña) y propiedades interesadas (tus favoritas) y consultadas (lista compacta de tus consultas, con opción de eliminar).
 - Favoritos (Paso 20): corazón en las tarjetas y en el detalle, y contador de favoritas en el header (Extra F); un visitante que lo pulsa va a iniciar sesión y vuelve a la página.
 
 Pendiente: **Paso 22 — Dashboard ADMIN** y el resto de usuarios y administración.
@@ -118,7 +118,8 @@ Sirven en `/login`, en `resources/postman/postman-api.json` y en `resources/rest
 | GET | `/api/properties/{id}` | Detalle con imágenes y características |
 | GET | `/api/locations` | Ciudades y regiones disponibles |
 | POST | `/api/inquiries` | Registra una consulta en PostgreSQL (asociada al usuario si hay sesión); el correo lo envía el navegador con Web3Forms |
-| GET | `/api/inquiries/properties` | Propiedades sobre las que la sesión consultó (200; 401) |
+| GET | `/api/inquiries/mine` | Consultas de la sesión, paginadas de 6 en 6 (`page`, `pageSize`, `q` busca en título o mensaje) (200; 400; 401) |
+| DELETE | `/api/inquiries/{id}` | Elimina una consulta propia (204; 401; 404) |
 | POST | `/api/auth/register` | Crea una cuenta USER e inicia sesión (201; 409 si el email existe) |
 | POST | `/api/auth/login` | Inicia sesión (200; 401 credenciales incorrectas; 403 cuenta desactivada) |
 | POST | `/api/auth/logout` | Cierra la sesión borrando la cookie (204) |

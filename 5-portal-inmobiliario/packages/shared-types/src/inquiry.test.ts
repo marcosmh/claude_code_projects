@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { inquiryInputSchema } from "./inquiry";
+import { inquiryInputSchema, userInquiryListQuerySchema } from "./inquiry";
 
 const valid = {
   propertyId: "p1",
@@ -35,5 +35,17 @@ describe("inquiryInputSchema", () => {
     ["sin propiedad", { propertyId: " " }],
   ])("rechaza %s", (_label, override) => {
     expect(inquiryInputSchema.safeParse({ ...valid, ...override }).success).toBe(false);
+  });
+});
+
+describe("userInquiryListQuerySchema", () => {
+  it("usa página 1 y 6 por página por defecto", () => {
+    expect(userInquiryListQuerySchema.parse({})).toEqual({ page: 1, pageSize: 6 });
+  });
+
+  it("recorta la búsqueda y rechaza páginas inválidas", () => {
+    expect(userInquiryListQuerySchema.parse({ q: "  casa " }).q).toBe("casa");
+    expect(userInquiryListQuerySchema.safeParse({ page: "0" }).success).toBe(false);
+    expect(userInquiryListQuerySchema.safeParse({ q: "x".repeat(101) }).success).toBe(false);
   });
 });

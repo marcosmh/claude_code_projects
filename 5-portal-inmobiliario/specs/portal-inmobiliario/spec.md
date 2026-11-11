@@ -625,3 +625,20 @@ Requisitos:
 - Después, el navegador envía el aviso por correo a Web3Forms con la clave de acceso pública `NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY`. Esa clave solo permite enviar al correo con el que se registró en Web3Forms; es el uso previsto por el plan gratuito y constituye una excepción documentada a «no exponer secretos».
 - Si el correo no puede enviarse, la persona ve que su consulta quedó guardada pero que no se pudo enviar el aviso.
 - Las propiedades consultadas por el usuario aparecen en «Propiedades consultadas» de `/account`.
+
+## 32. Lista compacta de consultas y eliminación (extensión)
+
+> Solicitada por el usuario: con muchas consultas, las tarjetas dificultan localizar y eliminar registros.
+
+- «Propiedades consultadas» de `/account` deja de mostrar tarjetas y pasa a una lista compacta, un renglón por consulta enviada: miniatura (enlace al detalle de la propiedad), título de la propiedad, asunto del correo («Nueva consulta: título»), mensaje enviado, fecha y un botón «Eliminar».
+- Eliminar pide confirmación y borra solo la consulta de esa persona (404 si no existe o es de otro usuario). No afecta al correo ya enviado.
+- Cada consulta aparece por separado (ya no se agrupan por propiedad).
+
+## 33. Paginación y búsqueda de consultas (extensión)
+
+> Solicitada por el usuario: con muchas consultas, la lista de «Propiedades consultadas» debe paginarse y poder filtrarse.
+
+- La lista muestra 6 consultas por página, con controles Anterior/Siguiente e indicador «Página X de Y».
+- Un campo de búsqueda filtra por título de la propiedad o texto del mensaje (sin distinguir mayúsculas ni acentos). Al buscar se vuelve a la página 1.
+- La paginación y la búsqueda se resuelven en el backend y siempre sobre las consultas del usuario autenticado (`userId` de la sesión); nunca se ven ni gestionan consultas ajenas.
+- Si al eliminar queda vacía la página actual, se retrocede a la anterior.

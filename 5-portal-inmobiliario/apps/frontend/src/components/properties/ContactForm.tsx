@@ -9,7 +9,7 @@ import {
   type ContactFormValues,
 } from "@/schemas/contact-form";
 import { submitInquiry } from "@portal/api-client";
-import { useInquiredProperties } from "@/hooks/useInquiredProperties";
+import { useUserInquiries } from "@/hooks/useUserInquiries";
 import { sendInquiryEmail } from "@/lib/web3forms";
 
 type ContactFormProps = {
@@ -25,7 +25,7 @@ const fieldClassName =
 
 export function ContactForm({ propertyId, propertyTitle }: ContactFormProps) {
   const [submissionState, setSubmissionState] = useState<SubmissionState>("idle");
-  const { refresh: refreshInquiredProperties } = useInquiredProperties();
+  const { refresh: refreshUserInquiries } = useUserInquiries();
   const {
     register,
     handleSubmit,
@@ -48,7 +48,7 @@ export function ContactForm({ propertyId, propertyTitle }: ContactFormProps) {
     const wasEmailSent = await sendInquiryEmail({ propertyId, propertyTitle, ...data });
     reset();
     // Actualiza «Propiedades consultadas» de la cuenta si la persona tiene sesión.
-    void refreshInquiredProperties();
+    void refreshUserInquiries();
     setSubmissionState(wasEmailSent ? "success" : "saved");
   };
 

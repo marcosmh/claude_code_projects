@@ -297,3 +297,13 @@
   - Quitar el envío por Web3Forms del backend (403 en plan gratuito) y enviarlo desde el navegador tras guardar.
   - `GET /api/inquiries/properties` y sección «Propiedades consultadas» en `/account`.
   - Pruebas, lint, typecheck y build pasan.
+
+- [x] **Extra H — Lista compacta de consultas con eliminación**
+  - `GET /api/inquiries/mine` y `DELETE /api/inquiries/{id}` (solo del propio usuario).
+  - «Propiedades consultadas» como lista compacta: miniatura, título, asunto, mensaje y «Eliminar».
+  - Pruebas, lint, typecheck y build pasan.
+
+- [x] **Extra I — Paginación (6) y búsqueda de consultas**
+  - `GET /api/inquiries/mine` con `page`, `pageSize` y `q` (título o mensaje), solo del usuario autenticado.
+  - Buscador y paginación en «Propiedades consultadas».
+  - Pruebas, lint, typecheck y build pasan.

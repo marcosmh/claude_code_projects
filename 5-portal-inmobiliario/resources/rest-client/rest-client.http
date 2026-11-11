@@ -355,7 +355,10 @@ DELETE {{baseUrl}}/api/favorites/{{propertyId}}
 PUT {{baseUrl}}/api/favorites/no-existe
 Accept: application/json
 
-### Propiedades que consulté (200; requiere sesión, 401 sin ella)
-GET {{baseUrl}}/api/inquiries/properties
+### Consultas que envié (200; requiere sesión, 401 sin ella)
+GET {{baseUrl}}/api/inquiries/mine?page=1&q=visita
 Accept: application/json
+
+### Eliminar una consulta propia (204; 404 si no existe o es de otra persona)
+DELETE {{baseUrl}}/api/inquiries/{{inquiryId}}
 

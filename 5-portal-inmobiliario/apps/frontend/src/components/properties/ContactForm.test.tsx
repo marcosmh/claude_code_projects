@@ -11,8 +11,8 @@ const sendInquiryEmailMock = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/web3forms", () => ({ sendInquiryEmail: sendInquiryEmailMock }));
 
 const refreshMock = vi.hoisted(() => vi.fn());
-vi.mock("@/hooks/useInquiredProperties", () => ({
-  useInquiredProperties: () => ({ properties: undefined, refresh: refreshMock }),
+vi.mock("@/hooks/useUserInquiries", () => ({
+  useUserInquiries: () => ({ inquiries: undefined, refresh: refreshMock }),
 }));
 
 afterEach(() => {

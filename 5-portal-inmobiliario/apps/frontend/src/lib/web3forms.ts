@@ -1,3 +1,5 @@
+import { buildInquirySubject } from "@portal/shared-types";
+
 export type InquiryEmail = {
   name: string;
   email: string;
@@ -26,7 +28,7 @@ export async function sendInquiryEmail(inquiry: InquiryEmail): Promise<boolean> 
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify({
         access_key: accessKey,
-        subject: `Nueva consulta: ${inquiry.propertyTitle}`,
+        subject: buildInquirySubject(inquiry.propertyTitle),
         from_name: "Portal Inmobiliario",
         name: inquiry.name,
         email: inquiry.email,
