@@ -19,7 +19,7 @@ export function Header() {
     <header className="sticky top-0 z-40 border-b border-foreground/10 bg-surface/90 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link
-          href="/"
+          href="/portal"
           onClick={closeMobileMenu}
           className="flex items-center gap-2 text-lg font-bold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >

@@ -689,3 +689,10 @@ Requisitos:
 - Un ADMIN no usa funciones de usuario final: `/account/**` lo redirige a `/admin`; la API de favoritos y de consultas propias responde 403 a un ADMIN; el header del portal no le muestra favoritos ni «Mi cuenta» (solo «Administración» y «Cerrar sesión») y las tarjetas no le muestran el corazón de favoritos.
 - Tras iniciar sesión (o cerrar sesión) el ADMIN va a `/admin` (y a `/login` al salir).
 - La API de identidad (`/api/auth/me`) sigue disponible para todos los roles.
+
+## 39. Punto de entrada según rol (extensión)
+
+> Solicitada por el usuario.
+
+- Al abrir `/`: un ADMIN con sesión es redirigido a `/admin`; cualquier otra persona (USER o visitante sin sesión) es redirigida a `/portal`.
+- La página de inicio del portal (landing) vive en `/portal`. El enlace «Inicio», el logotipo y la salida de sesión de un USER apuntan a `/portal`.

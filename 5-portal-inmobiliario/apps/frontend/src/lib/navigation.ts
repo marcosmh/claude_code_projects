@@ -10,7 +10,7 @@ export const loginNavigationItem: NavigationItem = {
 };
 
 export const publicNavigationItems: readonly NavigationItem[] = [
-  { label: "Inicio", href: "/" },
+  { label: "Inicio", href: "/portal" },
   { label: "Propiedades", href: "/properties" },
   { label: "Comprar", href: "/properties?operation=SALE" },
   { label: "Arrendar", href: "/properties?operation=RENT" },
@@ -29,6 +29,5 @@ export const headerMenuItems: readonly NavigationItem[] = publicNavigationItems.
  */
 export function isNavigationItemActive(currentPathname: string, itemHref: string): boolean {
   if (itemHref.includes("?")) return false;
-  if (itemHref === "/") return currentPathname === "/";
   return currentPathname === itemHref || currentPathname.startsWith(`${itemHref}/`);
 }

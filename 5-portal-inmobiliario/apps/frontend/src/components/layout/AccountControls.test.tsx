@@ -104,7 +104,7 @@ describe("AccountControls con sesión", () => {
 
     await userEvent.setup().click(screen.getByRole("button", { name: "Cerrar sesión" }));
 
-    await waitFor(() => expect(navigation.push).toHaveBeenCalledWith("/"));
+    await waitFor(() => expect(navigation.push).toHaveBeenCalledWith("/portal"));
     expect(logoutUserMock).toHaveBeenCalledOnce();
     expect(session.setUser).toHaveBeenCalledWith(null);
     expect(onNavigate).toHaveBeenCalledOnce();

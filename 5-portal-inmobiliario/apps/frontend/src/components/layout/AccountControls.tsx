@@ -45,7 +45,7 @@ export function AccountControls({ variant, onNavigate }: AccountControlsProps) {
       }
       await setUser(null);
       onNavigate?.();
-      router.push(user.role === "ADMIN" ? "/login" : "/");
+      router.push(user.role === "ADMIN" ? "/login" : "/portal");
     };
 
     return (

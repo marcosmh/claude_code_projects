@@ -323,3 +323,7 @@
   - Dashboard con indicadores y tabla de propiedades recientes.
   - ADMIN sin funciones de usuario final (redirección de `/account`, 403 en favoritos y consultas propias, header sin cuenta ni favoritos).
   - Pruebas, lint, typecheck y build pasan.
+
+- [x] **Extra M — Punto de entrada según rol**
+  - `/` redirige a `/admin` (ADMIN) o a `/portal` (USER y visitantes); la landing vive en `/portal`.
+  - Pruebas, lint, typecheck y build pasan.

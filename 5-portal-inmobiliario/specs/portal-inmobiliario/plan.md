@@ -500,3 +500,9 @@ Decisiones que concretan la sección 10 de este plan:
 - Componentes (`components/admin/`): `AdminShell` (estado colapsado persistido en `localStorage` con `try/catch`, panel móvil), `AdminSidebar` + `adminNavigation` (lista de módulos con `href` o `null` si no existe aún), `AdminTopBar`, `AdminDashboard` (indicadores + `RecentPropertiesTable`).
 - Autorización: `protectedRoutes` indica si un rol superior también accede (`allowHigherRoles`); `/account` lo desactiva y el `proxy.ts` redirige al ADMIN a `/admin`. Backend: `withRole(rol, handler, { exact: true })` y `authorizer.requireRole(..., { exact: true })` para favoritos y consultas propias.
 - `useFavorites` y `useUserInquiries` no consultan para un ADMIN; `FavoriteButton` no se muestra a un ADMIN; `AccountControls` muestra a un ADMIN solo «Administración» y «Cerrar sesión».
+
+## 37. Punto de entrada según rol (extensión)
+
+- La landing pasa de `app/(portal)/page.tsx` a `app/(portal)/portal/page.tsx` (ruta `/portal`).
+- `proxy.ts` también intercepta `/`: consulta la sesión y redirige a `/admin` (ADMIN) o a `/portal` (resto). La decisión vive en `resolveEntryPath(role)` de `lib/route-access.ts`. El `matcher` agrega `"/"`.
+- `navigation.ts`, `Header` y `AccountControls` usan `/portal` como inicio.

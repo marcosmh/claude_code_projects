@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import type { AuthUserDto } from "@portal/shared-types";
-import { buildLoginPath, canAccessRoute, findRouteRule } from "@/lib/route-access";
+import { buildLoginPath, canAccessRoute, findRouteRule, resolveEntryPath } from "@/lib/route-access";
 
 const backendUrl = process.env.BACKEND_URL ?? "http://localhost:4000";
 const SESSION_CHECK_TIMEOUT_MS = 5_000;
@@ -25,6 +25,12 @@ async function fetchSessionUser(request: NextRequest): Promise<AuthUserDto | nul
  * barrera evita servir páginas privadas, pero los datos se protegen en cada endpoint de la API.
  */
 export async function proxy(request: NextRequest) {
+  // La raíz no es una página: envía al ADMIN a su panel y al resto a la landing del portal.
+  if (request.nextUrl.pathname === "/") {
+    const entryUser = await fetchSessionUser(request);
+    return NextResponse.redirect(new URL(resolveEntryPath(entryUser?.role ?? null), request.url));
+  }
+
   const rule = findRouteRule(request.nextUrl.pathname);
   if (rule === null) return NextResponse.next();
 
@@ -43,5 +49,5 @@ export async function proxy(request: NextRequest) {
 
 // Debe coincidir con `protectedRoutes` en src/lib/route-access.ts.
 export const config = {
-  matcher: ["/account/:path*", "/admin/:path*"],
+  matcher: ["/", "/account/:path*", "/admin/:path*"],
 };

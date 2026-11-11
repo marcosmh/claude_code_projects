@@ -4,6 +4,7 @@ import {
   buildLoginPath,
   canAccessRoute,
   findRouteRule,
+  resolveEntryPath,
   findRequiredRole,
   protectedRoutes,
   resolvePostLoginPath,
@@ -80,7 +81,7 @@ describe("buildLoginPath", () => {
 
 describe("matcher del proxy", () => {
   it("cubre exactamente los prefijos protegidos", () => {
-    const expected = protectedRoutes.map(({ prefix }) => `${prefix}/:path*`).sort();
+    const expected = ["/", ...protectedRoutes.map(({ prefix }) => `${prefix}/:path*`)].sort();
     expect([...config.matcher].sort()).toEqual(expected);
   });
 });
@@ -101,5 +102,13 @@ describe("canAccessRoute (spec §38)", () => {
 
   it("las rutas públicas no tienen regla", () => {
     expect(findRouteRule("/properties")).toBeNull();
+  });
+});
+
+describe("resolveEntryPath (spec §39)", () => {
+  it("ADMIN va a /admin y el resto, incluido el visitante, a /portal", () => {
+    expect(resolveEntryPath("ADMIN")).toBe("/admin");
+    expect(resolveEntryPath("USER")).toBe("/portal");
+    expect(resolveEntryPath(null)).toBe("/portal");
   });
 });

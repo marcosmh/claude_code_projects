@@ -60,3 +60,8 @@ export function resolvePostLoginPath(role: UserRole, requestedPath: string | nul
   const safePath = sanitizeNextPath(requestedPath);
   return role === "ADMIN" && safePath === "/" ? "/admin" : safePath;
 }
+
+/** Ruta de entrada al abrir `/`: el ADMIN va a su panel y cualquier otra persona al portal. */
+export function resolveEntryPath(role: UserRole | null): string {
+  return role === "ADMIN" ? "/admin" : "/portal";
+}

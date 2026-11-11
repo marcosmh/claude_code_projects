@@ -32,8 +32,8 @@ describe("headerMenuItems", () => {
 
 describe("isNavigationItemActive", () => {
   it("Inicio solo está activo en la raíz", () => {
-    expect(isNavigationItemActive("/", "/")).toBe(true);
-    expect(isNavigationItemActive("/properties", "/")).toBe(false);
+    expect(isNavigationItemActive("/portal", "/portal")).toBe(true);
+    expect(isNavigationItemActive("/properties", "/portal")).toBe(false);
   });
 
   it("Propiedades está activo en el catálogo y su detalle", () => {
