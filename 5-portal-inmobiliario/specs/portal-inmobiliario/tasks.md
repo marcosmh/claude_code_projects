@@ -155,10 +155,11 @@
   - [x] Eliminar.
   - [x] Proteger endpoints (solo ADMIN).
 
-- [ ] **Paso 24 — Interfaz de administración**
-  - `/admin/properties`.
+- [x] **Paso 24 — Interfaz de administración**
+  - `/admin/properties`: listado con búsqueda, filtro de estado, paginación y eliminación con confirmación.
   - `/admin/properties/new`.
   - `/admin/properties/{id}/edit`.
+  - Pruebas, lint, typecheck y build pasan (el formulario de campos es el Paso 25).
 
 - [ ] **Paso 25 — Formulario de propiedad**
   - Título y descripción.

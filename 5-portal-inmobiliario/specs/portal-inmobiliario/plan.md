@@ -506,3 +506,9 @@ Decisiones que concretan la sección 10 de este plan:
 - La landing pasa de `app/(portal)/page.tsx` a `app/(portal)/portal/page.tsx` (ruta `/portal`).
 - `proxy.ts` también intercepta `/`: consulta la sesión y redirige a `/admin` (ADMIN) o a `/portal` (resto). La decisión vive en `resolveEntryPath(role)` de `lib/route-access.ts`. El `matcher` agrega `"/"`.
 - `navigation.ts`, `Header` y `AccountControls` usan `/portal` como inicio.
+
+## 38. Interfaz de administración de propiedades (Paso 24)
+
+- Rutas: `app/admin/properties/page.tsx`, `new/page.tsx` y `[id]/edit/page.tsx` (`params` asíncrono dentro de `Suspense`).
+- Componentes (`components/admin/`): `AdminPropertiesList` (SWR con `buildAdminPropertiesUrl`, búsqueda, estado, paginación, `ConfirmDialog`), `AdminPageHeader` (título + migas) y `AdminPropertyEditor` (carga `fetchAdminProperty`; marcador del formulario del Paso 25).
+- `adminNavigation`: `properties.href = "/admin/properties"`.

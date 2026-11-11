@@ -20,7 +20,7 @@ Panel `/admin` con indicadores (Paso 22) y CRUD REST de propiedades solo para AD
 
 Área de administración independiente (Extra L): `/admin/**` tiene su propio layout (sidebar colapsable, paleta corporativa, menú de módulos; los aún no construidos aparecen como «Próximamente») y no comparte el header ni el pie del portal. Un ADMIN solo usa el área de administración: `/account` lo redirige a `/admin`, favoritos y consultas propias responden 403 y su header no muestra cuenta ni favoritos.
 
-Pendiente: **Paso 24 — Interfaz de administración** y el resto de la administración.
+Pendiente: **Paso 25 — Formulario de propiedad** y el resto de la administración.
 
 ## Estructura
 

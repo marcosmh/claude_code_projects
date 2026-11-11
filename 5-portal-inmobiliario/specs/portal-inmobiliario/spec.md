@@ -696,3 +696,9 @@ Requisitos:
 
 - Al abrir `/`: un ADMIN con sesión es redirigido a `/admin`; cualquier otra persona (USER o visitante sin sesión) es redirigida a `/portal`.
 - La página de inicio del portal (landing) vive en `/portal`. El enlace «Inicio», el logotipo y la salida de sesión de un USER apuntan a `/portal`.
+
+## 40. Interfaz de administración de propiedades (Paso 24)
+
+- `/admin/properties`: lista paginada (10 por página) de propiedades de cualquier estado, con búsqueda por texto, filtro de estado (Todas, Publicadas, Borradores), enlace «Nueva propiedad», acción «Editar» y «Eliminar» con modal de confirmación (borrado lógico, spec §34).
+- `/admin/properties/new` y `/admin/properties/{id}/edit`: páginas con su cabecera, migas de pan y enlace de regreso al listado. La edición carga la propiedad (404 → mensaje «no encontrada»). El formulario de campos se construye en el Paso 25; hasta entonces ambas páginas lo anuncian.
+- El módulo «Administrar propiedades» del menú lateral queda activo.

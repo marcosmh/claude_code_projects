@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { adminNavigation, isAdminItemActive } from "./admin-navigation";
 
 describe("adminNavigation", () => {
-  it("incluye los módulos pedidos, con el Dashboard primero y solo él habilitado hoy", () => {
+  it("incluye los módulos pedidos, con el Dashboard primero y solo Dashboard y Propiedades habilitados hoy", () => {
     expect(adminNavigation.map((item) => item.label)).toEqual([
       "Dashboard",
       "Administrar usuarios",
@@ -14,6 +14,7 @@ describe("adminNavigation", () => {
     ]);
     expect(adminNavigation.filter((item) => item.href !== null).map((item) => item.href)).toEqual([
       "/admin",
+      "/admin/properties",
     ]);
   });
 

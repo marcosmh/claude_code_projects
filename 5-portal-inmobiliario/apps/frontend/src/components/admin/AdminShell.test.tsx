@@ -40,17 +40,20 @@ describe("AdminShell: menú", () => {
     expect(screen.getByRole("main").id).toBe("main-content");
   });
 
-  it("marca el Dashboard como página actual y deshabilita los módulos aún no construidos", () => {
+  it("marca el Dashboard como página actual y deja habilitadas las propiedades y deshabilita los módulos aún no construidos", () => {
     renderShell();
     const dashboard = screen.getByRole("link", { name: /Dashboard/ });
     expect(dashboard.getAttribute("href")).toBe("/admin");
     expect(dashboard.getAttribute("aria-current")).toBe("page");
 
+    expect(screen.getByRole("link", { name: /Administrar propiedades/ }).getAttribute("href")).toBe(
+      "/admin/properties",
+    );
     for (const label of ["Administrar usuarios", "Auditoría y logs", "Reportes y estadísticas"]) {
       expect(screen.queryByRole("link", { name: new RegExp(label) })).toBeNull();
     }
-    expect(document.querySelectorAll('[aria-disabled="true"]')).toHaveLength(6);
-    expect(screen.getAllByText("Próximamente")).toHaveLength(6);
+    expect(document.querySelectorAll('[aria-disabled="true"]')).toHaveLength(5);
+    expect(screen.getAllByText("Próximamente")).toHaveLength(5);
   });
 
   it("no ofrece ninguna opción de usuario final", () => {

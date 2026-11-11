@@ -16,7 +16,7 @@ export type AdminNavigationItem = {
 export const adminNavigation: readonly AdminNavigationItem[] = [
   { id: "dashboard", label: "Dashboard", icon: "dashboard", href: "/admin" },
   { id: "users", label: "Administrar usuarios", icon: "users", href: null },
-  { id: "properties", label: "Administrar propiedades", icon: "properties", href: null },
+  { id: "properties", label: "Administrar propiedades", icon: "properties", href: "/admin/properties" },
   { id: "inquiries", label: "Administrar consultas", icon: "inquiries", href: null },
   { id: "reports", label: "Reportes y estadísticas", icon: "reports", href: null },
   { id: "settings", label: "Configuración del sistema", icon: "settings", href: null },
