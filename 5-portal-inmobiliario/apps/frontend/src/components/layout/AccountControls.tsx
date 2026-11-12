@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { logoutUser } from "@portal/api-client";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useFlash } from "@/hooks/useFlash";
 import { useFavorites } from "@/hooks/useFavorites";
 import { cn } from "@/lib/cn";
 import { isNavigationItemActive, loginNavigationItem } from "@/lib/navigation";
@@ -22,6 +23,7 @@ export function AccountControls({ variant, onNavigate }: AccountControlsProps) {
   const router = useRouter();
   const currentPathname = usePathname();
   const { user, isLoading, setUser } = useCurrentUser();
+  const flash = useFlash();
   const { favorites } = useFavorites();
   const isMobile = variant === "mobile";
 
@@ -44,6 +46,7 @@ export function AccountControls({ variant, onNavigate }: AccountControlsProps) {
         return;
       }
       await setUser(null);
+      flash.success("Cerraste sesión.");
       onNavigate?.();
       router.push(user.role === "ADMIN" ? "/login" : "/portal");
     };

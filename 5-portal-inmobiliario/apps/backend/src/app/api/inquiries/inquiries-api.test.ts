@@ -19,11 +19,17 @@ const validBody = {
   message: "Me interesa visitar la propiedad este fin de semana.",
 };
 
+let requestCounter = 0;
+
+/** Cada petición simula una IP distinta para no agotar el rate limit por IP. */
+const uniqueIp = () => `10.1.${Math.floor(requestCounter / 250)}.${++requestCounter % 250}`;
+
 function buildRequest(body: unknown, raw = false, token?: string): NextRequest {
   return new NextRequest("http://localhost/api/inquiries", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      "x-forwarded-for": uniqueIp(),
       ...(token ? { cookie: `${sessionCookieName}=${token}` } : {}),
     },
     body: raw ? (body as string) : JSON.stringify(body),
@@ -365,5 +371,26 @@ describe.skipIf(!databaseUrl)("API REST de consultas", () => {
       const token = await newSession();
       expect((await listPage(token, "?page=0")).status).toBe(400);
     });
+  });
+});
+
+describe("rate limit de POST /api/inquiries", () => {
+  it("responde 429 con Retry-After tras 10 envíos por minuto desde una misma IP", async () => {
+    const statuses: number[] = [];
+    let retryAfter: string | null = null;
+    for (let attempt = 1; attempt <= 11; attempt += 1) {
+      const response = await createInquiry(
+        new NextRequest("http://localhost/api/inquiries", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-forwarded-for": "203.0.113.5" },
+          body: "{}",
+        }),
+      );
+      statuses.push(response.status);
+      retryAfter = response.headers.get("retry-after");
+    }
+    expect(statuses.slice(0, 10).every((status) => status === 400)).toBe(true);
+    expect(statuses[10]).toBe(429);
+    expect(Number(retryAfter)).toBeGreaterThan(0);
   });
 });

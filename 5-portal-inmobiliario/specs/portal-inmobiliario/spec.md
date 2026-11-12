@@ -813,7 +813,7 @@ Revisión por área, con lo verificado y lo corregido:
 - **Cloudinary.** Firma de subida y borrado solo en el backend, con el secreto fuera del navegador; el cargador del frontend (`res.cloudinary.com`) solo compone URLs públicas de lectura.
 - **Web3Forms.** La clave pública es pública por diseño (§31) y se usa solo para el aviso por correo; la consulta se valida y guarda siempre en el backend.
 - **Cabeceras.** Nuevo: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY` y `Referrer-Policy` en el frontend y en la API, más `Permissions-Policy` (sin cámara, micrófono, geolocalización ni pagos) en las páginas. No se define una `Content-Security-Policy` estricta porque Next.js inyecta scripts en línea y se cargan Google Maps, Cloudinary y Web3Forms.
-- **Riesgos residuales (fuera del alcance actual):** no hay límite de intentos de inicio de sesión (conviene un limitador compartido, p. ej. en el borde o con Redis, al desplegar con varias instancias), y el registro revela si un email ya existe (409).
+- **Riesgos residuales (fuera del alcance actual):** el límite de intentos de login y el rate limit (§56) viven en memoria de cada instancia (conviene un almacén compartido, p. ej. Redis, al desplegar con varias), y el registro revela si un email ya existe (409).
 
 ## 54. QA integral (Paso 35)
 
@@ -835,3 +835,17 @@ Las reglas de arquitectura de `CLAUDE.md` se verifican con una prueba automátic
 - **Capas:** los Route Handlers no importan repositorios ni Prisma; los servicios no acceden a la base de datos.
 - **Permisos en el backend:** todo handler de `/api/admin/**` usa `withRole("ADMIN")`; favoritos y consultas del usuario usan `withRole("USER")`; las rutas sin `withRole` son exactamente las públicas previstas (login, logout, register, `GET /auth/me`, crear consulta, ubicaciones, propiedades).
 - **Integraciones y secretos:** Cloudinary (con secreto) solo en `lib/cloudinary/` del backend; Web3Forms y Google Maps solo en el frontend con claves públicas; ninguna variable `NEXT_PUBLIC_*` contiene secretos y el backend no las usa.
+
+## 56. Límite de intentos y rate limit (Extra Q)
+
+- **Inicio de sesión:** tras **5 intentos fallidos** (401) para un mismo email, `POST /api/auth/login` responde **429** `{ message, status }` con cabecera `Retry-After` durante **15 minutos**, incluso si la contraseña es correcta. Un inicio de sesión correcto reinicia el contador. El mensaje no revela si el email existe (se cuenta igual con emails inexistentes).
+- **Rate limit por IP:** `POST /api/auth/login` y `POST /api/auth/register` aceptan como máximo **30 peticiones por minuto** por IP y `POST /api/inquiries` **10 por minuto**; el exceso responde 429 con `Retry-After`. La IP se toma de `x-forwarded-for` (primer valor) y, sin ella, se agrupa como «desconocida».
+- **Implementación:** limitador en memoria del proceso (`apps/backend/src/lib/security/`), con limpieza de entradas vencidas. Limitación conocida: con varias instancias cada una cuenta por separado; para producción conviene un almacén compartido (p. ej. Redis).
+- **Interfaz:** el formulario de acceso muestra el mensaje de 429 (y un mensaje flash de error).
+
+## 57. Mensajes flash (Extra R)
+
+- Mensajes breves (éxito, error, información) en la **parte superior de la pantalla**, sobre el header del portal y de la administración, visibles en todas las rutas porque viven en el layout raíz y sobreviven a la navegación.
+- **Desaparecen solos a los 5 segundos** y tienen botón «Cerrar» (accesible por teclado). Se anuncian a lector de pantalla (`role="status"` para éxito/info, `role="alert"` para error) y respetan `prefers-reduced-motion`. Se apilan (máximo 3 visibles) y funcionan en los tres temas.
+- Se muestran al: iniciar y cerrar sesión; crear usuario, cambiar rol y activar/desactivar usuarios; crear, editar y eliminar propiedades; y crear características o asignarlas a una propiedad. Los errores de esas acciones también se muestran como flash.
+- La edición de nombre de una característica existente no forma parte del producto actual (no hay endpoint de renombrado); queda fuera de este Extra.

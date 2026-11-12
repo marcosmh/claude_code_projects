@@ -2,10 +2,17 @@ import { NextResponse, type NextRequest } from "next/server";
 import { setSessionCookie } from "@/lib/auth/session-cookie";
 import { domainErrorResponse } from "@/lib/http/domain-error-response";
 import { parseJsonBody } from "@/lib/http/parse-body";
+import { limitAuthRequests } from "@/lib/security/limiters";
 import { authService } from "@/services/services";
 import { registerInputSchema } from "@portal/shared-types";
 
 export async function POST(request: NextRequest) {
+  try {
+    limitAuthRequests(request);
+  } catch (error) {
+    return domainErrorResponse(error, "POST /api/auth/register");
+  }
+
   const { data, response } = await parseJsonBody(
     request,
     registerInputSchema,

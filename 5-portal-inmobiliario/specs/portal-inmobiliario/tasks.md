@@ -364,3 +364,12 @@
   - `POST /api/admin/users` (USER o ADMIN, 201/400/409, solo ADMIN).
   - Botón «Nuevo usuario» y formulario en `/admin/users/new`.
   - Pruebas, lint, typecheck y build pasan.
+
+- [x] **Extra Q — Límite de intentos de login y rate limit**
+  - Bloqueo tras 5 intentos fallidos por email (429, 15 min, `Retry-After`) y rate limit por IP en login, registro y consultas.
+  - Pruebas, lint, typecheck y build pasan.
+
+- [x] **Extra R — Mensajes flash**
+  - Mensajes en la parte superior, con cierre manual y cierre automático a los 5 s.
+  - Login/logout, administración de usuarios, de propiedades y de características.
+  - Pruebas, lint, typecheck y build pasan.

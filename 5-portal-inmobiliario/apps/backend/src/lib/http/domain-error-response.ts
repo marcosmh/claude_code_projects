@@ -5,6 +5,7 @@ import {
   NotFoundError,
   PayloadTooLargeError,
   ServiceUnavailableError,
+  TooManyRequestsError,
   UnauthorizedError,
   UnsupportedMediaTypeError,
   ValidationError,
@@ -22,6 +23,11 @@ export function domainErrorResponse(error: unknown, routeLabel: string): Respons
   if (error instanceof UnsupportedMediaTypeError) return errorResponse(error.message, 415);
   if (error instanceof BadGatewayError) return errorResponse(error.message, 502);
   if (error instanceof ServiceUnavailableError) return errorResponse(error.message, 503);
+  if (error instanceof TooManyRequestsError) {
+    const response = errorResponse(error.message, 429);
+    response.headers.set("Retry-After", String(error.retryAfterSeconds));
+    return response;
+  }
   console.error(`${routeLabel} falló:`, error);
   return errorResponse("Error interno del servidor", 500);
 }

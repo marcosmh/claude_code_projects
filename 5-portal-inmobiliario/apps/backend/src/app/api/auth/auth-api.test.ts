@@ -12,10 +12,16 @@ const databaseUrl = process.env.DATABASE_URL;
 const emailPrefix = `auth-test-${Date.now()}`;
 const password = "clave-segura-1";
 
-function postRequest(path: string, body: unknown, raw = false): NextRequest {
+let requestCounter = 0;
+
+/** Cada petición simula una IP distinta, salvo que la prueba fije una, para no agotar el rate limit. */
+function postRequest(path: string, body: unknown, raw = false, ip?: string): NextRequest {
   return new NextRequest(`http://localhost/api/auth/${path}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "x-forwarded-for": ip ?? `10.0.${Math.floor(requestCounter / 250)}.${++requestCounter % 250}`,
+    },
     body: raw ? (body as string) : JSON.stringify(body),
   });
 }
@@ -176,6 +182,44 @@ describe.skipIf(!databaseUrl)("API REST de autenticación", () => {
 
       expect(response.status).toBe(403);
       expect(sessionCookie(response)).toBeUndefined();
+    });
+
+    it("bloquea con 429 tras 5 intentos fallidos, incluso con la contraseña correcta", async () => {
+      const { email } = await registerUser();
+      for (let attempt = 1; attempt <= 5; attempt += 1) {
+        const failed = await login(postRequest("login", { email, password: "incorrecta-1" }));
+        expect(failed.status).toBe(401);
+      }
+
+      const blocked = await login(postRequest("login", { email, password }));
+      const body = (await blocked.json()) as { message: string; status: number };
+
+      expect(blocked.status).toBe(429);
+      expect(body.status).toBe(429);
+      expect(Number(blocked.headers.get("retry-after"))).toBeGreaterThan(0);
+      expect(sessionCookie(blocked)).toBeUndefined();
+    });
+
+    it("un inicio de sesión correcto reinicia el contador de intentos fallidos", async () => {
+      const { email } = await registerUser();
+      for (let attempt = 1; attempt <= 4; attempt += 1) {
+        await login(postRequest("login", { email, password: "incorrecta-1" }));
+      }
+      expect((await login(postRequest("login", { email, password }))).status).toBe(200);
+      for (let attempt = 1; attempt <= 4; attempt += 1) {
+        await login(postRequest("login", { email, password: "incorrecta-1" }));
+      }
+      expect((await login(postRequest("login", { email, password }))).status).toBe(200);
+    });
+
+    it("limita con 429 las peticiones de una misma IP", async () => {
+      const ip = "203.0.113.77";
+      let lastStatus = 0;
+      for (let attempt = 1; attempt <= 31; attempt += 1) {
+        lastStatus = (await login(postRequest("login", { email: "x", password: "" }, false, ip)))
+          .status;
+      }
+      expect(lastStatus).toBe(429);
     });
 
     it("responde 400 con datos inválidos o sin JSON", async () => {

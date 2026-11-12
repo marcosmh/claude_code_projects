@@ -10,6 +10,7 @@ import {
   setPropertyFeatures,
 } from "@portal/api-client";
 import type { FeatureDto } from "@portal/shared-types";
+import { useFlash } from "@/hooks/useFlash";
 
 type PropertyFeaturesManagerProps = {
   propertyId: string;
@@ -42,6 +43,7 @@ export function PropertyFeaturesManager({
   const [isBusy, setIsBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [status, setStatus] = useState("");
+  const flash = useFlash();
 
   const selectedIds = features.map((feature) => feature.id);
 
@@ -49,6 +51,7 @@ export function PropertyFeaturesManager({
     await setPropertyFeatures(propertyId, featureIds);
     await onChanged();
     setStatus(success);
+    flash.success(success);
   };
 
   const toggle = async (featureId: string, isChecked: boolean) => {
@@ -60,7 +63,9 @@ export function PropertyFeaturesManager({
         : selectedIds.filter((id) => id !== featureId);
       await save(next, "Características actualizadas.");
     } catch (error) {
-      setMessage(describeError(error, "No pudimos guardar las características."));
+      const text = describeError(error, "No pudimos guardar las características.");
+      setMessage(text);
+      flash.error(text);
     } finally {
       setIsBusy(false);
     }
@@ -81,7 +86,9 @@ export function PropertyFeaturesManager({
       await save([...selectedIds, created.id], `Se agregó «${created.name}».`);
       setNewName("");
     } catch (error) {
-      setMessage(describeError(error, "No pudimos crear la característica."));
+      const text = describeError(error, "No pudimos crear la característica.");
+      setMessage(text);
+      flash.error(text);
     } finally {
       setIsBusy(false);
     }

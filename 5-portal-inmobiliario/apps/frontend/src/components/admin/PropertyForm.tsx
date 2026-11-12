@@ -22,6 +22,7 @@ import {
   type PropertyFormValues,
 } from "@/schemas/property-form";
 import { CheckboxField, SelectField, TextAreaField, TextField } from "./property-form-fields";
+import { useFlash } from "@/hooks/useFlash";
 
 type PropertyFormProps = {
   /** Propiedad a editar; sin ella el formulario crea una nueva. */
@@ -61,6 +62,7 @@ export function PropertyForm({ property }: PropertyFormProps) {
   const router = useRouter();
   const { mutate } = useSWRConfig();
   const [submissionError, setSubmissionError] = useState<string | null>(null);
+  const flash = useFlash();
   const {
     register,
     handleSubmit,
@@ -78,9 +80,11 @@ export function PropertyForm({ property }: PropertyFormProps) {
       else createdPropertyId = (await createAdminProperty(data)).id;
     } catch (error) {
       const isClientError = error instanceof ApiRequestError && error.status < 500;
-      setSubmissionError(
-        isClientError ? error.message : "No pudimos guardar la propiedad. Inténtalo de nuevo.",
-      );
+      const message = isClientError
+        ? error.message
+        : "No pudimos guardar la propiedad. Inténtalo de nuevo.";
+      setSubmissionError(message);
+      flash.error(message);
       return;
     }
     // El listado, el dashboard y la ficha en edición deben mostrar lo guardado.
@@ -89,6 +93,7 @@ export function PropertyForm({ property }: PropertyFormProps) {
         (typeof key === "string" && key.startsWith(adminPropertiesUrl)) ||
         (Array.isArray(key) && key[0] === "admin-property"),
     );
+    flash.success(property ? "Propiedad actualizada." : "Propiedad creada.");
     // Una propiedad nueva se abre en edición para poder agregarle imágenes.
     router.push(
       createdPropertyId

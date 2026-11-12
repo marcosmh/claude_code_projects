@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { logoutUser } from "@portal/api-client";
 import { ThemeSwitcher } from "@/components/layout/ThemeSwitcher";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useFlash } from "@/hooks/useFlash";
 
 type AdminTopBarProps = {
   /** Solo escritorio: la barra lateral muestra únicamente los iconos. */
@@ -25,6 +26,7 @@ export function AdminTopBar({
 }: AdminTopBarProps) {
   const router = useRouter();
   const { user, setUser } = useCurrentUser();
+  const flash = useFlash();
 
   const signOut = async () => {
     try {
@@ -34,6 +36,7 @@ export function AdminTopBar({
       return;
     }
     await setUser(null);
+    flash.success("Cerraste sesión.");
     router.push("/login");
   };
 

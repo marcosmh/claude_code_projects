@@ -21,6 +21,7 @@ import {
   toAdminQuery,
   type AdminAdvancedFilters,
 } from "./AdminPropertyFilters";
+import { useFlash } from "@/hooks/useFlash";
 
 type StatusFilter = NonNullable<AdminPropertiesQuery["status"]>;
 
@@ -61,6 +62,7 @@ export function AdminPropertiesList() {
   const [pendingDeletion, setPendingDeletion] = useState<AdminPropertyListItemDto | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deletionError, setDeletionError] = useState<string | null>(null);
+  const flash = useFlash();
   const { mutate: mutateMatching } = useSWRConfig();
 
   const { data, error, mutate, isValidating } = useSWR(
@@ -87,8 +89,10 @@ export function AdminPropertiesList() {
       if (data?.items.length === 1 && page > 1) setPage(page - 1);
       setDeletionError(null);
       setPendingDeletion(null);
+      flash.success(`Se eliminó «${pendingDeletion.title}».`);
     } catch {
       setDeletionError("No pudimos eliminar la propiedad. Inténtalo de nuevo.");
+      flash.error("No pudimos eliminar la propiedad. Inténtalo de nuevo.");
       setPendingDeletion(null);
     } finally {
       setIsDeleting(false);

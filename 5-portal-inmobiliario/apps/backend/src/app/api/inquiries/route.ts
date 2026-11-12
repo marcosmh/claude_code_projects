@@ -1,10 +1,22 @@
 import type { NextRequest } from "next/server";
-import { NotFoundError } from "@/lib/errors";
+import { NotFoundError, TooManyRequestsError } from "@/lib/errors";
 import { errorResponse } from "@/lib/http/api-response";
 import { inquiryInputSchema } from "@portal/shared-types";
+import { limitInquiryRequests } from "@/lib/security/limiters";
 import { authorizer, inquiryService } from "@/services/services";
 
 export async function POST(request: NextRequest) {
+  try {
+    limitInquiryRequests(request);
+  } catch (error) {
+    if (error instanceof TooManyRequestsError) {
+      const response = errorResponse(error.message, 429);
+      response.headers.set("Retry-After", String(error.retryAfterSeconds));
+      return response;
+    }
+    throw error;
+  }
+
   let payload: unknown;
   try {
     payload = await request.json();

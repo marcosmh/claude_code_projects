@@ -593,3 +593,13 @@ Decisiones que concretan la sección 10 de este plan:
 ## 53. Cumplimiento arquitectónico (Paso 36)
 
 - Sin código de producto nuevo: `apps/backend/src/architecture.test.ts` convierte las reglas de arquitectura (spec §55) en pruebas que fallan si un cambio futuro las rompe.
+
+## 54. Límite de intentos y rate limit (Extra Q)
+
+- Backend: `lib/security/rate-limiter.ts` (ventana deslizante en memoria, reloj inyectable), `lib/security/limiters.ts` (instancias: bloqueo de login por email 5/15 min, IP login/registro 30/min, consultas 10/min) y `getClientIp`. Nuevo `TooManyRequestsError` (429) traducido en `domainErrorResponse` con `Retry-After`. Los Route Handlers de login, registro y consultas consultan el limitador antes del servicio.
+- Pruebas unitarias del limitador y de integración del bloqueo de login.
+
+## 55. Mensajes flash (Extra R)
+
+- Frontend: store Zustand `flashStore` (cola de mensajes, `show`/`dismiss`), componente `FlashMessages` montado en el layout raíz (fijo arriba, `aria-live`), con temporizador de 5 s por mensaje (se pausa al pasar el cursor o enfocar) y botón de cierre. Hook `useFlash` para emitir mensajes desde los componentes.
+- Integración en LoginForm, cierre de sesión (portal y administración), formularios y listas de usuarios y propiedades, y gestor de características.

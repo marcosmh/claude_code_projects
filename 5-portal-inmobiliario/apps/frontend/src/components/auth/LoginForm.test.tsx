@@ -32,10 +32,12 @@ vi.mock("@portal/api-client", async () => {
 });
 
 import { ApiRequestError } from "@portal/api-client";
+import { useFlashStore } from "@/stores/flashStore";
 import { LoginForm } from "./LoginForm";
 
 afterEach(() => {
   cleanup();
+  useFlashStore.setState({ messages: [] });
   push.mockReset();
   search.params = new URLSearchParams();
   loginUserMock.mockReset();
@@ -62,6 +64,22 @@ describe("LoginForm", () => {
     );
     expect(session.setUser).toHaveBeenCalledWith(signedIn);
     expect(push).toHaveBeenCalledWith("/");
+    expect(useFlashStore.getState().messages).toMatchObject([
+      { kind: "success", text: "Bienvenido, Usuario Demo." },
+    ]);
+  });
+
+  it("muestra el bloqueo por demasiados intentos (429) como mensaje flash de error", async () => {
+    const blocked = "Demasiados intentos fallidos. Inténtalo de nuevo en 15 minuto(s).";
+    loginUserMock.mockRejectedValue(new ApiRequestError(blocked, 429));
+    const user = userEvent.setup();
+    render(<LoginForm />);
+    await user.type(screen.getByLabelText("Email"), "usuario@portal.mx");
+    await user.type(screen.getByLabelText("Contraseña"), "mala");
+    await user.click(screen.getByRole("button", { name: "Ingresar" }));
+
+    expect((await screen.findByRole("alert")).textContent).toBe(blocked);
+    expect(useFlashStore.getState().messages).toMatchObject([{ kind: "error", text: blocked }]);
   });
 
   it("valida el formulario y no llama a la API con datos inválidos", async () => {

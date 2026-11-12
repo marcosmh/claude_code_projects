@@ -14,6 +14,7 @@ import {
 } from "@/schemas/admin-user-form";
 import { AdminPageHeader } from "./AdminPageHeader";
 import { SelectField, TextField } from "./property-form-fields";
+import { useFlash } from "@/hooks/useFlash";
 
 const roleOptions = [
   { value: "USER", label: "Usuario" },
@@ -28,6 +29,7 @@ export function AdminUserForm() {
   const router = useRouter();
   const { mutate } = useSWRConfig();
   const [submissionError, setSubmissionError] = useState<string | null>(null);
+  const flash = useFlash();
   const {
     register,
     handleSubmit,
@@ -42,15 +44,17 @@ export function AdminUserForm() {
     try {
       await createAdminUser(data);
     } catch (error) {
-      setSubmissionError(
+      const message =
         error instanceof ApiRequestError && error.status < 500
           ? error.message
-          : "No pudimos crear el usuario. Inténtalo de nuevo.",
-      );
+          : "No pudimos crear el usuario. Inténtalo de nuevo.";
+      setSubmissionError(message);
+      flash.error(message);
       return;
     }
     // El listado (y sus páginas en caché) debe mostrar la cuenta nueva.
     await mutate((key) => typeof key === "string" && key.startsWith(adminUsersUrl));
+    flash.success(`Se creó la cuenta de ${data.name}.`);
     router.push("/admin/users");
   };
 

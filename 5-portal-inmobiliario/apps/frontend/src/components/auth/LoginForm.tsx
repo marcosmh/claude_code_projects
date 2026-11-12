@@ -7,6 +7,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { ApiRequestError, loginUser } from "@portal/api-client";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useFlash } from "@/hooks/useFlash";
 import { resolvePostLoginPath, sanitizeNextPath } from "@/lib/route-access";
 import { loginFormSchema, type LoginFormData, type LoginFormValues } from "@/schemas/auth-forms";
 import { AlreadySignedIn } from "./AlreadySignedIn";
@@ -21,6 +22,7 @@ export function LoginForm() {
   const requestedPath = useSearchParams().get("next");
   const nextPath = sanitizeNextPath(requestedPath);
   const { user, setUser } = useCurrentUser();
+  const flash = useFlash();
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const {
     register,
@@ -36,13 +38,16 @@ export function LoginForm() {
     try {
       const signedInUser = await loginUser(data);
       await setUser(signedInUser);
+      flash.success(`Bienvenido, ${signedInUser.name}.`);
       router.push(resolvePostLoginPath(signedInUser.role, requestedPath));
     } catch (error) {
       // 401 (credenciales) y 403 (cuenta desactivada) traen un mensaje claro de la API.
       const isClientError = error instanceof ApiRequestError && error.status < 500;
-      setSubmissionError(
-        isClientError ? error.message : "No pudimos iniciar sesión. Inténtalo de nuevo.",
-      );
+      const message = isClientError
+        ? error.message
+        : "No pudimos iniciar sesión. Inténtalo de nuevo.";
+      setSubmissionError(message);
+      flash.error(message);
     }
   };
 

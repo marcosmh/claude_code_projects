@@ -13,6 +13,7 @@ import {
 import type { AdminUserDto, AdminUserStatus, UpdateAdminUserInput } from "@portal/shared-types";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useFlash } from "@/hooks/useFlash";
 import { AdminPageHeader } from "./AdminPageHeader";
 
 type RoleFilter = "" | "USER" | "ADMIN";
@@ -42,6 +43,14 @@ const iconProps = {
 } as const;
 
 type PendingChange = { user: AdminUserDto; change: UpdateAdminUserInput };
+
+function describeSuccess({ user, change }: PendingChange): string {
+  if (change.isActive === false) return `Se desactivó a ${user.name}.`;
+  if (change.isActive === true) return `Se activó a ${user.name}.`;
+  return change.role === "ADMIN"
+    ? `${user.name} ahora es administrador.`
+    : `${user.name} ya no es administrador.`;
+}
 
 function describeChange({ user, change }: PendingChange) {
   if (change.isActive === false) {
@@ -82,6 +91,7 @@ export function AdminUsersList() {
   const [isSaving, setIsSaving] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const { user: currentUser } = useCurrentUser();
+  const flash = useFlash();
   const { mutate: mutateMatching } = useSWRConfig();
 
   const { data, error, mutate, isValidating } = useSWR(
@@ -99,12 +109,14 @@ export function AdminUsersList() {
       // Revalida todas las páginas y filtros en caché de la lista.
       await mutateMatching((key) => typeof key === "string" && key.startsWith(adminUsersUrl));
       setActionError(null);
+      flash.success(describeSuccess(pending));
     } catch (caught) {
-      setActionError(
+      const message =
         caught instanceof ApiRequestError && caught.status < 500
           ? caught.message
-          : "No pudimos actualizar al usuario. Inténtalo de nuevo.",
-      );
+          : "No pudimos actualizar al usuario. Inténtalo de nuevo.";
+      setActionError(message);
+      flash.error(message);
     } finally {
       setPending(null);
       setIsSaving(false);

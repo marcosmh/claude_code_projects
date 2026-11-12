@@ -68,3 +68,14 @@ export class ServiceUnavailableError extends Error {
     this.name = "ServiceUnavailableError";
   }
 }
+
+/** Se superó un límite de intentos o de peticiones (429). */
+export class TooManyRequestsError extends Error {
+  constructor(
+    message: string,
+    readonly retryAfterSeconds: number,
+  ) {
+    super(message);
+    this.name = "TooManyRequestsError";
+  }
+}
