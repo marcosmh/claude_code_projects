@@ -405,7 +405,7 @@ describe.skipIf(!databaseUrl)("API REST de autenticación", () => {
 
   describe("POST /api/auth/logout", () => {
     it("responde 204 y expira la cookie, con o sin sesión previa", async () => {
-      const response = await logout();
+      const response = await logout(postRequest("logout", {}));
 
       expect(response.status).toBe(204);
       const header = response.headers.get("set-cookie") ?? "";

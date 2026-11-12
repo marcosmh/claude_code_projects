@@ -11,7 +11,7 @@ export type AdminNavigationItem = {
 
 /**
  * Módulos del área de administración (spec §38). Cada módulo recibe su `href` cuando se
- * implementa: propiedades (Paso 24), usuarios (Paso 29), consultas (Paso 30), reportes (Extra T) y configuración (Extra U).
+ * implementa: propiedades (Paso 24), usuarios (Paso 29), consultas (Paso 30), reportes (Extra T), configuración (Extra U) y auditoría (Extra V).
  */
 export const adminNavigation: readonly AdminNavigationItem[] = [
   { id: "dashboard", label: "Dashboard", icon: "dashboard", href: "/admin" },
@@ -25,7 +25,7 @@ export const adminNavigation: readonly AdminNavigationItem[] = [
   { id: "inquiries", label: "Administrar consultas", icon: "inquiries", href: "/admin/inquiries" },
   { id: "reports", label: "Reportes y estadísticas", icon: "reports", href: "/admin/reports" },
   { id: "settings", label: "Configuración del sistema", icon: "settings", href: "/admin/settings" },
-  { id: "audit", label: "Auditoría y logs", icon: "audit", href: null },
+  { id: "audit", label: "Auditoría y logs", icon: "audit", href: "/admin/audit" },
 ];
 
 /** El Dashboard solo está activo en /admin exacto; el resto de módulos también en sus subrutas. */

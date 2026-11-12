@@ -2,8 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { setSessionCookie } from "@/lib/auth/session-cookie";
 import { domainErrorResponse } from "@/lib/http/domain-error-response";
 import { parseJsonBody } from "@/lib/http/parse-body";
-import { limitAuthRequests } from "@/lib/security/limiters";
-import { authService } from "@/services/services";
+import { getClientIp, limitAuthRequests } from "@/lib/security/limiters";
+import { auditService, authService } from "@/services/services";
 import { registerInputSchema } from "@portal/shared-types";
 
 export async function POST(request: NextRequest) {
@@ -22,6 +22,15 @@ export async function POST(request: NextRequest) {
 
   try {
     const user = await authService.register(data);
+    await auditService.record({
+      action: "REGISTER",
+      summary: "Creó su cuenta",
+      actorId: user.id,
+      actorEmail: user.email,
+      entityType: "user",
+      entityId: user.id,
+      ipAddress: getClientIp(request),
+    });
     // Registrarse inicia sesión: la persona no tiene que volver a escribir sus datos.
     const created = NextResponse.json(user, { status: 201 });
     await setSessionCookie(created, user.id);

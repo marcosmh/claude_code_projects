@@ -10,3 +10,4 @@ export * from "./admin-users-client";
 export * from "./admin-inquiries-client";
 export * from "./admin-reports-client";
 export * from "./system-settings-client";
+export * from "./admin-audit-client";

@@ -57,20 +57,26 @@ describe.skipIf(!databaseUrl)("API REST del panel de administración", () => {
   });
 
   it("un ADMIN recibe los indicadores reales", async () => {
-    const response = await call(await createSession("ADMIN"));
-    expect(response.status).toBe(200);
-    expect(response.headers.get("cache-control")).toBe("no-store");
+    const token = await createSession("ADMIN");
+    const first = await call(token);
+    expect(first.status).toBe(200);
+    expect(first.headers.get("cache-control")).toBe("no-store");
 
-    const indicators = (await response.json()) as Record<string, number>;
-    // Otras pruebas crean y borran filas en paralelo: se comprueba la forma y la coherencia,
-    // no igualdad exacta con un conteo tomado después.
-    for (const value of Object.values(indicators)) {
-      expect(Number.isInteger(value) && value >= 0).toBe(true);
-    }
-    expect(indicators.users).toBeGreaterThanOrEqual(1);
-    expect(indicators.publishedProperties).toBeLessThanOrEqual(indicators.totalProperties);
-    expect(indicators.propertiesForSale + indicators.propertiesForRent).toBeLessThanOrEqual(
-      indicators.publishedProperties,
+    // Otras pruebas crean y borran filas en paralelo y los conteos se toman en momentos distintos:
+    // se reintenta hasta obtener una lectura coherente en lugar de exigir igualdad con la base.
+    await vi.waitFor(
+      async () => {
+        const indicators = (await (await call(token)).json()) as Record<string, number>;
+        for (const value of Object.values(indicators)) {
+          expect(Number.isInteger(value) && value >= 0).toBe(true);
+        }
+        expect(indicators.users).toBeGreaterThanOrEqual(1);
+        expect(indicators.publishedProperties).toBeLessThanOrEqual(indicators.totalProperties);
+        expect(indicators.propertiesForSale + indicators.propertiesForRent).toBeLessThanOrEqual(
+          indicators.publishedProperties,
+        );
+      },
+      { timeout: 10_000, interval: 250 },
     );
   });
 });

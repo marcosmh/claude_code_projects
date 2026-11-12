@@ -11,3 +11,4 @@ export * from "./admin-user";
 export * from "./admin-inquiry";
 export * from "./admin-reports";
 export * from "./system-settings";
+export * from "./audit-log";

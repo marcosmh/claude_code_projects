@@ -617,3 +617,11 @@ Decisiones que concretan la sección 10 de este plan:
 - `shared-types`: `SystemSettingsDto`, `PublicSettingsDto` y `updateSystemSettingsSchema` (Zod). `api-client`: `fetchPublicSettings`, `fetchAdminSettings`, `updateAdminSettings`.
 - Backend: `systemSettingsRepository` (lee o crea la fila por defecto, actualiza), `createSystemSettingsService`, rutas `GET /api/settings` y `GET`/`PUT /api/admin/settings`. El servicio de autenticación recibe una dependencia `isRegistrationOpen` y `register` responde 403 si está cerrado.
 - Frontend: `useSiteSettings` (SWR), `/admin/settings` con `SystemSettingsForm` (React Hook Form + Zod + flash), `FooterContact` en el pie, aviso en `RegisterForm`, enlace de registro condicionado en `LoginForm` y moneda por defecto en `PropertyForm`.
+
+## 58. Auditoría y logs (Extra V)
+
+- Prisma: modelo `AuditLog` (`audit_logs`, índices por fecha y por acción) sin claves foráneas (guarda id y email del responsable como instantánea) y migración.
+- `shared-types`: acciones y categorías (`auditActionsByCategory`, `auditCategoryOf`), `AuditLogDto`, `auditLogListQuerySchema`. `api-client`: `buildAdminAuditUrl`, `fetchAdminAudit`.
+- Backend: `auditRepository` (`record`, `findPage`), `createAuditService` (`record` de mejor esfuerzo y `listLogs`), `lib/audit/describe-admin-mutation.ts` (función pura: método + ruta + cuerpo de la respuesta → acción y resumen), registro automático en `withRole` para ADMIN y eventos de acceso en las rutas de `/api/auth`, y `GET /api/admin/audit`.
+- Pruebas de integración: la limpieza global posterior a la suite borra las entradas de prueba (`@example.com`) para no ensuciar la base de desarrollo.
+- Frontend: `/admin/audit` con `AdminAuditList` (filtros, tabla, paginación) y el menú activo.

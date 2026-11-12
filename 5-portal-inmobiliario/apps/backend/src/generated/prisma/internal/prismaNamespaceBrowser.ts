@@ -57,7 +57,8 @@ export const ModelName = {
   Feature: 'Feature',
   Favorite: 'Favorite',
   Inquiry: 'Inquiry',
-  SystemSettings: 'SystemSettings'
+  SystemSettings: 'SystemSettings',
+  AuditLog: 'AuditLog'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -176,6 +177,21 @@ export const SystemSettingsScalarFieldEnum = {
 } as const
 
 export type SystemSettingsScalarFieldEnum = (typeof SystemSettingsScalarFieldEnum)[keyof typeof SystemSettingsScalarFieldEnum]
+
+
+export const AuditLogScalarFieldEnum = {
+  id: 'id',
+  createdAt: 'createdAt',
+  action: 'action',
+  summary: 'summary',
+  actorId: 'actorId',
+  actorEmail: 'actorEmail',
+  entityType: 'entityType',
+  entityId: 'entityId',
+  ipAddress: 'ipAddress'
+} as const
+
+export type AuditLogScalarFieldEnum = (typeof AuditLogScalarFieldEnum)[keyof typeof AuditLogScalarFieldEnum]
 
 
 export const SortOrder = {

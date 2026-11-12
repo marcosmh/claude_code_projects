@@ -420,6 +420,15 @@ Content-Type: application/json
   "contactPhone": "+52 55 1234 5678"
 }
 
+### Auditoría y logs — registro de accesos y acciones de administración (solo lectura)
+GET {{baseUrl}}/api/admin/audit?page=1&pageSize=20
+Accept: application/json
+
+### Auditoría con filtros (category: auth|properties|images|features|users|settings;
+### from/to: AAAA-MM-DD inclusivas; 400 si son inválidos o el rango está invertido)
+GET {{baseUrl}}/api/admin/audit?category=auth&from=2026-11-01&to=2026-11-30&search=admin
+Accept: application/json
+
 ### Listar propiedades con borradores (status: all | published | draft)
 GET {{baseUrl}}/api/admin/properties?page=1&pageSize=10&status=all&search=casa
 Accept: application/json

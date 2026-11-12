@@ -2634,6 +2634,104 @@
           ]
         },
         {
+          "name": "Auditoría — registro reciente",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/audit?page=1&pageSize=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "audit"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Registro de solo lectura, del más reciente al más antiguo. 200 con sesión ADMIN; 403 para USER; 401 sin sesión."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status esperado\", function () { pm.expect(pm.response.code).to.be.oneOf([200, 400, 403, 401]); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auditoría — filtros",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/audit?category=auth&from=2026-11-01&to=2026-11-30&search=admin",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "audit"
+              ],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "auth"
+                },
+                {
+                  "key": "from",
+                  "value": "2026-11-01"
+                },
+                {
+                  "key": "to",
+                  "value": "2026-11-30"
+                },
+                {
+                  "key": "search",
+                  "value": "admin"
+                }
+              ]
+            },
+            "description": "Filtros: category (auth|properties|images|features|users|settings), search, from y to (AAAA-MM-DD, inclusivas). 400 con parámetros inválidos o rango invertido."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status esperado\", function () { pm.expect(pm.response.code).to.be.oneOf([200, 400, 403, 401]); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Listar propiedades (con borradores)",
           "request": {
             "method": "GET",

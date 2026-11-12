@@ -7,10 +7,13 @@ const MINUTE_MS = 60_000;
 export const MAX_FAILED_LOGINS = 5;
 export const LOGIN_LOCKOUT_MS = 5 * MINUTE_MS;
 
-/** IP del cliente: primer valor de `x-forwarded-for`; sin él, un grupo común «desconocida». */
+/**
+ * IP del cliente: primer valor de `x-forwarded-for` (sin el prefijo IPv4 mapeado `::ffff:`); sin
+ * él, un grupo común «desconocida».
+ */
 export function getClientIp(request: Request): string {
   const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  return forwarded || "desconocida";
+  return forwarded ? forwarded.replace(/^::ffff:/i, "") : "desconocida";
 }
 
 function describeWait(seconds: number): string {

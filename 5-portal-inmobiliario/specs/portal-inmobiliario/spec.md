@@ -682,7 +682,7 @@ Requisitos:
 
 **Diseño**
 - Las rutas `/admin/**` usan un layout propio, sin el header ni el pie del portal: barra lateral izquierda colapsable (iconos solos cuando se colapsa; en móvil es un panel que se abre desde un botón), barra superior con el nombre de la persona y «Cerrar sesión», paleta corporativa propia con una variante por cada tema del selector (Claro, Oscuro y Smallville), selector de tema en la barra superior e iconografía de gestión. El botón de colapsar la barra lateral está en la barra superior.
-- Menú: Dashboard, Administrar usuarios, Administrar propiedades, Administrar consultas, Reportes y estadísticas, Configuración del sistema y Auditoría y logs. El módulo aún no construido aparece deshabilitado con la etiqueta «Próximamente» (Auditoría y logs, no planificado); «Administrar usuarios» (§47), «Administrar consultas» (§48), «Reportes y estadísticas» (§58) y «Configuración del sistema» (§59) ya están activos.
+- Menú: Dashboard, Administrar usuarios, Administrar propiedades, Administrar consultas, Reportes y estadísticas, Configuración del sistema y Auditoría y logs. Todos los módulos del menú están construidos (ya no hay etiquetas «Próximamente»): «Administrar usuarios» (§47), «Administrar consultas» (§48), «Reportes y estadísticas» (§58), «Configuración del sistema» (§59) y «Auditoría y logs» (§60).
 - El Dashboard muestra los indicadores y una tabla de propiedades recientes con filtro de estado.
 
 **Restricciones del rol ADMIN**
@@ -878,3 +878,21 @@ Módulo «Configuración del sistema» del área de administración (§38), acti
 - **Persistencia:** tabla `system_settings` con una fila (`id = "global"`) creada con los valores por defecto la primera vez que se lee; migración incluida.
 - **Interfaz:** formulario con etiquetas, validación y mensajes flash de éxito o error (§57); el pie de página y la pantalla de registro leen `GET /api/settings` con SWR, así que un cambio se ve sin esperar cachés.
 - **Fuera de alcance:** nombre del sitio, tema por defecto, modo mantenimiento, límites de peticiones configurables y secretos (siguen en variables de entorno, §14).
+
+## 60. Auditoría y logs (Extra V)
+
+Módulo «Auditoría y logs» del área de administración (§38), activo en `/admin/audit` (solo ADMIN). Es un registro de **solo lectura y de solo adición** de lo que ocurre en el sistema, guardado en PostgreSQL (`audit_logs`).
+
+- **Eventos registrados** (acción → categoría):
+  - **Acceso** (`auth`): inicio de sesión correcto, inicio de sesión fallido (con el email intentado), cuenta bloqueada tras 5 intentos fallidos (§56), cierre de sesión y registro de una cuenta.
+  - **Propiedades** (`properties`): crear, editar y eliminar.
+  - **Imágenes** (`images`): subir, reordenar, cambiar la principal y eliminar.
+  - **Características** (`features`): crear una característica y asignarlas a una propiedad.
+  - **Usuarios** (`users`): alta por un administrador y cambios de rol o de estado.
+  - **Configuración** (`settings`): guardar la configuración del sistema (§59).
+- **Cada entrada** guarda: fecha y hora, acción, un resumen en español, quién la hizo (id y email en el momento del hecho, que se conservan aunque la cuenta cambie), la entidad afectada (tipo e id) y la IP de la petición. **Nunca** se guardan contraseñas, tokens, cuerpos de peticiones ni mensajes de los visitantes.
+- **Cómo se registran:** las acciones de administración se registran en un solo punto, el envoltorio `withRole("ADMIN")`, cuando la petición de escritura (POST, PUT, PATCH, DELETE) tiene éxito (código < 400); una ruta de administración nueva queda auditada sin código adicional. Los eventos de acceso se registran en las rutas de `/api/auth`. Registrar es de mejor esfuerzo: un fallo al escribir el log se informa en el servidor y **nunca** hace fallar la petición.
+- **API:** `GET /api/admin/audit` (401 sin sesión, 403 para USER, 400 con parámetros inválidos): paginada (20 por página, máximo 100), del más reciente al más antiguo, con filtros `category`, `search` (en el resumen y el email, sin distinguir mayúsculas), `from` y `to` (fechas `YYYY-MM-DD`, ambas inclusivas, en UTC; `from` no puede ser posterior a `to`). Sin caché.
+- **Interfaz:** tabla con fecha, acción (etiqueta en español), resumen, responsable e IP; filtros por categoría, texto y fechas con aplicación dinámica y «Limpiar filtros»; paginación; estados de carga, vacío y error con «Reintentar».
+- **Notas:** la IP se toma de `x-forwarded-for` (el proxy del frontend la reenvía) y se normaliza sin el prefijo `::ffff:`. Los eventos de prueba (`@example.com`) se borran al terminar la suite.
+- **Fuera de alcance:** exportar, borrar o editar entradas, política de retención automática, alertas y logs de errores técnicos del servidor (siguen en la salida del proceso).

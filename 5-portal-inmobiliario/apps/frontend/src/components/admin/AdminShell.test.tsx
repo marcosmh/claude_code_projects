@@ -40,7 +40,7 @@ describe("AdminShell: menú", () => {
     expect(screen.getByRole("main").id).toBe("main-content");
   });
 
-  it("marca el Dashboard como página actual y deja habilitadas las propiedades y deshabilita los módulos aún no construidos", () => {
+  it("marca el Dashboard como página actual y deja habilitadas las propiedades y activa todos los módulos del menú", () => {
     renderShell();
     const dashboard = screen.getByRole("link", { name: /Dashboard/ });
     expect(dashboard.getAttribute("href")).toBe("/admin");
@@ -61,9 +61,12 @@ describe("AdminShell: menú", () => {
     expect(
       screen.getByRole("link", { name: /Configuración del sistema/ }).getAttribute("href"),
     ).toBe("/admin/settings");
-    expect(screen.queryByRole("link", { name: /Auditoría y logs/ })).toBeNull();
-    expect(document.querySelectorAll('[aria-disabled="true"]')).toHaveLength(1);
-    expect(screen.getAllByText("Próximamente")).toHaveLength(1);
+    expect(screen.getByRole("link", { name: /Auditoría y logs/ }).getAttribute("href")).toBe(
+      "/admin/audit",
+    );
+    // Todos los módulos del menú están construidos: ninguno queda como «Próximamente».
+    expect(document.querySelectorAll('[aria-disabled="true"]')).toHaveLength(0);
+    expect(screen.queryAllByText("Próximamente")).toHaveLength(0);
   });
 
   it("no ofrece ninguna opción de usuario final", () => {

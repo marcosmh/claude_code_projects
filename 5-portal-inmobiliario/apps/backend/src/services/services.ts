@@ -5,6 +5,7 @@ import { hashPassword, spendVerificationTime, verifyPassword } from "@/lib/auth/
 import { adminPropertyRepository } from "@/repositories/admin-property-repository";
 import { adminInquiryRepository } from "@/repositories/admin-inquiry-repository";
 import { adminUserRepository } from "@/repositories/admin-user-repository";
+import { auditRepository } from "@/repositories/audit-repository";
 import { adminReportsRepository } from "@/repositories/admin-reports-repository";
 import { adminRepository } from "@/repositories/admin-repository";
 import { featureRepository } from "@/repositories/feature-repository";
@@ -19,6 +20,7 @@ import { createAdminUserService } from "./admin-user-service";
 import { createAdminReportsService } from "./admin-reports-service";
 import { createAdminService } from "./admin-service";
 import { createAdminPropertyService } from "./admin-property-service";
+import { createAuditService } from "./audit-service";
 import { createAuthService } from "./auth-service";
 import { createFeatureService } from "./feature-service";
 import { createFavoriteService } from "./favorite-service";
@@ -56,3 +58,4 @@ export const adminUserService = createAdminUserService({
 });
 export const adminInquiryService = createAdminInquiryService(adminInquiryRepository);
 export const adminReportsService = createAdminReportsService(adminReportsRepository);
+export const auditService = createAuditService(auditRepository);

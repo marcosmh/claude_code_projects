@@ -19,6 +19,7 @@ describe("adminNavigation", () => {
       "/admin/inquiries",
       "/admin/reports",
       "/admin/settings",
+      "/admin/audit",
     ]);
   });
 

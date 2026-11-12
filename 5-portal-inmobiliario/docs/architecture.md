@@ -43,6 +43,14 @@ favoritos, administración); los contadores no se comparten entre instancias ni 
 reinicio (en producción: Redis, WAF o CDN); y la IP sale de `x-forwarded-for` (detrás del proxy
 del frontend aún no está comprobado qué IP ve el backend).
 
+## Auditoría
+
+Las escrituras exitosas de `/api/admin/**` se registran en `audit_logs` desde un único punto, el
+envoltorio `withRole("ADMIN")` (`lib/audit/describe-admin-mutation.ts` traduce método + ruta +
+respuesta a una acción y un resumen), y los eventos de acceso desde las rutas de `/api/auth`
+(spec §60). Registrar es de mejor esfuerzo y nunca hace fallar la petición; la consulta es
+`GET /api/admin/audit`. La suite de pruebas borra al terminar las entradas de cuentas `@example.com`.
+
 ## Mensajes flash
 
 `FlashMessages` vive en el layout raíz del frontend (spec §57) y se alimenta del store Zustand

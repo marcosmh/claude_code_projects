@@ -11,6 +11,7 @@ export default defineConfig({
   test: {
     environment: "node",
     setupFiles: ["src/test/load-env.ts"],
+    globalSetup: ["src/test/audit-cleanup.ts"],
     // scrypt es lento a propósito y las pruebas de integración registran cuentas: con todas las
     // suites en paralelo 5 s no alcanzan y un timeout deja datos de prueba sin limpiar.
     testTimeout: 30_000,

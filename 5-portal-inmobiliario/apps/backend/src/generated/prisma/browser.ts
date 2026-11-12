@@ -52,3 +52,8 @@ export type Inquiry = Prisma.InquiryModel
  * 
  */
 export type SystemSettings = Prisma.SystemSettingsModel
+/**
+ * Model AuditLog
+ * 
+ */
+export type AuditLog = Prisma.AuditLogModel

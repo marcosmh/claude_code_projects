@@ -175,3 +175,21 @@ model SystemSettings {
 
   @@map("system_settings")
 }
+
+// Registro de auditoría: solo se añaden filas. El responsable se guarda como instantánea
+// (id y email) y sin clave foránea, para conservar el rastro aunque la cuenta cambie.
+model AuditLog {
+  id         String   @id @default(cuid())
+  createdAt  DateTime @default(now())
+  action     String
+  summary    String
+  actorId    String?
+  actorEmail String?
+  entityType String?
+  entityId   String?
+  ipAddress  String?
+
+  @@index([createdAt])
+  @@index([action, createdAt])
+  @@map("audit_logs")
+}

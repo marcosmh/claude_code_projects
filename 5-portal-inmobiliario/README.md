@@ -18,7 +18,7 @@ Implementado (Pasos 1–17 de `specs/portal-inmobiliario/tasks.md`):
 
 Panel `/admin` con indicadores (Paso 22) y CRUD REST de propiedades solo para ADMIN (Paso 23).
 
-Área de administración independiente (Extra L): `/admin/**` tiene su propio layout (sidebar colapsable, paleta corporativa, menú de módulos; el aún no construido (Auditoría y logs) aparece como «Próximamente») y no comparte el header ni el pie del portal. Un ADMIN solo usa el área de administración: `/account` lo redirige a `/admin`, favoritos y consultas propias responden 403 y su header no muestra cuenta ni favoritos.
+Área de administración independiente (Extra L): `/admin/**` tiene su propio layout (sidebar colapsable, paleta corporativa, menú de módulos; todos los módulos del menú están activos) y no comparte el header ni el pie del portal. Un ADMIN solo usa el área de administración: `/account` lo redirige a `/admin`, favoritos y consultas propias responden 403 y su header no muestra cuenta ni favoritos.
 
 Seguridad: tras 5 intentos de login fallidos por email la API responde 429 durante 5 min (`Retry-After`), con rate limit por IP en login, registro y consultas (en memoria; ver spec §56). Mensajes flash en la parte superior (spec §57).
 
@@ -132,6 +132,7 @@ Sirven en `/login`, en `resources/postman/postman-api.json` y en `resources/rest
 | POST | `/api/auth/logout` | Cierra la sesión borrando la cookie (204) |
 | GET | `/api/auth/me` | Usuario de la sesión actual (200; 401 sin sesión válida) |
 | GET | `/api/admin/dashboard` | Indicadores del panel (solo ADMIN: 200; 401; 403) |
+| GET | `/api/admin/audit` | Registro de auditoría de solo lectura (`page`, `pageSize`, `search`, `category`, `from`, `to`) (solo ADMIN: 200; 400; 401; 403) |
 | GET, PUT | `/api/admin/settings` | Configuración del sistema: registro abierto, moneda por defecto y contacto (solo ADMIN: 200; 400; 401; 403) |
 | GET | `/api/settings` | Configuración pública (sin sesión) |
 | GET | `/api/admin/reports` | Reportes y estadísticas: propiedades, consultas, favoritos, usuarios y 6 meses de actividad (solo ADMIN: 200; 401; 403) |

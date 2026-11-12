@@ -384,3 +384,9 @@
   - Registro de cuentas habilitable, moneda por defecto y contacto del pie de página con efecto real.
   - Página `/admin/settings`; el menú deja de decir «Próximamente».
   - Pruebas, lint, typecheck y build pasan; Postman y REST Client actualizados.
+
+- [x] **Extra V — Auditoría y logs**
+  - Tabla `audit_logs`; registro automático de las acciones de administración (`withRole`) y de los eventos de acceso.
+  - `GET /api/admin/audit` (solo ADMIN) con paginación y filtros por categoría, texto y fechas.
+  - Página `/admin/audit`; el menú deja de decir «Próximamente».
+  - Pruebas, lint, typecheck y build pasan; Postman y REST Client actualizados.
