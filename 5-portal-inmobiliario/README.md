@@ -20,7 +20,7 @@ Panel `/admin` con indicadores (Paso 22) y CRUD REST de propiedades solo para AD
 
 Área de administración independiente (Extra L): `/admin/**` tiene su propio layout (sidebar colapsable, paleta corporativa, menú de módulos; los aún no construidos aparecen como «Próximamente») y no comparte el header ni el pie del portal. Un ADMIN solo usa el área de administración: `/account` lo redirige a `/admin`, favoritos y consultas propias responden 403 y su header no muestra cuenta ni favoritos.
 
-Seguridad: tras 5 intentos de login fallidos por email la API responde 429 durante 15 min (`Retry-After`), con rate limit por IP en login, registro y consultas (en memoria; ver spec §56). Mensajes flash en la parte superior (spec §57).
+Seguridad: tras 5 intentos de login fallidos por email la API responde 429 durante 5 min (`Retry-After`), con rate limit por IP en login, registro y consultas (en memoria; ver spec §56). Mensajes flash en la parte superior (spec §57).
 
 Estado: Pasos 1–37 completados; no quedan tareas pendientes en `tasks.md`.
 

@@ -78,6 +78,8 @@ Claude Code Projects
 
 * https://app.web3forms.com/
 
+* https://openspec.dev/
+
 -------------------
 
 

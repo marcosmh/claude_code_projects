@@ -70,7 +70,7 @@ describe("LoginForm", () => {
   });
 
   it("muestra el bloqueo por demasiados intentos (429) como mensaje flash de error", async () => {
-    const blocked = "Demasiados intentos fallidos. Inténtalo de nuevo en 15 minuto(s).";
+    const blocked = "Demasiados intentos fallidos. Inténtalo de nuevo en 5 minuto(s).";
     loginUserMock.mockRejectedValue(new ApiRequestError(blocked, 429));
     const user = userEvent.setup();
     render(<LoginForm />);

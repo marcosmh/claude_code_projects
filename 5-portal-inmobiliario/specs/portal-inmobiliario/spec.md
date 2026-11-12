@@ -838,7 +838,7 @@ Las reglas de arquitectura de `CLAUDE.md` se verifican con una prueba automátic
 
 ## 56. Límite de intentos y rate limit (Extra Q)
 
-- **Inicio de sesión:** tras **5 intentos fallidos** (401) para un mismo email, `POST /api/auth/login` responde **429** `{ message, status }` con cabecera `Retry-After` durante **15 minutos**, incluso si la contraseña es correcta. Un inicio de sesión correcto reinicia el contador. El mensaje no revela si el email existe (se cuenta igual con emails inexistentes).
+- **Inicio de sesión:** tras **5 intentos fallidos** (401) para un mismo email, `POST /api/auth/login` responde **429** `{ message, status }` con cabecera `Retry-After` durante **5 minutos**, incluso si la contraseña es correcta. Un inicio de sesión correcto reinicia el contador. El mensaje no revela si el email existe (se cuenta igual con emails inexistentes).
 - **Rate limit por IP:** `POST /api/auth/login` y `POST /api/auth/register` aceptan como máximo **30 peticiones por minuto** por IP y `POST /api/inquiries` **10 por minuto**; el exceso responde 429 con `Retry-After`. La IP se toma de `x-forwarded-for` (primer valor) y, sin ella, se agrupa como «desconocida».
 - **Implementación:** limitador en memoria del proceso (`apps/backend/src/lib/security/`), con limpieza de entradas vencidas. Limitación conocida: con varias instancias cada una cuenta por separado; para producción conviene un almacén compartido (p. ej. Redis).
 - **Interfaz:** el formulario de acceso muestra el mensaje de 429 (y un mensaje flash de error).

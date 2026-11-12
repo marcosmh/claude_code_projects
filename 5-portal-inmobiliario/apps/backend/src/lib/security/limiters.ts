@@ -5,7 +5,7 @@ const MINUTE_MS = 60_000;
 
 /** Intentos fallidos de login por email antes del bloqueo (spec §56). */
 export const MAX_FAILED_LOGINS = 5;
-export const LOGIN_LOCKOUT_MS = 15 * MINUTE_MS;
+export const LOGIN_LOCKOUT_MS = 5 * MINUTE_MS;
 
 /** IP del cliente: primer valor de `x-forwarded-for`; sin él, un grupo común «desconocida». */
 export function getClientIp(request: Request): string {

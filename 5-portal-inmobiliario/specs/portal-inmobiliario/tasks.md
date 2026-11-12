@@ -366,7 +366,7 @@
   - Pruebas, lint, typecheck y build pasan.
 
 - [x] **Extra Q — Límite de intentos de login y rate limit**
-  - Bloqueo tras 5 intentos fallidos por email (429, 15 min, `Retry-After`) y rate limit por IP en login, registro y consultas.
+  - Bloqueo tras 5 intentos fallidos por email (429, 5 min, `Retry-After`) y rate limit por IP en login, registro y consultas.
   - Pruebas, lint, typecheck y build pasan.
 
 - [x] **Extra R — Mensajes flash**

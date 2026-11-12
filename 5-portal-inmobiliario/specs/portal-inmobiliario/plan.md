@@ -596,7 +596,7 @@ Decisiones que concretan la sección 10 de este plan:
 
 ## 54. Límite de intentos y rate limit (Extra Q)
 
-- Backend: `lib/security/rate-limiter.ts` (ventana deslizante en memoria, reloj inyectable), `lib/security/limiters.ts` (instancias: bloqueo de login por email 5/15 min, IP login/registro 30/min, consultas 10/min) y `getClientIp`. Nuevo `TooManyRequestsError` (429) traducido en `domainErrorResponse` con `Retry-After`. Los Route Handlers de login, registro y consultas consultan el limitador antes del servicio.
+- Backend: `lib/security/rate-limiter.ts` (ventana deslizante en memoria, reloj inyectable), `lib/security/limiters.ts` (instancias: bloqueo de login por email 5/5 min, IP login/registro 30/min, consultas 10/min) y `getClientIp`. Nuevo `TooManyRequestsError` (429) traducido en `domainErrorResponse` con `Retry-After`. Los Route Handlers de login, registro y consultas consultan el limitador antes del servicio.
 - Pruebas unitarias del limitador y de integración del bloqueo de login.
 
 ## 55. Mensajes flash (Extra R)
