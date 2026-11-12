@@ -2482,6 +2482,41 @@
           ]
         },
         {
+          "name": "Reportes y estadísticas",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/reports",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "reports"
+              ]
+            },
+            "description": "Agregados de propiedades, consultas, favoritos, usuarios y tendencia de 6 meses. 200 con sesión ADMIN; 403 para USER; 401 sin sesión."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status esperado\", function () { pm.expect(pm.response.code).to.be.oneOf([200, 403, 401]); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Listar propiedades (con borradores)",
           "request": {
             "method": "GET",

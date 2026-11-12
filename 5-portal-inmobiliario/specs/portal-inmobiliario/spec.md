@@ -682,7 +682,7 @@ Requisitos:
 
 **Diseño**
 - Las rutas `/admin/**` usan un layout propio, sin el header ni el pie del portal: barra lateral izquierda colapsable (iconos solos cuando se colapsa; en móvil es un panel que se abre desde un botón), barra superior con el nombre de la persona y «Cerrar sesión», paleta corporativa propia con una variante por cada tema del selector (Claro, Oscuro y Smallville), selector de tema en la barra superior e iconografía de gestión. El botón de colapsar la barra lateral está en la barra superior.
-- Menú: Dashboard, Administrar usuarios, Administrar propiedades, Administrar consultas, Reportes y estadísticas, Configuración del sistema y Auditoría y logs. Solo el Dashboard existe hoy; los módulos aún no construidos aparecen deshabilitados con la etiqueta «Próximamente» y se activan al implementarse (Pasos 24, 29 y 30; los demás no están planificados). «Administrar usuarios» (§47) y «Administrar consultas» (§48) ya están activos.
+- Menú: Dashboard, Administrar usuarios, Administrar propiedades, Administrar consultas, Reportes y estadísticas, Configuración del sistema y Auditoría y logs. Los módulos aún no construidos aparecen deshabilitados con la etiqueta «Próximamente» (Configuración y Auditoría, no planificados); «Administrar usuarios» (§47), «Administrar consultas» (§48) y «Reportes y estadísticas» (§58) ya están activos.
 - El Dashboard muestra los indicadores y una tabla de propiedades recientes con filtro de estado.
 
 **Restricciones del rol ADMIN**
@@ -849,3 +849,16 @@ Las reglas de arquitectura de `CLAUDE.md` se verifican con una prueba automátic
 - **Desaparecen solos a los 5 segundos** y tienen botón «Cerrar» (accesible por teclado). Se anuncian a lector de pantalla (`role="status"` para éxito/info, `role="alert"` para error) y respetan `prefers-reduced-motion`. Se apilan (máximo 3 visibles) y funcionan en los tres temas.
 - Se muestran al: iniciar y cerrar sesión; crear usuario, cambiar rol y activar/desactivar usuarios; crear, editar y eliminar propiedades; y crear características o asignarlas a una propiedad. Los errores de esas acciones también se muestran como flash.
 - La edición de nombre de una característica existente no forma parte del producto actual (no hay endpoint de renombrado); queda fuera de este Extra.
+
+## 58. Reportes y estadísticas (Extra T)
+
+Módulo «Reportes y estadísticas» del área de administración (§38), activo en `/admin/reports` (solo ADMIN).
+
+- **API:** `GET /api/admin/reports` (401 sin sesión, 403 para USER) devuelve, sin paginación y sin caché (`no-store`), agregados calculados en PostgreSQL. Las propiedades eliminadas lógicamente (§37) no cuentan.
+  - **Propiedades:** conteo por operación, por tipo, por estado comercial (disponible, vendida, rentada), por visibilidad (publicada/borrador) y por ciudad (las 5 con más propiedades); **precio promedio** de las publicadas por operación y moneda (no se mezclan monedas).
+  - **Consultas:** total, últimos 30 días, de usuarios registrados frente a visitantes, y las 5 propiedades con más consultas.
+  - **Favoritos:** total y las 5 propiedades más guardadas.
+  - **Usuarios:** total, activos, desactivados y administradores.
+  - **Tendencia mensual:** últimos 6 meses (incluido el actual, aunque sea 0) con propiedades creadas, consultas recibidas y usuarios registrados.
+- **Interfaz:** tarjetas de resumen y gráficas de barras en HTML/CSS (sin librerías), con el valor numérico siempre visible (no depende del color), tablas y listas accesibles, estados de carga y de error con «Reintentar», y los tres temas. El Dashboard (§18) conserva sus indicadores.
+- **Fuera de alcance:** exportación (CSV/PDF), rangos de fechas configurables y comparativas con periodos anteriores.

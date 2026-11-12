@@ -5,6 +5,7 @@ import { hashPassword, spendVerificationTime, verifyPassword } from "@/lib/auth/
 import { adminPropertyRepository } from "@/repositories/admin-property-repository";
 import { adminInquiryRepository } from "@/repositories/admin-inquiry-repository";
 import { adminUserRepository } from "@/repositories/admin-user-repository";
+import { adminReportsRepository } from "@/repositories/admin-reports-repository";
 import { adminRepository } from "@/repositories/admin-repository";
 import { featureRepository } from "@/repositories/feature-repository";
 import { favoriteRepository } from "@/repositories/favorite-repository";
@@ -14,6 +15,7 @@ import { propertyRepository } from "@/repositories/property-repository";
 import { userRepository } from "@/repositories/user-repository";
 import { createAdminInquiryService } from "./admin-inquiry-service";
 import { createAdminUserService } from "./admin-user-service";
+import { createAdminReportsService } from "./admin-reports-service";
 import { createAdminService } from "./admin-service";
 import { createAdminPropertyService } from "./admin-property-service";
 import { createAuthService } from "./auth-service";
@@ -49,3 +51,4 @@ export const adminUserService = createAdminUserService({
   findEmailOwner: userRepository.findByEmail,
 });
 export const adminInquiryService = createAdminInquiryService(adminInquiryRepository);
+export const adminReportsService = createAdminReportsService(adminReportsRepository);

@@ -603,3 +603,10 @@ Decisiones que concretan la sección 10 de este plan:
 
 - Frontend: store Zustand `flashStore` (cola de mensajes, `show`/`dismiss`), componente `FlashMessages` montado en el layout raíz (fijo arriba, `aria-live`), con temporizador de 5 s por mensaje (se pausa al pasar el cursor o enfocar) y botón de cierre. Hook `useFlash` para emitir mensajes desde los componentes.
 - Integración en LoginForm, cierre de sesión (portal y administración), formularios y listas de usuarios y propiedades, y gestor de características.
+
+## 56. Reportes y estadísticas (Extra T)
+
+- Contrato `AdminReportsDto` en `shared-types` (`admin-reports.ts`) y `fetchAdminReports` en `api-client`.
+- Backend: `adminReportsRepository` (`groupBy` de Prisma y `date_trunc` en SQL para la serie mensual), `createAdminReportsService` (completa claves en cero y arma los 6 meses con reloj inyectable) y `GET /api/admin/reports` con `withRole("ADMIN")`, compuesto en `services.ts`.
+- Frontend: `/admin/reports` con `AdminReports` (tarjetas, `BarList` y `MonthlyChart` accesibles); el menú activa «Reportes y estadísticas».
+- Pruebas: servicio (ceros y meses), integración de la ruta (401/403/200 y coherencia con la base), cliente y componente.

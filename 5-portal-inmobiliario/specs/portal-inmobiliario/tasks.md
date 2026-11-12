@@ -373,3 +373,8 @@
   - Mensajes en la parte superior, con cierre manual y cierre automático a los 5 s.
   - Login/logout, administración de usuarios, de propiedades y de características.
   - Pruebas, lint, typecheck y build pasan.
+
+- [x] **Extra T — Reportes y estadísticas**
+  - `GET /api/admin/reports` (solo ADMIN) con agregados de propiedades, consultas, favoritos, usuarios y tendencia mensual.
+  - Página `/admin/reports` con tarjetas y gráficas accesibles; el menú deja de decir «Próximamente».
+  - Pruebas, lint, typecheck y build pasan; Postman y REST Client actualizados.

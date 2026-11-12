@@ -11,7 +11,7 @@ export type AdminNavigationItem = {
 
 /**
  * Módulos del área de administración (spec §38). Cada módulo recibe su `href` cuando se
- * implementa: propiedades (Paso 24), usuarios (Paso 29) y consultas (Paso 30).
+ * implementa: propiedades (Paso 24), usuarios (Paso 29), consultas (Paso 30) y reportes (Extra T).
  */
 export const adminNavigation: readonly AdminNavigationItem[] = [
   { id: "dashboard", label: "Dashboard", icon: "dashboard", href: "/admin" },
@@ -23,7 +23,7 @@ export const adminNavigation: readonly AdminNavigationItem[] = [
     href: "/admin/properties",
   },
   { id: "inquiries", label: "Administrar consultas", icon: "inquiries", href: "/admin/inquiries" },
-  { id: "reports", label: "Reportes y estadísticas", icon: "reports", href: null },
+  { id: "reports", label: "Reportes y estadísticas", icon: "reports", href: "/admin/reports" },
   { id: "settings", label: "Configuración del sistema", icon: "settings", href: null },
   { id: "audit", label: "Auditoría y logs", icon: "audit", href: null },
 ];

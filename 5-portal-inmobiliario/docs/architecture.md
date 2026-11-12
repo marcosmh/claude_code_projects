@@ -28,6 +28,27 @@ Ventajas: sin CORS, y las cookies de sesión (Paso 17) funcionan sin configuraci
 
 Route Handlers → servicios → repositorios → PostgreSQL (Prisma). Los componentes React nunca acceden a la base de datos.
 
+## Límites de peticiones
+
+`apps/backend/src/lib/security/` (spec §56) aplica límites **en memoria del proceso**:
+
+| Qué                                    | Límite                                                   | Respuesta           |
+| -------------------------------------- | -------------------------------------------------------- | ------------------- |
+| Login: intentos fallidos por **email** | 5 → bloqueo de 5 minutos (un login correcto lo reinicia) | 429 + `Retry-After` |
+| `POST /api/auth/login` y `/register`   | 30 peticiones por minuto por IP                          | 429 + `Retry-After` |
+| `POST /api/inquiries`                  | 10 peticiones por minuto por IP                          | 429 + `Retry-After` |
+
+Limitaciones: no hay todavía un límite general para el resto de `/api/**` (lecturas públicas,
+favoritos, administración); los contadores no se comparten entre instancias ni sobreviven a un
+reinicio (en producción: Redis, WAF o CDN); y la IP sale de `x-forwarded-for` (detrás del proxy
+del frontend aún no está comprobado qué IP ve el backend).
+
+## Mensajes flash
+
+`FlashMessages` vive en el layout raíz del frontend (spec §57) y se alimenta del store Zustand
+`flashStore` mediante el hook `useFlash`. Se muestran arriba, se cierran solos a los 5 s y se
+pueden cerrar a mano; sobreviven a la navegación porque el layout raíz no se desmonta.
+
 ## Código compartido
 
 Los paquetes `@portal/*` son paquetes internos TypeScript (sin paso de build): cada app los
@@ -36,11 +57,11 @@ compila con `transpilePackages`. Una regla simple: lo que define el **contrato**
 
 ## Variables de entorno
 
-| Archivo                     | Contenido                                             |
-| --------------------------- | ----------------------------------------------------- |
-| `apps/backend/.env.local`   | `DATABASE_URL`, `AUTH_SECRET`, Cloudinary             |
-| `apps/frontend/.env.local`  | `BACKEND_URL`, `NEXT_PUBLIC_*` (Google Maps, app URL) |
-| `.env` (raíz)               | Solo `PGADMIN_*` para `docker compose`                |
+| Archivo                    | Contenido                                             |
+| -------------------------- | ----------------------------------------------------- |
+| `apps/backend/.env.local`  | `DATABASE_URL`, `AUTH_SECRET`, Cloudinary             |
+| `apps/frontend/.env.local` | `BACKEND_URL`, `NEXT_PUBLIC_*` (Google Maps, app URL) |
+| `.env` (raíz)              | Solo `PGADMIN_*` para `docker compose`                |
 
 Cada app trae su `.env.example`. Solo las variables `NEXT_PUBLIC_*` llegan al navegador.
 

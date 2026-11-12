@@ -9,3 +9,4 @@ export * from "./property-image";
 export * from "./feature";
 export * from "./admin-user";
 export * from "./admin-inquiry";
+export * from "./admin-reports";

@@ -18,7 +18,7 @@ Implementado (Pasos 1–17 de `specs/portal-inmobiliario/tasks.md`):
 
 Panel `/admin` con indicadores (Paso 22) y CRUD REST de propiedades solo para ADMIN (Paso 23).
 
-Área de administración independiente (Extra L): `/admin/**` tiene su propio layout (sidebar colapsable, paleta corporativa, menú de módulos; los aún no construidos aparecen como «Próximamente») y no comparte el header ni el pie del portal. Un ADMIN solo usa el área de administración: `/account` lo redirige a `/admin`, favoritos y consultas propias responden 403 y su header no muestra cuenta ni favoritos.
+Área de administración independiente (Extra L): `/admin/**` tiene su propio layout (sidebar colapsable, paleta corporativa, menú de módulos; los aún no construidos (Configuración y Auditoría) aparecen como «Próximamente») y no comparte el header ni el pie del portal. Un ADMIN solo usa el área de administración: `/account` lo redirige a `/admin`, favoritos y consultas propias responden 403 y su header no muestra cuenta ni favoritos.
 
 Seguridad: tras 5 intentos de login fallidos por email la API responde 429 durante 5 min (`Retry-After`), con rate limit por IP en login, registro y consultas (en memoria; ver spec §56). Mensajes flash en la parte superior (spec §57).
 
@@ -132,6 +132,7 @@ Sirven en `/login`, en `resources/postman/postman-api.json` y en `resources/rest
 | POST | `/api/auth/logout` | Cierra la sesión borrando la cookie (204) |
 | GET | `/api/auth/me` | Usuario de la sesión actual (200; 401 sin sesión válida) |
 | GET | `/api/admin/dashboard` | Indicadores del panel (solo ADMIN: 200; 401; 403) |
+| GET | `/api/admin/reports` | Reportes y estadísticas: propiedades, consultas, favoritos, usuarios y 6 meses de actividad (solo ADMIN: 200; 401; 403) |
 | GET | `/api/admin/properties` | Lista paginada con borradores (`page`, `pageSize`, `search`, `status`=all/published/draft y los filtros `operation`, `type`, `availability`, `minPrice`, `maxPrice`, `publishedFrom`, `publishedTo`) (solo ADMIN) |
 | POST | `/api/admin/properties` | Crea una propiedad (201; 400; solo ADMIN) |
 | POST | `/api/admin/properties/{id}/images` | Sube una imagen (`multipart/form-data`, campo `file`; JPEG/PNG/WebP hasta 5 MB) a Cloudinary (carpeta `propiedades-claude`) y guarda URL y `publicId` (201; 400/404/413/415; 502/503; solo ADMIN) |

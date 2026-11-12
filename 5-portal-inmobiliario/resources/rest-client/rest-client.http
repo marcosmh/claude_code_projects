@@ -202,6 +202,8 @@ Accept: application/json
 
 ### ------------------------------------------------------------
 ### Autenticación — registro, login, logout y usuario actual
+# Tras 5 intentos de login fallidos con un mismo email, la API responde 429 (con Retry-After)
+# durante 5 minutos. Login/registro: 30 peticiones/min por IP; consultas: 10/min por IP.
 ### La sesión viaja en la cookie httpOnly "portal_session"; REST Client
 ### la guarda y la reenvía sola. Ejecuta en orden: "register" crea un
 ### usuario real (rol USER) en la base de desarrollo.
@@ -392,6 +394,10 @@ DELETE {{baseUrl}}/api/inquiries/no-existe
 
 ### Indicadores del panel
 GET {{baseUrl}}/api/admin/dashboard
+Accept: application/json
+
+### Reportes y estadísticas (propiedades, consultas, favoritos, usuarios y 6 meses de actividad)
+GET {{baseUrl}}/api/admin/reports
 Accept: application/json
 
 ### Listar propiedades con borradores (status: all | published | draft)
