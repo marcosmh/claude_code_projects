@@ -61,7 +61,7 @@ describe("PropertyForm", () => {
     expect(api.createAdminProperty).not.toHaveBeenCalled();
   });
 
-  it("crea la propiedad con números y vuelve al listado", async () => {
+  it("crea la propiedad con números y abre su edición para agregar imágenes", async () => {
     api.createAdminProperty.mockResolvedValue({ id: "nueva" });
     render(<PropertyForm />);
     fillRequired();
@@ -69,7 +69,7 @@ describe("PropertyForm", () => {
     fireEvent.click(screen.getByLabelText("Publicada"));
     fireEvent.click(screen.getByRole("button", { name: "Crear propiedad" }));
 
-    await waitFor(() => expect(router.push).toHaveBeenCalledWith("/admin/properties"));
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith("/admin/properties/nueva/edit"));
     expect(api.createAdminProperty).toHaveBeenCalledWith(
       expect.objectContaining({
         title: "Casa en Coyoacán",

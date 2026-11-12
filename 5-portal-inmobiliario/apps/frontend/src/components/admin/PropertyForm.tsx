@@ -72,9 +72,10 @@ export function PropertyForm({ property }: PropertyFormProps) {
 
   const saveProperty = async (data: PropertyFormData) => {
     setSubmissionError(null);
+    let createdPropertyId: string | null = null;
     try {
       if (property) await updateAdminProperty(property.id, data);
-      else await createAdminProperty(data);
+      else createdPropertyId = (await createAdminProperty(data)).id;
     } catch (error) {
       const isClientError = error instanceof ApiRequestError && error.status < 500;
       setSubmissionError(
@@ -88,7 +89,12 @@ export function PropertyForm({ property }: PropertyFormProps) {
         (typeof key === "string" && key.startsWith(adminPropertiesUrl)) ||
         (Array.isArray(key) && key[0] === "admin-property"),
     );
-    router.push("/admin/properties");
+    // Una propiedad nueva se abre en edición para poder agregarle imágenes.
+    router.push(
+      createdPropertyId
+        ? `/admin/properties/${encodeURIComponent(createdPropertyId)}/edit`
+        : "/admin/properties",
+    );
   };
 
   return (

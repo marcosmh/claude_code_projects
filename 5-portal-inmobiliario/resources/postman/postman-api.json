@@ -36,6 +36,11 @@
       "type": "string"
     },
     {
+      "key": "adminImageId",
+      "value": "",
+      "type": "string"
+    },
+    {
       "key": "inquiryId",
       "value": "",
       "type": "string"
@@ -2756,7 +2761,137 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Status 201 o 503 sin credenciales\", function () { pm.expect(pm.response.code).to.be.oneOf([201, 503]); });",
-                  "if (pm.response.code === 201) { pm.test(\"Devuelve url y posición\", function () { const body = pm.response.json(); pm.expect(body.url).to.include(\"propiedades-claude\"); pm.expect(body.position).to.be.a(\"number\"); }); }"
+                  "if (pm.response.code === 201) { pm.test(\"Devuelve url y posición\", function () { const body = pm.response.json(); pm.expect(body.url).to.include(\"propiedades-claude\"); pm.expect(body.position).to.be.a(\"number\"); }); }",
+                  "if (pm.response.code === 201) { pm.collectionVariables.set(\"adminImageId\", pm.response.json().id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Marcar imagen como principal",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/properties/{{adminPropertyId}}/images/{{adminImageId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "properties",
+                "{{adminPropertyId}}",
+                "images",
+                "{{adminImageId}}"
+              ]
+            },
+            "description": "Solo una principal por propiedad. Devuelve la lista actualizada. Define la variable adminImageId con el id de una imagen subida.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isPrimary\": true\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reordenar imágenes",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/properties/{{adminPropertyId}}/images",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "properties",
+                "{{adminPropertyId}}",
+                "images"
+              ]
+            },
+            "description": "imageIds debe incluir exactamente todas las imágenes de la propiedad, sin repetir (400 si no). Devuelve la lista en el nuevo orden.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"imageIds\": [\n    \"{{adminImageId}}\"\n  ]\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Eliminar imagen (Cloudinary + PostgreSQL)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/properties/{{adminPropertyId}}/images/{{adminImageId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "properties",
+                "{{adminPropertyId}}",
+                "images",
+                "{{adminImageId}}"
+              ]
+            },
+            "description": "Elimina primero de Cloudinary y luego de la base; promueve una nueva principal y compacta posiciones. 204; 404 si no existe; 502 si Cloudinary falla."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 204\", function () { pm.response.to.have.status(204); });"
                 ]
               }
             }

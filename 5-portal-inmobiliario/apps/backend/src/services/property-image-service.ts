@@ -7,6 +7,7 @@ import {
 import type { ImageStorage, ImageUpload } from "@/lib/cloudinary/cloudinary-storage";
 import type { AdminPropertyRepository } from "@/repositories/admin-property-repository";
 import type { PropertyImageRepository } from "@/repositories/property-image-repository";
+import type { PropertyImage } from "@/generated/prisma/client";
 import {
   PROPERTY_IMAGE_MAX_BYTES,
   propertyImageContentTypes,
@@ -37,17 +38,32 @@ export function detectImageContentType(bytes: Uint8Array): PropertyImageContentT
   return null;
 }
 
-/** Subida de imágenes de propiedades (solo ADMIN, autorizado en la ruta). */
+function toDto(record: PropertyImage): PropertyImageDto {
+  return { id: record.id, url: record.url, position: record.position, isPrimary: record.isPrimary };
+}
+
+/** Administración de imágenes de propiedades (solo ADMIN, autorizado en la ruta). */
 export function createPropertyImageService({
   properties,
   images,
   storage,
 }: PropertyImageServiceDependencies) {
+  async function requireProperty(propertyId: string): Promise<void> {
+    if (!(await properties.findById(propertyId))) {
+      throw new NotFoundError("Propiedad no encontrada");
+    }
+  }
+
+  async function requireImage(propertyId: string, imageId: string): Promise<PropertyImage> {
+    await requireProperty(propertyId);
+    const image = await images.findOwned(propertyId, imageId);
+    if (!image) throw new NotFoundError("Imagen no encontrada");
+    return image;
+  }
+
   return {
     async uploadImage(propertyId: string, file: ImageUpload): Promise<PropertyImageDto> {
-      if (!(await properties.findById(propertyId))) {
-        throw new NotFoundError("Propiedad no encontrada");
-      }
+      await requireProperty(propertyId);
       if (file.bytes.length === 0) throw new ValidationError("El archivo está vacío");
       if (file.bytes.length > PROPERTY_IMAGE_MAX_BYTES) {
         throw new PayloadTooLargeError(
@@ -65,12 +81,7 @@ export function createPropertyImageService({
       const stored = await storage.upload(file);
       try {
         const record = await images.create(propertyId, stored);
-        return {
-          id: record.id,
-          url: record.url,
-          position: record.position,
-          isPrimary: record.isPrimary,
-        };
+        return toDto(record);
       } catch (error) {
         // Mantiene sincronizados Cloudinary y PostgreSQL: no deja archivos huérfanos.
         await storage.remove(stored.publicId).catch((removeError: unknown) => {
@@ -78,6 +89,42 @@ export function createPropertyImageService({
         });
         throw error;
       }
+    },
+
+    /**
+     * Elimina la imagen de Cloudinary y luego de PostgreSQL. Si Cloudinary falla no cambia nada;
+     * repetir la operación es seguro porque Cloudinary acepta que la imagen ya no exista.
+     */
+    async deleteImage(propertyId: string, imageId: string): Promise<void> {
+      const image = await requireImage(propertyId, imageId);
+      await storage.remove(image.publicId);
+      await images.remove(propertyId, imageId);
+    },
+
+    /** Marca la imagen como la principal y devuelve la lista actualizada. */
+    async setPrimaryImage(propertyId: string, imageId: string): Promise<PropertyImageDto[]> {
+      await requireImage(propertyId, imageId);
+      await images.setPrimary(propertyId, imageId);
+      return (await images.findByProperty(propertyId)).map(toDto);
+    },
+
+    /** Reordena las imágenes: `imageIds` debe contener exactamente las de la propiedad, sin repetir. */
+    async reorderImages(propertyId: string, imageIds: string[]): Promise<PropertyImageDto[]> {
+      await requireProperty(propertyId);
+      const current = await images.findByProperty(propertyId);
+      const currentIds = new Set(current.map((image) => image.id));
+      const requestedIds = new Set(imageIds);
+      const isSameSet =
+        requestedIds.size === imageIds.length &&
+        requestedIds.size === currentIds.size &&
+        imageIds.every((imageId) => currentIds.has(imageId));
+      if (!isSameSet) {
+        throw new ValidationError(
+          "La lista debe incluir exactamente las imágenes de la propiedad, sin repetir",
+        );
+      }
+      await images.reorder(propertyId, imageIds);
+      return (await images.findByProperty(propertyId)).map(toDto);
     },
   };
 }

@@ -738,3 +738,12 @@ Requisitos:
 - La primera imagen de una propiedad queda como principal; las siguientes se agregan al final (`position` consecutivo). Si falla el guardado en PostgreSQL, la imagen recién subida se elimina de Cloudinary para no dejar archivos huérfanos.
 - Variables de entorno (backend): `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` y opcional `CLOUDINARY_FOLDER`.
 - La interfaz para subir, eliminar, ordenar y elegir la principal es el Paso 27.
+
+## 45. Administración de imágenes de propiedades (Paso 27)
+
+- En `/admin/properties/{id}/edit`, bajo el formulario, hay un gestor de imágenes: subir varias a la vez (cada una sigue las reglas de §44), **eliminar**, **elegir la principal** y **reordenar** (flechas «mover antes / después»; la acción son iconos con etiqueta accesible, sin arrastrar). Tras crear una propiedad nueva se abre su edición para que se agreguen imágenes.
+- API (solo ADMIN; 404 si la propiedad o la imagen no existen o no pertenecen a la propiedad):
+  - `DELETE /api/admin/properties/{id}/images/{imageId}` → 204. Elimina primero la imagen de Cloudinary (acepta que ya no exista) y luego la fila de PostgreSQL; si Cloudinary falla responde 502 y no cambia nada, y repetir la operación es seguro. Si era la principal, la primera imagen restante pasa a serlo; las posiciones se compactan (0, 1, 2…).
+  - `PATCH /api/admin/properties/{id}/images/{imageId}` con `{ "isPrimary": true }` → 200 con la lista actualizada. Solo hay una principal por propiedad.
+  - `PUT /api/admin/properties/{id}/images` con `{ "imageIds": [...] }` → 200 con la lista en el nuevo orden; debe incluir exactamente las imágenes de la propiedad, sin repetir (400 si no). La posición de cada una pasa a ser su lugar en la lista.
+- La imagen principal es la que muestran las tarjetas del catálogo; la galería del detalle sigue el orden por posición.

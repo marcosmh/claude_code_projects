@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { errorResponse } from "@/lib/http/api-response";
+import { parseJsonBody } from "@/lib/http/parse-body";
 import { withRole } from "@/lib/http/with-role";
 import { propertyImageService } from "@/services/services";
-import { PROPERTY_IMAGE_MAX_BYTES } from "@portal/shared-types";
+import { PROPERTY_IMAGE_MAX_BYTES, reorderImagesInputSchema } from "@portal/shared-types";
 
 type PropertyParams = { id: string };
 
@@ -37,4 +38,19 @@ export const POST = withRole<PropertyParams>("ADMIN", async (request, { params }
     filename: file.name,
   });
   return NextResponse.json(image, { status: 201, headers: { "Cache-Control": "no-store" } });
+});
+
+/** Reordena las imágenes: el cuerpo lista todos los ids en el orden deseado; devuelve la lista. */
+export const PUT = withRole<PropertyParams>("ADMIN", async (request, { params }) => {
+  const { id } = await params;
+  const { data, response } = await parseJsonBody(
+    request,
+    reorderImagesInputSchema,
+    "Datos de orden no válidos",
+  );
+  if (response) return response;
+
+  return NextResponse.json(await propertyImageService.reorderImages(id, data.imageIds), {
+    headers: { "Cache-Control": "no-store" },
+  });
 });

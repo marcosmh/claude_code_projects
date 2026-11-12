@@ -5,6 +5,7 @@ import useSWR from "swr";
 import { ApiRequestError, fetchAdminProperty } from "@portal/api-client";
 import { AdminPageHeader } from "./AdminPageHeader";
 import { PropertyForm } from "./PropertyForm";
+import { PropertyImagesManager } from "./PropertyImagesManager";
 
 type AdminPropertyEditorProps = {
   /** Id de la propiedad a editar; sin id es la página de creación. */
@@ -17,7 +18,7 @@ const backLinkClassName =
 /** Página de creación o edición de una propiedad; la edición carga la propiedad (cualquier estado). */
 export function AdminPropertyEditor({ propertyId }: AdminPropertyEditorProps) {
   const isEditing = propertyId !== undefined;
-  const { data, error } = useSWR(
+  const { data, error, mutate } = useSWR(
     isEditing ? ["admin-property", propertyId] : null,
     () => fetchAdminProperty(propertyId as string),
     { revalidateOnFocus: false, shouldRetryOnError: false },
@@ -52,7 +53,17 @@ export function AdminPropertyEditor({ propertyId }: AdminPropertyEditorProps) {
             Cargando propiedad…
           </p>
         ) : (
-          <PropertyForm key={data?.id ?? "new"} property={data} />
+          <div className="space-y-8">
+            <PropertyForm key={data?.id ?? "new"} property={data} />
+            {data && (
+              <PropertyImagesManager
+                propertyId={data.id}
+                title={data.title}
+                images={data.images}
+                onChanged={() => mutate()}
+              />
+            )}
+          </div>
         )}
       </div>
     </div>

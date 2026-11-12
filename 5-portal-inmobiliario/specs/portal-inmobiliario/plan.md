@@ -539,3 +539,10 @@ Decisiones que concretan la sección 10 de este plan:
 - Route Handler `app/api/admin/properties/[id]/images/route.ts` (POST, `withRole("ADMIN")`).
 - Errores de dominio nuevos: `ValidationError` (400), `PayloadTooLargeError` (413), `UnsupportedMediaTypeError` (415), `BadGatewayError` (502) y `ServiceUnavailableError` (503).
 - Contratos en `@portal/shared-types` (`property-image.ts`): tipos permitidos y tamaño máximo, para reutilizarlos en el Paso 27.
+
+## 43. Administración de imágenes (Paso 27)
+
+- Contratos (`property-image.ts`): `reorderImagesInputSchema` y `setPrimaryImageInputSchema`.
+- Repositorio de imágenes: `findOwned`, `delete` (promueve una principal y compacta posiciones en una transacción), `setPrimary` y `reorder` (valida el conjunto exacto de ids). Servicio: `deleteImage` (Cloudinary → PostgreSQL), `setPrimaryImage`, `reorderImages`.
+- Rutas: `images/[imageId]/route.ts` (PATCH, DELETE) y PUT en `images/route.ts`, todas con `withRole("ADMIN")`.
+- Frontend: `@portal/api-client` (`admin-images-client.ts`: subir, eliminar, principal y ordenar), componente `PropertyImagesManager` (subida múltiple con validación previa, iconos de acción, `ConfirmDialog` al eliminar) dentro de `AdminPropertyEditor`; al crear una propiedad se navega a su edición.

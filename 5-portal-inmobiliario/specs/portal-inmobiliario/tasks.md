@@ -182,12 +182,14 @@
   - Guardar URL y `publicId`.
   - Carpeta `propiedades-claude`; `POST /api/admin/properties/{id}/images` (solo ADMIN). La interfaz es el Paso 27.
 
-- [ ] **Paso 27 — Administración de imágenes**
+- [x] **Paso 27 — Administración de imágenes**
   - Múltiples imágenes.
   - Eliminar.
   - Seleccionar principal.
   - Ordenar.
   - Mantener sincronizados Cloudinary y PostgreSQL.
+  - `DELETE`/`PATCH` `/images/{imageId}` y `PUT /images` (orden); gestor en `/admin/properties/{id}/edit`.
+  - Pruebas, lint, typecheck y build pasan.
 
 - [ ] **Paso 28 — Características**
   - Múltiples características por propiedad.

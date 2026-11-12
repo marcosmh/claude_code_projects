@@ -6,6 +6,7 @@ const swr = vi.hoisted(() => ({
   data: undefined as unknown,
   error: undefined as unknown,
   key: null as unknown,
+  mutate: vi.fn(),
 }));
 vi.mock("swr", () => ({
   default: (key: unknown) => {
@@ -31,6 +32,11 @@ vi.mock("./PropertyForm", () => ({
     <form aria-label={property ? "form-edicion" : "form-nuevo"} />
   ),
 }));
+vi.mock("./PropertyImagesManager", () => ({
+  PropertyImagesManager: ({ images }: { images: unknown[] }) => (
+    <section aria-label="gestor-imagenes">{images.length} imágenes</section>
+  ),
+}));
 import { AdminPropertyEditor } from "./AdminPropertyEditor";
 
 afterEach(() => {
@@ -48,12 +54,18 @@ describe("AdminPropertyEditor", () => {
   });
 
   it("la edición carga la propiedad y muestra su título", () => {
-    swr.data = { id: "p1", title: "Casa en Polanco" };
+    swr.data = { id: "p1", title: "Casa en Polanco", images: [{ id: "i1" }] };
     render(<AdminPropertyEditor propertyId="p1" />);
     expect(swr.key).toEqual(["admin-property", "p1"]);
     expect(screen.getByRole("heading", { level: 1, name: "Editar propiedad" })).toBeTruthy();
     expect(screen.getByText("Casa en Polanco")).toBeTruthy();
     expect(screen.getByRole("form", { name: "form-edicion" })).toBeTruthy();
+    expect(screen.getByRole("region", { name: "gestor-imagenes" }).textContent).toBe("1 imágenes");
+  });
+
+  it("la creación no muestra el gestor de imágenes", () => {
+    render(<AdminPropertyEditor />);
+    expect(screen.queryByRole("region", { name: "gestor-imagenes" })).toBeNull();
   });
 
   it("indica que carga y que la propiedad no existe", () => {
