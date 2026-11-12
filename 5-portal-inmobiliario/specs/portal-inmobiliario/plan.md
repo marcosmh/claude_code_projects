@@ -625,3 +625,10 @@ Decisiones que concretan la sección 10 de este plan:
 - Backend: `auditRepository` (`record`, `findPage`), `createAuditService` (`record` de mejor esfuerzo y `listLogs`), `lib/audit/describe-admin-mutation.ts` (función pura: método + ruta + cuerpo de la respuesta → acción y resumen), registro automático en `withRole` para ADMIN y eventos de acceso en las rutas de `/api/auth`, y `GET /api/admin/audit`.
 - Pruebas de integración: la limpieza global posterior a la suite borra las entradas de prueba (`@example.com`) para no ensuciar la base de desarrollo.
 - Frontend: `/admin/audit` con `AdminAuditList` (filtros, tabla, paginación) y el menú activo.
+
+## 59. Base de datos en Supabase (Extra W)
+
+- `prisma.config.ts`: la URL del datasource es `DIRECT_URL` si está definida y, si no, `DATABASE_URL`; así `migrate` usa conexión directa/sesión y la aplicación el pooler.
+- Migración `enable_row_level_security`: bloque `DO` que activa RLS en las tablas de la aplicación y revoca permisos de `anon`/`authenticated` solo si esos roles existen.
+- Documentación: variables de entorno (`DIRECT_URL`) y guía de migración a Supabase en README y `docs/architecture.md`.
+- Pasos operativos (con las credenciales del usuario): `pnpm db:deploy`, `pnpm db:seed`, `pnpm db:check`, pruebas y revisión de avisos de seguridad de Supabase.

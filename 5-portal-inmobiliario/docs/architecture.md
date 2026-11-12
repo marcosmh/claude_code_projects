@@ -67,7 +67,7 @@ compila con `transpilePackages`. Una regla simple: lo que define el **contrato**
 
 | Archivo                    | Contenido                                             |
 | -------------------------- | ----------------------------------------------------- |
-| `apps/backend/.env.local`  | `DATABASE_URL`, `AUTH_SECRET`, Cloudinary             |
+| `apps/backend/.env.local`  | `DATABASE_URL`, `DIRECT_URL`, `AUTH_SECRET`, Cloudinary |
 | `apps/frontend/.env.local` | `BACKEND_URL`, `NEXT_PUBLIC_*` (Google Maps, app URL) |
 | `.env` (raíz)              | Solo `PGADMIN_*` para `docker compose`                |
 

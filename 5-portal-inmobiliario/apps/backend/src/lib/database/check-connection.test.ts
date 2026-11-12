@@ -6,7 +6,7 @@ const databaseUrl = process.env.DATABASE_URL;
 describe("checkDatabaseConnection", () => {
   it.skipIf(!databaseUrl)("se conecta a PostgreSQL", async () => {
     const status = await checkDatabaseConnection(databaseUrl as string);
-    expect(status.databaseName).toBe("portal_inmobiliario");
+    expect(status.databaseName.length).toBeGreaterThan(0);
     expect(status.serverVersion).toBeTruthy();
   });
 

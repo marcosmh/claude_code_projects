@@ -390,3 +390,8 @@
   - `GET /api/admin/audit` (solo ADMIN) con paginación y filtros por categoría, texto y fechas.
   - Página `/admin/audit`; el menú deja de decir «Próximamente».
   - Pruebas, lint, typecheck y build pasan; Postman y REST Client actualizados.
+
+- [x] **Extra W — Base de datos en Supabase**
+  - `DIRECT_URL` opcional para migraciones; RLS activado en todas las tablas (migración condicional).
+  - Migraciones y seed aplicados en Supabase, `db:check` y pruebas contra la nueva base.
+  - Documentación de variables y de la migración; lint, typecheck y build pasan.

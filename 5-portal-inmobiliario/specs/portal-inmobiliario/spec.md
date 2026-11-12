@@ -896,3 +896,14 @@ Módulo «Auditoría y logs» del área de administración (§38), activo en `/a
 - **Interfaz:** tabla con fecha, acción (etiqueta en español), resumen, responsable e IP; filtros por categoría, texto y fechas con aplicación dinámica y «Limpiar filtros»; paginación; estados de carga, vacío y error con «Reintentar».
 - **Notas:** la IP se toma de `x-forwarded-for` (el proxy del frontend la reenvía) y se normaliza sin el prefijo `::ffff:`. Los eventos de prueba (`@example.com`) se borran al terminar la suite.
 - **Fuera de alcance:** exportar, borrar o editar entradas, política de retención automática, alertas y logs de errores técnicos del servidor (siguen en la salida del proceso).
+
+## 61. Base de datos en Supabase (Extra W)
+
+La base de datos de la aplicación pasa de PostgreSQL local a **Supabase** (PostgreSQL administrado). PostgreSQL sigue siendo la única base de datos y Prisma el único acceso a ella (§55); Supabase se usa solo como alojamiento, **no** se usan su Data API, Auth ni Storage.
+
+- **Conexiones:** `DATABASE_URL` es la conexión de la aplicación (pooler de Supabase) y `DIRECT_URL`, opcional, es la conexión para migraciones (`prisma migrate`), que necesita sesiones completas (conexión directa o pooler en modo sesión, puerto 5432). Si `DIRECT_URL` no existe, las migraciones usan `DATABASE_URL` (desarrollo local).
+- **Usuario dedicado:** la aplicación se conecta con un usuario propio de Prisma (no con `postgres`), según la guía de Supabase.
+- **Seguridad (RLS):** todas las tablas del esquema `public` tienen RLS activado, sin políticas, y se revocan los permisos de `anon` y `authenticated`. Así, aunque la Data API de Supabase esté activa, ninguna tabla (hay hashes de contraseñas) es accesible por ella; solo el backend, mediante Prisma, lee y escribe. La migración es condicional: en un PostgreSQL local sin esos roles no hace nada de más.
+- **Secretos:** las cadenas de conexión viven solo en `apps/backend/.env.local` y nunca llegan al navegador (§14).
+- **Datos:** las migraciones y el seed crean el esquema y las cuentas de ejemplo; si se quieren conservar los datos locales, se copian con `pg_dump`/`psql` (solo datos).
+- **Pruebas:** las pruebas de integración usan la base de `DATABASE_URL` y limpian lo que crean; se recomienda ejecutarlas contra una base de desarrollo, no contra datos reales.

@@ -93,7 +93,8 @@ Para ver pgAdmin en desarrollo: `docker compose up -d` (puerto 5050; credenciale
 
 | Archivo | Variable | Uso |
 | --- | --- | --- |
-| `apps/backend/.env.local` | `DATABASE_URL` | Conexión a PostgreSQL |
+| `apps/backend/.env.local` | `DATABASE_URL` | Conexión de la aplicación a PostgreSQL (en Supabase, el pooler) |
+| | `DIRECT_URL` | Opcional: conexión directa o en modo sesión (puerto 5432) para `prisma migrate`; si falta se usa `DATABASE_URL` |
 | | `AUTH_SECRET` | Firma de sesiones (mínimo 32 caracteres; p. ej. `openssl rand -base64 32`) |
 | | `CLOUDINARY_*` | Imágenes de propiedades |
 | `apps/frontend/.env.local` | `BACKEND_URL` | Destino del proxy `/api/**` |
@@ -221,3 +222,11 @@ como completada cuando esté correctamente terminada.
 
 No avances a la siguiente tarea.
 ```
+
+## Base de datos en Supabase
+
+La base puede alojarse en Supabase (spec §61); solo se usa como PostgreSQL, a través de Prisma.
+
+1. En Supabase crea un usuario dedicado (SQL Editor): `create user "prisma" with password '<contraseña>' bypassrls createdb; grant prisma to postgres; grant usage, create on schema public to prisma; alter default privileges in schema public grant all on tables to prisma;`
+2. En `apps/backend/.env.local` define `DATABASE_URL` (pooler, p. ej. `postgresql://prisma.<ref>:<contraseña>@<región>.pooler.supabase.com:6543/postgres?pgbouncer=true`) y `DIRECT_URL` (pooler en modo sesión, puerto `5432`).
+3. `pnpm db:deploy` aplica las migraciones (incluida la que activa RLS) y `pnpm db:seed` crea los datos de ejemplo; `pnpm db:check` verifica la conexión.

@@ -12,5 +12,7 @@ export default defineConfig({
     path: "prisma/migrations",
     seed: "tsx prisma/seed.ts",
   },
-  datasource: { url: env("DATABASE_URL") },
+  // Las migraciones necesitan una conexión directa o en modo sesión (DIRECT_URL en Supabase);
+  // en desarrollo local basta con DATABASE_URL.
+  datasource: { url: process.env.DIRECT_URL ? env("DIRECT_URL") : env("DATABASE_URL") },
 });
