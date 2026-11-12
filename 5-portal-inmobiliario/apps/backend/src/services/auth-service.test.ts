@@ -67,6 +67,23 @@ describe("register", () => {
     await expect(service.register(registration)).rejects.toBeInstanceOf(ConflictError);
     expect(hasher.hash).not.toHaveBeenCalled();
   });
+
+  it("lanza ForbiddenError sin tocar la base cuando el registro está deshabilitado", async () => {
+    const repository = buildRepository();
+    const hasher = buildHasher();
+    const service = createAuthService({
+      repository,
+      passwordHasher: hasher,
+      isRegistrationOpen: async () => false,
+    });
+
+    await expect(service.register(registration)).rejects.toThrow(
+      "El registro de cuentas está deshabilitado",
+    );
+    expect(repository.findByEmail).not.toHaveBeenCalled();
+    expect(repository.create).not.toHaveBeenCalled();
+    expect(hasher.hash).not.toHaveBeenCalled();
+  });
 });
 
 describe("login", () => {

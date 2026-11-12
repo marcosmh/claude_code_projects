@@ -150,6 +150,10 @@ Accept: application/json
 GET {{baseUrl}}/api/properties?sort=area_desc&pageSize=50
 Accept: application/json
 
+### Configuración pública del portal (sin sesión)
+GET {{baseUrl}}/api/settings
+Accept: application/json
+
 ### ------------------------------------------------------------
 ### Ubicaciones — opciones de los filtros de ciudad y región
 ### ------------------------------------------------------------
@@ -399,6 +403,22 @@ Accept: application/json
 ### Reportes y estadísticas (propiedades, consultas, favoritos, usuarios y 6 meses de actividad)
 GET {{baseUrl}}/api/admin/reports
 Accept: application/json
+
+### Configuración del sistema (registro abierto, moneda por defecto y contacto)
+GET {{baseUrl}}/api/admin/settings
+Accept: application/json
+
+### Guardar configuración (reemplaza todo; "" = sin valor; 400 si es inválida).
+### Con allowRegistration=false, POST /api/auth/register responde 403.
+PUT {{baseUrl}}/api/admin/settings
+Content-Type: application/json
+
+{
+  "allowRegistration": true,
+  "defaultCurrency": "MXN",
+  "contactEmail": "contacto@portal.mx",
+  "contactPhone": "+52 55 1234 5678"
+}
 
 ### Listar propiedades con borradores (status: all | published | draft)
 GET {{baseUrl}}/api/admin/properties?page=1&pageSize=10&status=all&search=casa

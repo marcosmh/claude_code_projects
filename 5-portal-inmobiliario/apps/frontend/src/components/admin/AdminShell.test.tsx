@@ -58,11 +58,12 @@ describe("AdminShell: menú", () => {
     expect(screen.getByRole("link", { name: /Reportes y estadísticas/ }).getAttribute("href")).toBe(
       "/admin/reports",
     );
-    for (const label of ["Auditoría y logs", "Configuración del sistema"]) {
-      expect(screen.queryByRole("link", { name: new RegExp(label) })).toBeNull();
-    }
-    expect(document.querySelectorAll('[aria-disabled="true"]')).toHaveLength(2);
-    expect(screen.getAllByText("Próximamente")).toHaveLength(2);
+    expect(
+      screen.getByRole("link", { name: /Configuración del sistema/ }).getAttribute("href"),
+    ).toBe("/admin/settings");
+    expect(screen.queryByRole("link", { name: /Auditoría y logs/ })).toBeNull();
+    expect(document.querySelectorAll('[aria-disabled="true"]')).toHaveLength(1);
+    expect(screen.getAllByText("Próximamente")).toHaveLength(1);
   });
 
   it("no ofrece ninguna opción de usuario final", () => {

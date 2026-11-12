@@ -18,6 +18,7 @@ describe("adminNavigation", () => {
       "/admin/properties",
       "/admin/inquiries",
       "/admin/reports",
+      "/admin/settings",
     ]);
   });
 

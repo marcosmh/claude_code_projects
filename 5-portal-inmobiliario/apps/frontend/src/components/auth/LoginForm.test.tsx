@@ -3,6 +3,19 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+const siteSettings = vi.hoisted(() => ({
+  value: {
+    allowRegistration: true,
+    defaultCurrency: "MXN",
+    contactEmail: null,
+    contactPhone: null,
+  } as Record<string, unknown>,
+  isLoaded: true,
+}));
+vi.mock("@/hooks/useSiteSettings", () => ({
+  useSiteSettings: () => ({ settings: siteSettings.value, isLoaded: siteSettings.isLoaded }),
+}));
+
 const push = vi.hoisted(() => vi.fn());
 const search = vi.hoisted(() => ({ params: new URLSearchParams() }));
 vi.mock("next/navigation", () => ({
@@ -37,6 +50,7 @@ import { LoginForm } from "./LoginForm";
 
 afterEach(() => {
   cleanup();
+  siteSettings.value = { ...siteSettings.value, allowRegistration: true };
   useFlashStore.setState({ messages: [] });
   push.mockReset();
   search.params = new URLSearchParams();
@@ -46,6 +60,12 @@ afterEach(() => {
 });
 
 describe("LoginForm", () => {
+  it("oculta el enlace de registro cuando el registro está deshabilitado", () => {
+    siteSettings.value = { ...siteSettings.value, allowRegistration: false };
+    render(<LoginForm />);
+    expect(screen.queryByRole("link", { name: "Regístrate" })).toBeNull();
+  });
+
   it("inicia sesión, actualiza la sesión y vuelve al inicio", async () => {
     const signedIn = { id: "u1", email: "usuario@portal.mx", name: "Usuario Demo", role: "USER" };
     loginUserMock.mockResolvedValue(signedIn);

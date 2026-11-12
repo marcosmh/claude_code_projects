@@ -71,3 +71,8 @@ export type Favorite = Prisma.FavoriteModel
  * 
  */
 export type Inquiry = Prisma.InquiryModel
+/**
+ * Model SystemSettings
+ * 
+ */
+export type SystemSettings = Prisma.SystemSettingsModel

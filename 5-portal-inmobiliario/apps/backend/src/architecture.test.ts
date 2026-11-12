@@ -185,6 +185,7 @@ describe("permisos en el backend", () => {
         "locations/route.ts",
         "properties/[id]/route.ts",
         "properties/route.ts",
+        "settings/route.ts",
       ].sort(),
     );
   });

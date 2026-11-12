@@ -163,3 +163,15 @@ model Inquiry {
   @@index([createdAt])
   @@map("inquiries")
 }
+
+// Configuración del sistema: una única fila (id "global") creada con los valores por defecto.
+model SystemSettings {
+  id                String   @id @default("global")
+  allowRegistration Boolean  @default(true)
+  defaultCurrency   Currency @default(MXN)
+  contactEmail      String?
+  contactPhone      String?
+  updatedAt         DateTime @updatedAt
+
+  @@map("system_settings")
+}

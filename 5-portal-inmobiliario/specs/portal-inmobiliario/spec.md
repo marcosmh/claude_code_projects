@@ -682,7 +682,7 @@ Requisitos:
 
 **Diseño**
 - Las rutas `/admin/**` usan un layout propio, sin el header ni el pie del portal: barra lateral izquierda colapsable (iconos solos cuando se colapsa; en móvil es un panel que se abre desde un botón), barra superior con el nombre de la persona y «Cerrar sesión», paleta corporativa propia con una variante por cada tema del selector (Claro, Oscuro y Smallville), selector de tema en la barra superior e iconografía de gestión. El botón de colapsar la barra lateral está en la barra superior.
-- Menú: Dashboard, Administrar usuarios, Administrar propiedades, Administrar consultas, Reportes y estadísticas, Configuración del sistema y Auditoría y logs. Los módulos aún no construidos aparecen deshabilitados con la etiqueta «Próximamente» (Configuración y Auditoría, no planificados); «Administrar usuarios» (§47), «Administrar consultas» (§48) y «Reportes y estadísticas» (§58) ya están activos.
+- Menú: Dashboard, Administrar usuarios, Administrar propiedades, Administrar consultas, Reportes y estadísticas, Configuración del sistema y Auditoría y logs. El módulo aún no construido aparece deshabilitado con la etiqueta «Próximamente» (Auditoría y logs, no planificado); «Administrar usuarios» (§47), «Administrar consultas» (§48), «Reportes y estadísticas» (§58) y «Configuración del sistema» (§59) ya están activos.
 - El Dashboard muestra los indicadores y una tabla de propiedades recientes con filtro de estado.
 
 **Restricciones del rol ADMIN**
@@ -862,3 +862,19 @@ Módulo «Reportes y estadísticas» del área de administración (§38), activo
   - **Tendencia mensual:** últimos 6 meses (incluido el actual, aunque sea 0) con propiedades creadas, consultas recibidas y usuarios registrados.
 - **Interfaz:** tarjetas de resumen y gráficas de barras en HTML/CSS (sin librerías), con el valor numérico siempre visible (no depende del color), tablas y listas accesibles, estados de carga y de error con «Reintentar», y los tres temas. El Dashboard (§18) conserva sus indicadores.
 - **Fuera de alcance:** exportación (CSV/PDF), rangos de fechas configurables y comparativas con periodos anteriores.
+
+## 59. Configuración del sistema (Extra U)
+
+Módulo «Configuración del sistema» del área de administración (§38), activo en `/admin/settings` (solo ADMIN). Los ajustes se guardan en PostgreSQL (una única fila) y tienen efecto real:
+
+| Ajuste | Efecto |
+| --- | --- |
+| **Registro de cuentas** (`allowRegistration`, por defecto sí) | Si está desactivado, `POST /api/auth/register` responde **403** «El registro de cuentas está deshabilitado» y la página `/register` muestra ese aviso en lugar del formulario; el enlace «Regístrate» de la pantalla de acceso se oculta. Un ADMIN sigue pudiendo crear usuarios (§49). |
+| **Moneda por defecto** (`defaultCurrency`: MXN o USD, por defecto MXN) | Moneda preseleccionada al crear una propiedad en la administración. |
+| **Correo de contacto** (`contactEmail`, opcional) | Se muestra en el pie de página del portal. |
+| **Teléfono de contacto** (`contactPhone`, opcional) | Se muestra en el pie de página del portal. |
+
+- **API:** `GET /api/settings` (público: solo los ajustes anteriores, no hay secretos) y `GET`/`PUT /api/admin/settings` (solo ADMIN; 401, 403, 400 con datos inválidos). `PUT` valida con Zod (email válido, teléfono de 7 a 20 caracteres con dígitos y `+ - ( ) espacio`, cadena vacía = sin valor) y reemplaza todos los ajustes.
+- **Persistencia:** tabla `system_settings` con una fila (`id = "global"`) creada con los valores por defecto la primera vez que se lee; migración incluida.
+- **Interfaz:** formulario con etiquetas, validación y mensajes flash de éxito o error (§57); el pie de página y la pantalla de registro leen `GET /api/settings` con SWR, así que un cambio se ve sin esperar cachés.
+- **Fuera de alcance:** nombre del sitio, tema por defecto, modo mantenimiento, límites de peticiones configurables y secretos (siguen en variables de entorno, §14).

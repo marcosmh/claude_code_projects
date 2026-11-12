@@ -1234,6 +1234,40 @@
               }
             }
           ]
+        },
+        {
+          "name": "Configuración pública",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/settings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "settings"
+              ]
+            },
+            "description": "Público: registro abierto, moneda por defecto y contacto del portal."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status esperado\", function () { pm.expect(pm.response.code).to.be.oneOf([200, 400, 403, 401]); });"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
@@ -2511,6 +2545,89 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Status esperado\", function () { pm.expect(pm.response.code).to.be.oneOf([200, 403, 401]); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Configuración del sistema",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/settings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "settings"
+              ]
+            },
+            "description": "200 con sesión ADMIN; 403 para USER; 401 sin sesión."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status esperado\", function () { pm.expect(pm.response.code).to.be.oneOf([200, 400, 403, 401]); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Guardar configuración",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/settings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "settings"
+              ]
+            },
+            "description": "Reemplaza la configuración completa. Cadena vacía en correo/teléfono = sin valor. 400 con datos inválidos. Con allowRegistration=false, POST /api/auth/register responde 403.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"allowRegistration\": true,\n  \"defaultCurrency\": \"MXN\",\n  \"contactEmail\": \"contacto@portal.mx\",\n  \"contactPhone\": \"+52 55 1234 5678\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status esperado\", function () { pm.expect(pm.response.code).to.be.oneOf([200, 400, 403, 401]); });"
                 ]
               }
             }

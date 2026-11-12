@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useSWRConfig } from "swr";
 import {
@@ -23,6 +23,7 @@ import {
 } from "@/schemas/property-form";
 import { CheckboxField, SelectField, TextAreaField, TextField } from "./property-form-fields";
 import { useFlash } from "@/hooks/useFlash";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 type PropertyFormProps = {
   /** Propiedad a editar; sin ella el formulario crea una nueva. */
@@ -63,14 +64,24 @@ export function PropertyForm({ property }: PropertyFormProps) {
   const { mutate } = useSWRConfig();
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const flash = useFlash();
+  const { settings, isLoaded: areSettingsLoaded } = useSiteSettings();
   const {
     register,
     handleSubmit,
+    setValue,
+    getFieldState,
     formState: { errors, isSubmitting },
   } = useForm<PropertyFormValues, unknown, PropertyFormData>({
     resolver: zodResolver(propertyFormSchema),
     defaultValues: property ? propertyToFormValues(property) : emptyPropertyFormValues,
   });
+
+  // Una propiedad nueva parte de la moneda por defecto de la configuración (spec §59), salvo que
+  // la persona ya haya elegido otra mientras la configuración cargaba.
+  useEffect(() => {
+    if (property || !areSettingsLoaded) return;
+    if (!getFieldState("currency").isDirty) setValue("currency", settings.defaultCurrency);
+  }, [property, areSettingsLoaded, settings.defaultCurrency, setValue, getFieldState]);
 
   const saveProperty = async (data: PropertyFormData) => {
     setSubmissionError(null);

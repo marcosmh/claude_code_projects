@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { ApiRequestError, loginUser } from "@portal/api-client";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useFlash } from "@/hooks/useFlash";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { resolvePostLoginPath, sanitizeNextPath } from "@/lib/route-access";
 import { loginFormSchema, type LoginFormData, type LoginFormValues } from "@/schemas/auth-forms";
 import { AlreadySignedIn } from "./AlreadySignedIn";
@@ -23,6 +24,7 @@ export function LoginForm() {
   const nextPath = sanitizeNextPath(requestedPath);
   const { user, setUser } = useCurrentUser();
   const flash = useFlash();
+  const { settings } = useSiteSettings();
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const {
     register,
@@ -103,15 +105,17 @@ export function LoginForm() {
               {isSubmitting ? "Ingresando…" : "Ingresar"}
             </button>
           </form>
-          <p className="mt-6 text-center text-sm text-foreground/70">
-            ¿No tienes cuenta?{" "}
-            <Link
-              href={`/register${nextPath === "/" ? "" : `?next=${encodeURIComponent(nextPath)}`}`}
-              className={linkClassName}
-            >
-              Regístrate
-            </Link>
-          </p>
+          {settings.allowRegistration && (
+            <p className="mt-6 text-center text-sm text-foreground/70">
+              ¿No tienes cuenta?{" "}
+              <Link
+                href={`/register${nextPath === "/" ? "" : `?next=${encodeURIComponent(nextPath)}`}`}
+                className={linkClassName}
+              >
+                Regístrate
+              </Link>
+            </p>
+          )}
         </>
       )}
     </AuthCard>

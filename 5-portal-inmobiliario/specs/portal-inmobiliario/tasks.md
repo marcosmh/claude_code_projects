@@ -378,3 +378,9 @@
   - `GET /api/admin/reports` (solo ADMIN) con agregados de propiedades, consultas, favoritos, usuarios y tendencia mensual.
   - Página `/admin/reports` con tarjetas y gráficas accesibles; el menú deja de decir «Próximamente».
   - Pruebas, lint, typecheck y build pasan; Postman y REST Client actualizados.
+
+- [x] **Extra U — Configuración del sistema**
+  - Tabla `system_settings`, `GET /api/settings` (público) y `GET`/`PUT /api/admin/settings` (solo ADMIN).
+  - Registro de cuentas habilitable, moneda por defecto y contacto del pie de página con efecto real.
+  - Página `/admin/settings`; el menú deja de decir «Próximamente».
+  - Pruebas, lint, typecheck y build pasan; Postman y REST Client actualizados.

@@ -7,6 +7,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { ApiRequestError, registerUser } from "@portal/api-client";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { sanitizeNextPath } from "@/lib/route-access";
 import {
   registerFormSchema,
@@ -24,6 +25,7 @@ export function RegisterForm() {
   const router = useRouter();
   const nextPath = sanitizeNextPath(useSearchParams().get("next"));
   const { user, setUser } = useCurrentUser();
+  const { settings } = useSiteSettings();
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const {
     register,
@@ -57,6 +59,17 @@ export function RegisterForm() {
     >
       {user ? (
         <AlreadySignedIn user={user} />
+      ) : !settings.allowRegistration ? (
+        <p
+          role="status"
+          className="rounded-md border border-foreground/15 bg-foreground/5 p-4 text-sm"
+        >
+          El registro de cuentas está deshabilitado por ahora. Si ya tienes una cuenta,{" "}
+          <Link href="/login" className={linkClassName}>
+            inicia sesión
+          </Link>
+          .
+        </p>
       ) : (
         <>
           <form

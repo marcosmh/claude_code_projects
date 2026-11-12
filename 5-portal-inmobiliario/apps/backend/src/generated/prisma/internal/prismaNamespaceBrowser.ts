@@ -56,7 +56,8 @@ export const ModelName = {
   PropertyImage: 'PropertyImage',
   Feature: 'Feature',
   Favorite: 'Favorite',
-  Inquiry: 'Inquiry'
+  Inquiry: 'Inquiry',
+  SystemSettings: 'SystemSettings'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -163,6 +164,18 @@ export const InquiryScalarFieldEnum = {
 } as const
 
 export type InquiryScalarFieldEnum = (typeof InquiryScalarFieldEnum)[keyof typeof InquiryScalarFieldEnum]
+
+
+export const SystemSettingsScalarFieldEnum = {
+  id: 'id',
+  allowRegistration: 'allowRegistration',
+  defaultCurrency: 'defaultCurrency',
+  contactEmail: 'contactEmail',
+  contactPhone: 'contactPhone',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SystemSettingsScalarFieldEnum = (typeof SystemSettingsScalarFieldEnum)[keyof typeof SystemSettingsScalarFieldEnum]
 
 
 export const SortOrder = {

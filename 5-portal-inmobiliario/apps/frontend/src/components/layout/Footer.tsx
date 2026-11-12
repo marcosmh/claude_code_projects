@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FooterContact } from "@/components/layout/FooterContact";
 import { LogoMark } from "@/components/layout/LogoMark";
 import { publicNavigationItems } from "@/lib/navigation";
 
@@ -18,6 +19,7 @@ export async function Footer() {
           <p className="mt-1 text-sm text-foreground/70">
             Propiedades en venta y arriendo en México.
           </p>
+          <FooterContact />
         </div>
         <nav aria-label="Enlaces del pie de página">
           <ul className="flex flex-wrap gap-x-6 gap-y-2 text-sm">

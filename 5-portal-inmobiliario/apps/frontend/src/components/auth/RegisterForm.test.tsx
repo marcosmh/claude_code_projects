@@ -3,6 +3,19 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+const siteSettings = vi.hoisted(() => ({
+  value: {
+    allowRegistration: true,
+    defaultCurrency: "MXN",
+    contactEmail: null,
+    contactPhone: null,
+  } as Record<string, unknown>,
+  isLoaded: true,
+}));
+vi.mock("@/hooks/useSiteSettings", () => ({
+  useSiteSettings: () => ({ settings: siteSettings.value, isLoaded: siteSettings.isLoaded }),
+}));
+
 const push = vi.hoisted(() => vi.fn());
 const search = vi.hoisted(() => ({ params: new URLSearchParams() }));
 vi.mock("next/navigation", () => ({
@@ -36,6 +49,7 @@ import { RegisterForm } from "./RegisterForm";
 
 afterEach(() => {
   cleanup();
+  siteSettings.value = { ...siteSettings.value, allowRegistration: true };
   push.mockReset();
   search.params = new URLSearchParams();
   registerUserMock.mockReset();
@@ -50,6 +64,15 @@ async function fillValidForm(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe("RegisterForm", () => {
+  it("con el registro deshabilitado muestra un aviso con enlace a iniciar sesión y no el formulario", () => {
+    siteSettings.value = { ...siteSettings.value, allowRegistration: false };
+    render(<RegisterForm />);
+
+    expect(screen.getByRole("status").textContent).toContain("deshabilitado");
+    expect(screen.getByRole("link", { name: "inicia sesión" }).getAttribute("href")).toBe("/login");
+    expect(screen.queryByRole("form", { name: "Formulario de registro" })).toBeNull();
+  });
+
   it("crea la cuenta, deja la sesión iniciada y vuelve al inicio", async () => {
     const created = { id: "u9", email: "ana@example.com", name: "Ana Pérez", role: "USER" };
     registerUserMock.mockResolvedValue(created);

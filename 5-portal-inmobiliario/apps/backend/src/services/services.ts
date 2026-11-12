@@ -12,6 +12,7 @@ import { favoriteRepository } from "@/repositories/favorite-repository";
 import { inquiryRepository } from "@/repositories/inquiry-repository";
 import { propertyImageRepository } from "@/repositories/property-image-repository";
 import { propertyRepository } from "@/repositories/property-repository";
+import { systemSettingsRepository } from "@/repositories/system-settings-repository";
 import { userRepository } from "@/repositories/user-repository";
 import { createAdminInquiryService } from "./admin-inquiry-service";
 import { createAdminUserService } from "./admin-user-service";
@@ -24,12 +25,15 @@ import { createFavoriteService } from "./favorite-service";
 import { createInquiryService } from "./inquiry-service";
 import { createPropertyImageService } from "./property-image-service";
 import { createPropertyService } from "./property-service";
+import { createSystemSettingsService } from "./system-settings-service";
 
 // Raíz de composición: conecta los servicios con sus repositorios e integraciones reales.
 export const propertyService = createPropertyService(propertyRepository);
 export const inquiryService = createInquiryService(inquiryRepository);
+export const systemSettingsService = createSystemSettingsService(systemSettingsRepository);
 export const authService = createAuthService({
   repository: userRepository,
+  isRegistrationOpen: systemSettingsService.isRegistrationOpen,
   passwordHasher: { hash: hashPassword, verify: verifyPassword, spendVerificationTime },
 });
 export const authorizer = createAuthorizer(authService);

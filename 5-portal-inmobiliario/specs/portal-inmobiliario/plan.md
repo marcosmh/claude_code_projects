@@ -610,3 +610,10 @@ Decisiones que concretan la sección 10 de este plan:
 - Backend: `adminReportsRepository` (`groupBy` de Prisma y `date_trunc` en SQL para la serie mensual), `createAdminReportsService` (completa claves en cero y arma los 6 meses con reloj inyectable) y `GET /api/admin/reports` con `withRole("ADMIN")`, compuesto en `services.ts`.
 - Frontend: `/admin/reports` con `AdminReports` (tarjetas, `BarList` y `MonthlyChart` accesibles); el menú activa «Reportes y estadísticas».
 - Pruebas: servicio (ceros y meses), integración de la ruta (401/403/200 y coherencia con la base), cliente y componente.
+
+## 57. Configuración del sistema (Extra U)
+
+- Prisma: modelo `SystemSettings` (`system_settings`, fila `global`) y migración.
+- `shared-types`: `SystemSettingsDto`, `PublicSettingsDto` y `updateSystemSettingsSchema` (Zod). `api-client`: `fetchPublicSettings`, `fetchAdminSettings`, `updateAdminSettings`.
+- Backend: `systemSettingsRepository` (lee o crea la fila por defecto, actualiza), `createSystemSettingsService`, rutas `GET /api/settings` y `GET`/`PUT /api/admin/settings`. El servicio de autenticación recibe una dependencia `isRegistrationOpen` y `register` responde 403 si está cerrado.
+- Frontend: `useSiteSettings` (SWR), `/admin/settings` con `SystemSettingsForm` (React Hook Form + Zod + flash), `FooterContact` en el pie, aviso en `RegisterForm`, enlace de registro condicionado en `LoginForm` y moneda por defecto en `PropertyForm`.

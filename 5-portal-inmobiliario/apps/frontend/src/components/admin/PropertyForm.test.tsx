@@ -2,6 +2,19 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+const siteSettings = vi.hoisted(() => ({
+  value: {
+    allowRegistration: true,
+    defaultCurrency: "MXN",
+    contactEmail: null,
+    contactPhone: null,
+  } as Record<string, unknown>,
+  isLoaded: true,
+}));
+vi.mock("@/hooks/useSiteSettings", () => ({
+  useSiteSettings: () => ({ settings: siteSettings.value, isLoaded: siteSettings.isLoaded }),
+}));
+
 const router = vi.hoisted(() => ({ push: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => router }));
 const mutate = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
@@ -24,6 +37,7 @@ import { PropertyForm } from "./PropertyForm";
 
 afterEach(() => {
   cleanup();
+  siteSettings.value = { ...siteSettings.value, defaultCurrency: "MXN" };
   router.push.mockReset();
   mutate.mockClear();
   api.createAdminProperty.mockReset();
@@ -45,6 +59,14 @@ function fillRequired() {
 }
 
 describe("PropertyForm", () => {
+  it("una propiedad nueva parte de la moneda por defecto de la configuración", async () => {
+    siteSettings.value = { ...siteSettings.value, defaultCurrency: "USD" };
+    render(<PropertyForm />);
+    await waitFor(() =>
+      expect((screen.getByLabelText("Moneda") as HTMLSelectElement).value).toBe("USD"),
+    );
+  });
+
   it("no tiene campos de latitud ni longitud", () => {
     render(<PropertyForm />);
     expect(screen.queryByLabelText(/latitud|longitud/i)).toBeNull();

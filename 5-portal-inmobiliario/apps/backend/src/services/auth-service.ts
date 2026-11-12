@@ -17,6 +17,8 @@ export type PasswordHasher = {
 type AuthServiceDependencies = {
   repository: UserRepository;
   passwordHasher: PasswordHasher;
+  /** Indica si el registro público de cuentas está permitido (configuración del sistema). */
+  isRegistrationOpen?: () => Promise<boolean>;
 };
 
 function toAuthUserDto(user: UserRecord): AuthUserDto {
@@ -25,9 +27,16 @@ function toAuthUserDto(user: UserRecord): AuthUserDto {
 
 const invalidCredentialsMessage = "Email o contraseña incorrectos";
 
-export function createAuthService({ repository, passwordHasher }: AuthServiceDependencies) {
+export function createAuthService({
+  repository,
+  passwordHasher,
+  isRegistrationOpen = async () => true,
+}: AuthServiceDependencies) {
   return {
     async register(input: RegisterInput): Promise<AuthUserDto> {
+      if (!(await isRegistrationOpen())) {
+        throw new ForbiddenError("El registro de cuentas está deshabilitado");
+      }
       if ((await repository.findByEmail(input.email)) !== null) {
         throw new ConflictError("Ya existe una cuenta con este email");
       }
