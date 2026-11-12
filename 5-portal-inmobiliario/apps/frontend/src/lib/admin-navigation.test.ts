@@ -14,6 +14,7 @@ describe("adminNavigation", () => {
     ]);
     expect(adminNavigation.filter((item) => item.href !== null).map((item) => item.href)).toEqual([
       "/admin",
+      "/admin/users",
       "/admin/properties",
     ]);
   });

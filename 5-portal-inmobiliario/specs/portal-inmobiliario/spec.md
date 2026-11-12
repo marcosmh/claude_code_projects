@@ -682,7 +682,7 @@ Requisitos:
 
 **Diseño**
 - Las rutas `/admin/**` usan un layout propio, sin el header ni el pie del portal: barra lateral izquierda colapsable (iconos solos cuando se colapsa; en móvil es un panel que se abre desde un botón), barra superior con el nombre de la persona y «Cerrar sesión», paleta corporativa propia con una variante por cada tema del selector (Claro, Oscuro y Smallville), selector de tema en la barra superior e iconografía de gestión. El botón de colapsar la barra lateral está en la barra superior.
-- Menú: Dashboard, Administrar usuarios, Administrar propiedades, Administrar consultas, Reportes y estadísticas, Configuración del sistema y Auditoría y logs. Solo el Dashboard existe hoy; los módulos aún no construidos aparecen deshabilitados con la etiqueta «Próximamente» y se activan al implementarse (Pasos 24, 29 y 30; los demás no están planificados).
+- Menú: Dashboard, Administrar usuarios, Administrar propiedades, Administrar consultas, Reportes y estadísticas, Configuración del sistema y Auditoría y logs. Solo el Dashboard existe hoy; los módulos aún no construidos aparecen deshabilitados con la etiqueta «Próximamente» y se activan al implementarse (Pasos 24, 29 y 30; los demás no están planificados). «Administrar usuarios» ya está activo (§47).
 - El Dashboard muestra los indicadores y una tabla de propiedades recientes con filtro de estado.
 
 **Restricciones del rol ADMIN**
@@ -756,3 +756,12 @@ Requisitos:
   - `POST /api/admin/features` con `{ "name": "Cancha de pádel" }` → 201. El `slug` se genera del nombre (minúsculas, sin acentos, guiones). 400 si el nombre es inválido (1–60 caracteres) y 409 si ya existe una con el mismo nombre o slug (sin distinguir mayúsculas ni acentos).
   - `PUT /api/admin/properties/{id}/features` con `{ "featureIds": [...] }` → 200 con las características de la propiedad. Reemplaza el conjunto completo (puede ser vacío; los repetidos se ignoran). 400 si algún id no existe; 404 si la propiedad no existe o fue eliminada.
 - En `/admin/properties/{id}/edit` hay una sección «Características» con una casilla por característica del catálogo (se guardan al marcar o desmarcar) y un campo para crear una nueva y asignarla en el momento. El detalle público ya muestra las características de la propiedad.
+
+## 47. Administración de usuarios (Paso 29)
+
+- API (solo ADMIN):
+  - `GET /api/admin/users?page&pageSize&search&role&status` → lista paginada (10 por página, máximo 50) por fecha de alta descendente. `search` busca en nombre y email ignorando mayúsculas y acentos; `role` = `USER` | `ADMIN`; `status` = `all` (por defecto) | `active` | `inactive`. Cada usuario incluye `id`, `name`, `email`, `role`, `isActive`, `createdAt`, `favoritesCount` e `inquiriesCount`. Nunca se expone el hash de la contraseña. 400 si los parámetros son inválidos.
+  - `GET /api/admin/users/{id}` → 200 con el mismo detalle; 404 si no existe.
+  - `PATCH /api/admin/users/{id}` con `{ "isActive"?: boolean, "role"?: "USER" | "ADMIN" }` (al menos un campo) → 200 con el usuario actualizado; 400 si el cuerpo es inválido; 404 si no existe.
+- Reglas «cuando corresponda»: un ADMIN **no puede cambiar su propio rol ni desactivarse** (403); así siempre queda al menos un ADMIN activo. Una cuenta desactivada no inicia sesión y su sesión actual deja de ser válida (§17).
+- Interfaz `/admin/users` («Administrar usuarios» en el menú): buscador, filtros de rol y estado, paginación y una tabla con rol, estado, alta y consultas/favoritos. Cada fila tiene iconos para activar/desactivar (con confirmación al desactivar) y para cambiar el rol (con confirmación); en la cuenta propia se deshabilitan.

@@ -198,11 +198,13 @@
   - `GET`/`POST` `/api/admin/features` y `PUT /api/admin/properties/{id}/features`; sección en `/admin/properties/{id}/edit`.
   - Pruebas, lint, typecheck y build pasan.
 
-- [ ] **Paso 29 — Usuarios**
+- [x] **Paso 29 — Usuarios**
   - Crear `/admin/users`.
   - Listar y buscar.
   - Activar/desactivar.
   - Modificar rol cuando corresponda.
+  - `GET /api/admin/users`, `GET`/`PATCH` `/api/admin/users/{id}`; un ADMIN no se modifica a sí mismo.
+  - Pruebas, lint, typecheck y build pasan.
 
 - [ ] **Paso 30 — Consultas**
   - Crear `/admin/inquiries`.

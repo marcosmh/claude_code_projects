@@ -7,3 +7,4 @@ export * from "./admin";
 export * from "./property-admin";
 export * from "./property-image";
 export * from "./feature";
+export * from "./admin-user";

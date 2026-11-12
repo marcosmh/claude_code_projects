@@ -447,6 +447,21 @@ Content-Type: application/json
 
 { "featureIds": ["{{adminFeatureId}}"] }
 
+### Listar usuarios (búsqueda sin acentos; role=USER|ADMIN; status=all|active|inactive)
+# @name listAdminUsers
+GET {{baseUrl}}/api/admin/users?page=1&search=&status=all
+Accept: application/json
+
+### Consultar un usuario (200; 404 si no existe)
+GET {{baseUrl}}/api/admin/users/{{adminUserId}}
+Accept: application/json
+
+### Activar/desactivar y/o cambiar el rol (200; 400 sin campos; 403 si es tu propia cuenta). Usa un usuario de prueba
+PATCH {{baseUrl}}/api/admin/users/{{adminUserId}}
+Content-Type: application/json
+
+{ "isActive": true, "role": "USER" }
+
 ### 400 — filtros de administración inválidos (rango de precio invertido)
 GET {{baseUrl}}/api/admin/properties?minPrice=10&maxPrice=5
 Accept: application/json
@@ -482,6 +497,7 @@ Content-Type: application/json
 @adminPropertyId = {{createAdminProperty.response.body.$.id}}
 @adminImageId = {{uploadAdminImage.response.body.$.id}}
 @adminFeatureId = {{createAdminFeature.response.body.$.id}}
+@adminUserId = {{listAdminUsers.response.body.$.items[0].id}}
 
 ### Obtener la propiedad creada (cualquier estado)
 GET {{baseUrl}}/api/admin/properties/{{adminPropertyId}}

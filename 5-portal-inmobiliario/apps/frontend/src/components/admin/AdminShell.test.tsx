@@ -49,11 +49,14 @@ describe("AdminShell: menú", () => {
     expect(screen.getByRole("link", { name: /Administrar propiedades/ }).getAttribute("href")).toBe(
       "/admin/properties",
     );
-    for (const label of ["Administrar usuarios", "Auditoría y logs", "Reportes y estadísticas"]) {
+    expect(screen.getByRole("link", { name: /Administrar usuarios/ }).getAttribute("href")).toBe(
+      "/admin/users",
+    );
+    for (const label of ["Auditoría y logs", "Reportes y estadísticas"]) {
       expect(screen.queryByRole("link", { name: new RegExp(label) })).toBeNull();
     }
-    expect(document.querySelectorAll('[aria-disabled="true"]')).toHaveLength(5);
-    expect(screen.getAllByText("Próximamente")).toHaveLength(5);
+    expect(document.querySelectorAll('[aria-disabled="true"]')).toHaveLength(4);
+    expect(screen.getAllByText("Próximamente")).toHaveLength(4);
   });
 
   it("no ofrece ninguna opción de usuario final", () => {

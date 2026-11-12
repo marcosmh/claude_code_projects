@@ -552,3 +552,9 @@ Decisiones que concretan la sección 10 de este plan:
 - Contratos (`feature.ts`): `featureInputSchema` y `setPropertyFeaturesInputSchema`.
 - Backend: `feature-repository` (listar, crear con slug único, ids existentes, reemplazar las de una propiedad) y `feature-service` (`slugifyFeatureName`, 409 en duplicados, 400 en ids desconocidos). Rutas `api/admin/features` (GET, POST) y `api/admin/properties/[id]/features` (PUT), con `withRole("ADMIN")`.
 - api-client: `admin-features-client.ts`. Frontend: `PropertyFeaturesManager` dentro de `AdminPropertyEditor`, bajo el gestor de imágenes.
+
+## 45. Administración de usuarios (Paso 29)
+
+- Contratos (`admin-user.ts`): `AdminUserDto`, `adminUserListQuerySchema`, `updateAdminUserInputSchema`.
+- Backend: `admin-user-repository` (página con búsqueda `unaccent`+`ILIKE`, por id, actualización) y `admin-user-service` (regla de no modificarse a sí mismo → 403). Rutas `api/admin/users` (GET), `api/admin/users/[id]` (GET, PATCH) con `withRole("ADMIN")`.
+- api-client: `admin-users-client.ts`. Frontend: `AdminUsersList` en `app/admin/users/page.tsx`; el menú lateral activa «Administrar usuarios».
