@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { imageLoaderFor } from "@/lib/image-loader";
 import Link from "next/link";
 import { memo } from "react";
 import { FavoriteButton } from "@/components/favorites/FavoriteButton";
@@ -47,6 +48,7 @@ export const PropertyCard = memo(function PropertyCard({
           {property.primaryImageUrl && (
             <Image
               src={property.primaryImageUrl}
+              loader={imageLoaderFor(property.primaryImageUrl)}
               alt={`Fotografía de ${property.title}`}
               fill
               priority={priority}

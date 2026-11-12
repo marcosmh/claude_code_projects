@@ -1,6 +1,7 @@
 import type {
   AdminUserDto,
   AdminUserStatus,
+  CreateAdminUserInput,
   PaginatedResponse,
   UpdateAdminUserInput,
   UserRole,
@@ -86,4 +87,9 @@ export function updateAdminUser(
     { method: "PATCH", body: input },
     "No se pudo actualizar el usuario",
   );
+}
+
+/** Da de alta una cuenta (USER o ADMIN); 409 si el email ya existe. */
+export function createAdminUser(input: CreateAdminUserInput): Promise<AdminUserDto> {
+  return send(adminUsersUrl, { method: "POST", body: input }, "No se pudo crear el usuario");
 }

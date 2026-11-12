@@ -50,6 +50,7 @@ model User {
   favorites Favorite[]
   inquiries Inquiry[]
 
+  @@index([createdAt])
   @@map("users")
 }
 
@@ -95,6 +96,7 @@ model Property {
   @@index([isPublished, availability])
   @@index([isPublished, isFeatured])
   @@index([deletedAt])
+  @@index([updatedAt])
   @@index([price])
   @@index([commune])
   @@index([city])

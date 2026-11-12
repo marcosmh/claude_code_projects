@@ -189,6 +189,24 @@ describe.skipIf(!databaseUrl)("API REST: subida de imágenes de propiedades", ()
     expect(cloudinaryFetch).not.toHaveBeenCalled();
   });
 
+  it("rechaza con 413 por Content-Length antes de leer un cuerpo enorme", async () => {
+    stubCloudinary();
+    const response = await uploadImage(
+      new NextRequest(`http://localhost/api/admin/properties/${propertyId}/images`, {
+        method: "POST",
+        headers: {
+          cookie: `${sessionCookieName}=${adminToken}`,
+          "content-length": String(PROPERTY_IMAGE_MAX_BYTES * 3),
+          "content-type": "multipart/form-data; boundary=x",
+        },
+        body: "--x--",
+      }),
+      { params: Promise.resolve({ id: propertyId }) },
+    );
+    expect(response.status).toBe(413);
+    expect(cloudinaryFetch).not.toHaveBeenCalled();
+  });
+
   it("responde 404 con una propiedad inexistente o eliminada", async () => {
     stubCloudinary();
     expect((await buildRequest("no-existe", adminToken)).status).toBe(404);

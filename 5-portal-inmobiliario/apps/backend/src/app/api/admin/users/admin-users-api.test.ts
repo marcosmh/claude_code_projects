@@ -5,7 +5,7 @@ import { PrismaClient } from "@/generated/prisma/client";
 import { POST as register } from "@/app/api/auth/register/route";
 import { sessionCookieName } from "@/lib/auth/session";
 import { PATCH, GET as getUser } from "./[id]/route";
-import { GET as listUsers } from "./route";
+import { GET as listUsers, POST as createUser } from "./route";
 
 const databaseUrl = process.env.DATABASE_URL;
 const runIdentifier = `users-api-${Date.now()}`;
@@ -43,6 +43,15 @@ describe.skipIf(!databaseUrl)("API REST: administración de usuarios", () => {
   const list = (token: string | null, query = "") =>
     listUsers(
       new NextRequest(`http://localhost/api/admin/users?${query}`, { headers: headers(token) }),
+      { params: Promise.resolve({}) },
+    );
+  const create = (token: string | null, body: unknown) =>
+    createUser(
+      new NextRequest("http://localhost/api/admin/users", {
+        method: "POST",
+        headers: headers(token),
+        body: JSON.stringify(body),
+      }),
       { params: Promise.resolve({}) },
     );
   const get = (id: string, token: string | null) =>
@@ -133,5 +142,46 @@ describe.skipIf(!databaseUrl)("API REST: administración de usuarios", () => {
     expect((await patch(adminId, adminToken, { isActive: false })).status).toBe(403);
     expect((await patch(adminId, adminToken, { role: "USER" })).status).toBe(403);
     expect((await client.user.findUnique({ where: { id: adminId } }))?.role).toBe("ADMIN");
+  });
+
+  it("da de alta usuarios normales y administradores sin exponer la contraseña", async () => {
+    const email = `${runIdentifier}-alta-${Date.now()}@Example.com`;
+    const response = await create(adminToken, {
+      name: "Alta Admin",
+      email,
+      password: "clave-segura-1",
+      role: "ADMIN",
+    });
+    expect(response.status).toBe(201);
+    const body = (await response.json()) as { id: string; email: string; role: string };
+    expect(body).toMatchObject({ email: email.toLowerCase(), role: "ADMIN", isActive: true });
+    expect(JSON.stringify(body)).not.toContain("clave-segura-1");
+    const stored = await client.user.findUnique({ where: { id: body.id } });
+    expect(stored?.passwordHash).toBeTruthy();
+    expect(stored?.passwordHash).not.toContain("clave-segura-1");
+
+    const normal = await create(adminToken, {
+      name: "Alta Normal",
+      email: `${runIdentifier}-normal@example.com`,
+      password: "clave-segura-1",
+    });
+    expect(normal.status).toBe(201);
+    expect(await normal.json()).toMatchObject({ role: "USER" });
+  });
+
+  it("valida el alta: 401/403, datos inválidos y email repetido (409)", async () => {
+    const valid = {
+      name: "Repetido",
+      email: `${runIdentifier}-dup@example.com`,
+      password: "clave-segura-1",
+    };
+    expect((await create(null, valid)).status).toBe(401);
+    expect((await create(userToken, valid)).status).toBe(403);
+    expect((await create(adminToken, { ...valid, password: "corta" })).status).toBe(400);
+    expect((await create(adminToken, { ...valid, role: "ROOT" })).status).toBe(400);
+    expect((await create(adminToken, { ...valid, email: "no-es-email" })).status).toBe(400);
+
+    expect((await create(adminToken, valid)).status).toBe(201);
+    expect((await create(adminToken, valid)).status).toBe(409);
   });
 });

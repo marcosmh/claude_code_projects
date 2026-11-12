@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { imageLoaderFor } from "@/lib/image-loader";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -107,6 +108,7 @@ export function InquiredSection() {
                 {inquiry.propertyImageUrl && (
                   <Image
                     src={inquiry.propertyImageUrl}
+                    loader={imageLoaderFor(inquiry.propertyImageUrl)}
                     alt=""
                     fill
                     sizes="96px"

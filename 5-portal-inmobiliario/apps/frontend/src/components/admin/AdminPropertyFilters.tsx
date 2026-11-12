@@ -99,7 +99,7 @@ const focusClassName =
 const inputClassName = `h-10 w-full rounded-md border border-foreground/20 bg-surface px-3 text-sm text-foreground aria-[invalid=true]:border-danger ${focusClassName}`;
 const legendClassName = "mb-2 text-sm font-semibold";
 const checkboxLabelClassName = "flex cursor-pointer items-center gap-2 py-1 text-sm";
-const checkboxClassName = `size-4 accent-primary ${focusClassName}`;
+const checkboxClassName = `size-5 accent-primary ${focusClassName}`;
 
 type AdminPropertyFiltersProps = {
   id: string;
@@ -150,7 +150,7 @@ export function AdminPropertyFilters({ id, filters, onChange }: AdminPropertyFil
         aria-invalid={errors[name] ? "true" : "false"}
         aria-describedby={errors[name] ? `${id}-${name}-error` : undefined}
         onChange={(event) => apply({ ...draft, [name]: event.target.value }, TYPING_DEBOUNCE_MS)}
-        className={inputClassName}
+        className={`${inputClassName} focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-ring`}
       />
       {errors[name] && (
         <p id={`${id}-${name}-error`} role="alert" className="mt-1 text-xs text-danger">

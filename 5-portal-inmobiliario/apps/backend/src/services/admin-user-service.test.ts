@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { ForbiddenError, NotFoundError } from "@/lib/errors";
+import { ConflictError, ForbiddenError, NotFoundError } from "@/lib/errors";
 import type { AdminUserRepository } from "@/repositories/admin-user-repository";
 import { createAdminUserService } from "./admin-user-service";
 
@@ -16,13 +16,20 @@ const record = (overrides = {}) => ({
   ...overrides,
 });
 
-function build(found: ReturnType<typeof record> | null = record()) {
+function build(found: ReturnType<typeof record> | null = record(), emailTaken = false) {
   const repository: AdminUserRepository = {
     findPage: vi.fn().mockResolvedValue({ records: [record()], total: 25 }),
     findById: vi.fn().mockResolvedValue(found),
     update: vi.fn().mockResolvedValue(found),
+    create: vi.fn().mockImplementation(async (data) => record({ ...data })),
   };
-  return { service: createAdminUserService(repository), repository };
+  const hashPassword = vi.fn().mockResolvedValue("hash-seguro");
+  const findEmailOwner = vi.fn().mockResolvedValue(emailTaken ? { id: "otro" } : null);
+  return {
+    service: createAdminUserService({ repository, hashPassword, findEmailOwner }),
+    repository,
+    hashPassword,
+  };
 }
 
 describe("createAdminUserService", () => {
@@ -79,5 +86,31 @@ describe("createAdminUserService", () => {
     await expect(
       build(null).service.updateUser("admin", "x", { role: "ADMIN" }),
     ).rejects.toBeInstanceOf(NotFoundError);
+  });
+});
+
+describe("createUser", () => {
+  const input = { name: "Nuevo", email: "nuevo@example.com", password: "clave-segura-1" };
+
+  it("crea la cuenta con el rol indicado y la contraseña con hash", async () => {
+    const { service, repository, hashPassword } = build();
+    const result = await service.createUser({ ...input, role: "ADMIN" });
+    expect(hashPassword).toHaveBeenCalledWith("clave-segura-1");
+    expect(repository.create).toHaveBeenCalledWith({
+      name: "Nuevo",
+      email: "nuevo@example.com",
+      passwordHash: "hash-seguro",
+      role: "ADMIN",
+    });
+    expect(result).toMatchObject({ email: "nuevo@example.com", role: "ADMIN" });
+    expect(JSON.stringify(result)).not.toContain("hash-seguro");
+  });
+
+  it("rechaza un email que ya existe sin crear nada", async () => {
+    const { service, repository } = build(record(), true);
+    await expect(service.createUser({ ...input, role: "USER" })).rejects.toBeInstanceOf(
+      ConflictError,
+    );
+    expect(repository.create).not.toHaveBeenCalled();
   });
 });

@@ -26,7 +26,7 @@ export function AdminPageHeader({
                 {crumb.href ? (
                   <Link
                     href={crumb.href}
-                    className="underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                    className="inline-block py-1 underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                   >
                     {crumb.label}
                   </Link>

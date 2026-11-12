@@ -41,7 +41,7 @@ export function PropertySection({
         </div>
         <Link
           href={viewAllHref}
-          className="text-sm font-semibold text-link hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          className="inline-block py-1 text-sm font-semibold text-link hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
           {viewAllLabel} →
         </Link>

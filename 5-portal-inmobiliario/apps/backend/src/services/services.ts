@@ -43,5 +43,9 @@ export const featureService = createFeatureService({
   features: featureRepository,
   properties: adminPropertyRepository,
 });
-export const adminUserService = createAdminUserService(adminUserRepository);
+export const adminUserService = createAdminUserService({
+  repository: adminUserRepository,
+  hashPassword,
+  findEmailOwner: userRepository.findByEmail,
+});
 export const adminInquiryService = createAdminInquiryService(adminInquiryRepository);

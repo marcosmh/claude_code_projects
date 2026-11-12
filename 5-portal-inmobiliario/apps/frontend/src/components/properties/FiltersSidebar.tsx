@@ -41,7 +41,7 @@ const inputClassName =
 const legendClassName = "mb-2 text-sm font-semibold";
 const checkboxLabelClassName = "flex cursor-pointer items-center gap-2 py-1 text-sm";
 const checkboxClassName =
-  "h-4 w-4 accent-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
+  "h-5 w-5 accent-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
 
 /** Opciones del select incluyendo el valor activo aunque ya no figure en la lista. */
 function withCurrentValue(options: string[], current: string | undefined): string[] {
@@ -132,7 +132,8 @@ export function FiltersSidebar({ id, filters, cities, regions }: FiltersSidebarP
         type="date"
         aria-invalid={errors[name] ? "true" : "false"}
         aria-describedby={errors[name] ? `filter-${name}-error` : undefined}
-        className={inputClassName}
+        // El foco cae en los segmentos internos del campo de fecha: `focus-within` mantiene el anillo.
+        className={`${inputClassName} focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-ring`}
         {...register(name)}
       />
       {errors[name] && (

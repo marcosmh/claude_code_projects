@@ -41,8 +41,7 @@ export function ThemeSwitcher({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
-  const currentOption =
-    THEME_OPTIONS.find((option) => option.name === theme) ?? THEME_OPTIONS[0];
+  const currentOption = THEME_OPTIONS.find((option) => option.name === theme) ?? THEME_OPTIONS[0];
 
   useEffect(() => {
     syncFromDocument();

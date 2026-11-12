@@ -7,12 +7,24 @@ import { PROPERTY_IMAGE_MAX_BYTES, reorderImagesInputSchema } from "@portal/shar
 
 type PropertyParams = { id: string };
 
+/** Margen para los encabezados multipart (límites y nombre de campo) sobre el tamaño del archivo. */
+const MULTIPART_OVERHEAD_BYTES = 64 * 1024;
+
 /**
  * Sube una imagen (`multipart/form-data`, campo `file`) a Cloudinary y guarda su URL y `publicId`.
  * 201 con la imagen creada; 400, 404, 413, 415, 502 o 503 según el caso.
  */
 export const POST = withRole<PropertyParams>("ADMIN", async (request, { params }) => {
   const { id } = await params;
+
+  // Rechaza antes de leer el cuerpo: `formData()` lo carga completo en memoria.
+  const declaredLength = Number(request.headers.get("content-length"));
+  if (declaredLength > PROPERTY_IMAGE_MAX_BYTES + MULTIPART_OVERHEAD_BYTES) {
+    return errorResponse(
+      `La imagen supera el máximo de ${PROPERTY_IMAGE_MAX_BYTES / (1024 * 1024)} MB`,
+      413,
+    );
+  }
 
   let formData: FormData;
   try {

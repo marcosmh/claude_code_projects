@@ -8,7 +8,7 @@ export function AlreadySignedIn({ user }: { user: AuthUserDto }) {
       <p className="font-medium">Ya iniciaste sesión como {user.name}.</p>
       <Link
         href={user.role === "ADMIN" ? "/admin" : "/properties"}
-        className="mt-2 inline-block text-sm font-semibold text-link hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        className="mt-2 inline-block py-1 text-sm font-semibold text-link hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
       >
         {user.role === "ADMIN" ? "Ir al panel de administración" : "Ver propiedades"}
       </Link>

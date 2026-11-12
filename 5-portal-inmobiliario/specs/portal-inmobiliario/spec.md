@@ -771,3 +771,67 @@ Requisitos:
 - API (solo ADMIN): `GET /api/admin/inquiries?page&pageSize&search&propertyId` → lista paginada (10 por página, máximo 50), la más reciente primero. `search` busca por palabras, sin distinguir mayúsculas ni acentos, en nombre, email, mensaje y título de la propiedad; `propertyId` limita a una propiedad. 400 si los parámetros son inválidos.
 - Cada consulta incluye: `id`, `createdAt`, `message`, contacto (`name`, `email`, `phone` o null), propiedad (`propertyId`, `propertyTitle`, `propertyDeleted`) y usuario asociado (`userId`, `userName`, ambos null si la envió un visitante sin sesión). Incluye consultas de propiedades despublicadas o eliminadas (borrado lógico, §37).
 - Interfaz `/admin/inquiries` («Administrar consultas» en el menú): buscador, paginación y una tabla con propiedad, contacto (email y teléfono como enlaces `mailto:`/`tel:`), usuario («Visitante» si no tiene cuenta), mensaje y fecha. El título de la propiedad enlaza a `/admin/properties/{id}/edit`; si fue eliminada se muestra con la etiqueta «Eliminada» y sin enlace.
+
+## 49. Alta de usuarios por un administrador (Extra P)
+
+> Solicitada por el usuario: el ADMIN debe poder dar de alta cuentas, normales o de administración (el registro público solo crea USER, §17).
+
+- API (solo ADMIN): `POST /api/admin/users` con `{ "name", "email", "password", "role"?: "USER" | "ADMIN" }` → 201 con el usuario creado (`AdminUserDto`, sin contraseña). `role` es `USER` si no se indica. Mismas reglas que el registro: nombre 2–100 caracteres, email válido (se guarda en minúsculas) y contraseña de 8 a 128. La cuenta se crea activa. 400 si el cuerpo es inválido y 409 si el email ya existe. La contraseña se guarda con el mismo hash (scrypt) que el registro y nunca se devuelve.
+- Interfaz: botón «Nuevo usuario» en `/admin/users` que abre `/admin/users/new`, con un formulario (nombre, email, contraseña, rol «Usuario» o «Administrador»). Al crear vuelve al listado, que se actualiza. Los errores de la API (p. ej. email repetido) se muestran en el formulario.
+
+## 50. SEO y metadata (Paso 31)
+
+- Cada página pública de propiedad (`/properties/{id}`) genera su metadata en el servidor: **título** `«{título de la propiedad} | Portal Inmobiliario»`, **descripción** con tipo, operación, ubicación, precio y el inicio de la descripción (máximo 160 caracteres), y **Open Graph** (`og:title`, `og:description`, `og:type`, `og:url`, `og:site_name`, `og:locale` = `es_MX`) con la **imagen principal** (`og:image`, o la primera imagen) cuando la propiedad la tiene; con imagen se usa la tarjeta `summary_large_image` de Twitter.
+- Si la propiedad no existe, no está publicada o el backend no responde, la página usa un título genérico («Propiedad no encontrada») con `robots: noindex`; la metadata nunca rompe la página.
+- La consulta de metadata se hace en el servidor contra el backend (`BACKEND_URL`) mediante `@portal/api-client`, se cachea unos minutos y no expone secretos.
+- El layout raíz define `metadataBase` (variable opcional `NEXT_PUBLIC_SITE_URL`, por defecto `http://localhost:3000`) y valores Open Graph por defecto para el resto de páginas. Las páginas privadas (`/account`, `/account/edit`, `/forbidden`) y toda el área `/admin` llevan `robots: noindex`.
+
+## 51. Optimización (Paso 32)
+
+- **Imágenes.** Todas las imágenes usan `next/image` con `sizes` ajustado a su espacio (tarjetas, galería, miniaturas, cuenta y administración) y `priority` solo en las que están a la vista al cargar. Las URLs de Cloudinary se piden ya transformadas al CDN (`f_auto,q_auto,c_limit,w_{ancho}`), de modo que el navegador nunca descarga el original (hasta 5 MB) y el servidor de Next.js no lo reprocesa. Las demás imágenes (portada local y datos de ejemplo) siguen con el optimizador de Next.js. Un cargador global no es válido: con `loader: "custom"` `/_next/image` deja de existir (404), por eso el cargador se asigna por imagen.
+- **Solicitudes duplicadas.** Revisadas en el navegador (portada, catálogo y detalle): cada pantalla pide cada recurso una sola vez (SWR comparte claves, p. ej. la sesión `/api/auth/me`, y las secciones de la portada usan consultas distintas). No se requirieron cambios.
+- **PostgreSQL.** Las listas ya se resuelven con `findMany` + `count` sin consultas por fila (la imagen principal se trae en la misma consulta con `take: 1`) y con índices para los filtros y órdenes del catálogo. Se agregan índices para los órdenes de administración que no los tenían: `properties(updatedAt)` (listado de administración) y `users(createdAt)` (listado de usuarios). Las búsquedas con `unaccent` + `ILIKE` resuelven los ids en SQL antes de paginar; es correcto para el volumen actual y es el punto a revisar (índice trigram) si el catálogo crece mucho.
+
+## 52. Responsive y accesibilidad (Paso 33)
+
+Auditoría hecha en el navegador sobre portada, catálogo, detalle, acceso, registro y todo el área `/admin` en tres anchos (escritorio 1280 px, tablet 820 px y móvil 390 px):
+
+- **Semántica:** un solo `h1` y un solo `main` por página, sin saltos de nivel de encabezado, todos los controles con etiqueta o nombre accesible, todas las imágenes con `alt` (decorativas con `alt=""`).
+- **Responsive:** ninguna página desborda horizontalmente. Corregido: en móvil la barra superior de `/admin` (texto «Panel de administración» + selector de tema + «Cerrar sesión») excedía el ancho en 10 px; el texto ahora solo se muestra desde `sm`.
+- **Teclado y foco:** recorriendo cada pantalla con Tab, todo elemento enfocable muestra un indicador de foco visible. Corregido: los campos de fecha de los filtros no mostraban el anillo (el foco cae en sus segmentos internos); ahora usan `focus-within`. Quedan fuera del control de la aplicación el iframe de Google Maps y el overlay de desarrollo de Next.js.
+- **Tamaño de los objetivos táctiles (WCAG 2.2, 24 px):** los enlaces «Ver todas…», «Ir al panel de administración» y las migas de pan tienen ahora una altura de acción mínima de 24 px, y las casillas de verificación de filtros y características pasan de 16 a 20 px (su etiqueta sigue siendo clicable). Los enlaces del menú ya tenían relleno vertical.
+
+## 53. Seguridad (Paso 34)
+
+Revisión por área, con lo verificado y lo corregido:
+
+- **Autenticación.** Contraseñas con scrypt y comparación en tiempo constante (también cuando el email no existe); sesión en cookie `httpOnly`, `SameSite=Lax` y `Secure` en HTTPS; JWT HS256 con `AUTH_SECRET` de mínimo 32 caracteres que solo lleva el id: el rol y el estado activo se leen de la base en cada petición, así que desactivar o degradar una cuenta surte efecto de inmediato. Una cuenta desactivada no inicia sesión.
+- **Autorización.** Todo endpoint `/api/admin/**` usa `withRole("ADMIN")`. Una prueba de integración descubre **todas** las rutas de administración por el sistema de archivos y exige 401 sin sesión y 403 con un USER, de modo que una ruta nueva sin protección rompe la suite. Favoritos y consultas propias son exclusivos de USER (`exact`). `proxy.ts` es solo una barrera de páginas: los datos se protegen en cada endpoint.
+- **Validación REST.** Todo cuerpo y query se valida con Zod en el backend (los campos desconocidos se descartan, sin asignación masiva); las consultas SQL en bruto usan parámetros enlazados y los comodines de `LIKE` se escapan; los errores 500 no exponen detalles internos.
+- **Cargas de archivos.** Solo ADMIN; tipo real por firma de bytes (JPEG/PNG/WebP, no el `Content-Type` declarado), máximo 5 MB, archivo vacío rechazado. Nuevo: se rechaza con 413 por `Content-Length` **antes** de leer el cuerpo en memoria.
+- **Secretos.** Los `.env` reales no se versionan (solo los `.env.example`); el navegador solo recibe variables `NEXT_PUBLIC_*` (Google Maps, Web3Forms, URL del sitio); el JavaScript compilado del frontend no contiene `AUTH_SECRET`, `DATABASE_URL`, `CLOUDINARY_*` ni hashes.
+- **Cloudinary.** Firma de subida y borrado solo en el backend, con el secreto fuera del navegador; el cargador del frontend (`res.cloudinary.com`) solo compone URLs públicas de lectura.
+- **Web3Forms.** La clave pública es pública por diseño (§31) y se usa solo para el aviso por correo; la consulta se valida y guarda siempre en el backend.
+- **Cabeceras.** Nuevo: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY` y `Referrer-Policy` en el frontend y en la API, más `Permissions-Policy` (sin cámara, micrófono, geolocalización ni pagos) en las páginas. No se define una `Content-Security-Policy` estricta porque Next.js inyecta scripts en línea y se cargan Google Maps, Cloudinary y Web3Forms.
+- **Riesgos residuales (fuera del alcance actual):** no hay límite de intentos de inicio de sesión (conviene un limitador compartido, p. ej. en el borde o con Redis, al desplegar con varias instancias), y el registro revela si un email ya existe (409).
+
+## 54. QA integral (Paso 35)
+
+Recorrido de extremo a extremo contra las aplicaciones en marcha (frontend :3000 con su proxy hacia el backend :4000), con las cuentas de ejemplo del seed. Resultado: **72 de 72 comprobaciones de API correctas** y los flujos de interfaz verificados en el navegador, sin defectos bloqueantes.
+
+- **Visitante.** Listado, filtros combinados, orden por precio, operación múltiple (`SALE,RENT`), ubicaciones y detalle (con imágenes y características). Códigos: 404 para propiedad inexistente, 400 para `operation` inválida y para rango de precio invertido, 404 al consultar una propiedad inexistente, 400 para consulta inválida. Sin sesión: 401 en favoritos, mis consultas, `/api/auth/me` y todo `/api/admin/**`; `/account` y `/admin/**` redirigen a `/login?next=…`.
+- **Autenticación.** Login incorrecto 401, email inexistente 401, cuenta desactivada 403, registro con email repetido 409, datos inválidos 400, JSON roto 400; cookie `httpOnly` + `SameSite`.
+- **USER.** Login, `/me`, favoritos (agregar, ver, quitar, 404 si la propiedad no existe), mis consultas y edición de perfil (cambiar el email sin contraseña actual: 403). 403 en cualquier recurso ADMIN (dashboard, propiedades, usuarios, subida de imágenes). En la interfaz, un USER que abre `/admin` ve «Acceso restringido» (403) y, tras iniciar sesión, vuelve a la ruta que pidió.
+- **ADMIN.** 403 en favoritos y mis consultas (sin funciones de usuario final); dashboard; crear propiedad (201, 400 con precio negativo), despublicarla (el visitante recibe 404, el admin la ve), características (crear, asignar, 400 con id inexistente), subida de imágenes (400 sin archivo, 415 con contenido no imagen, 404 con propiedad inexistente), reordenar (400 con lista vacía), alta de usuario por API y por formulario (409 con email repetido), desactivar/activar con confirmación (Esc cancela; el usuario desactivado no inicia sesión: 403), un ADMIN no se modifica a sí mismo (403), borrado lógico de propiedad (204; repetirlo 404) y cierre de sesión (la sesión deja de ser válida).
+- **Defectos encontrados y corregidos.** (1) Pruebas del diálogo de confirmación con `queryByRole("dialog")`, que nunca coincide con el `alertdialog` real y por tanto no comprobaban nada: ahora usan `alertdialog`. (2) Con las suites en paralelo, los 5 s por defecto de Vitest no alcanzaban en pruebas con scrypt y un timeout dejaba datos de prueba sin limpiar en la base de desarrollo (propiedades `*-test-*` visibles en el catálogo): el backend usa ahora 30 s de timeout y se limpiaron los restos.
+
+## 55. Cumplimiento arquitectónico (Paso 36)
+
+Las reglas de arquitectura de `CLAUDE.md` se verifican con una prueba automática (`apps/backend/src/architecture.test.ts`) que recorre el código fuente del monorepo:
+
+- **Sin Server Actions:** ningún archivo contiene la directiva `"use server"`.
+- **Comunicación REST:** el frontend no define Route Handlers; solo `proxy.ts` (barrera de páginas, servidor) y `lib/web3forms.ts` (navegador, spec §31) usan `fetch` fuera de `@portal/api-client`; no hay URLs absolutas a localhost en el frontend salvo valores por defecto de variables de entorno.
+- **PostgreSQL única y React sin acceso a la base:** ningún workspace declara otro motor de base de datos; frontend y paquetes compartidos no dependen de Prisma ni `pg` ni importan el backend; solo `repositories/` y `lib/database/` acceden al cliente de base de datos.
+- **Capas:** los Route Handlers no importan repositorios ni Prisma; los servicios no acceden a la base de datos.
+- **Permisos en el backend:** todo handler de `/api/admin/**` usa `withRole("ADMIN")`; favoritos y consultas del usuario usan `withRole("USER")`; las rutas sin `withRole` son exactamente las públicas previstas (login, logout, register, `GET /auth/me`, crear consulta, ubicaciones, propiedades).
+- **Integraciones y secretos:** Cloudinary (con secreto) solo en `lib/cloudinary/` del backend; Web3Forms y Google Maps solo en el frontend con claves públicas; ninguna variable `NEXT_PUBLIC_*` contiene secretos y el backend no las usa.

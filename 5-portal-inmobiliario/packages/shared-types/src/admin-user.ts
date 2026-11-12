@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { UserRole } from "./auth";
+import { registerInputSchema, type UserRole } from "./auth";
 
 export const ADMIN_USERS_PAGE_SIZE = 10;
 
@@ -43,3 +43,12 @@ export const updateAdminUserInputSchema = z
     message: "Indica isActive o role",
   });
 export type UpdateAdminUserInput = z.output<typeof updateAdminUserInputSchema>;
+
+/**
+ * Cuerpo de POST /api/admin/users: mismas reglas que el registro público, más el rol
+ * (el registro público solo crea USER). La cuenta se crea activa.
+ */
+export const createAdminUserInputSchema = registerInputSchema.extend({
+  role: z.enum(["USER", "ADMIN"], { error: "Rol no válido" }).default("USER"),
+});
+export type CreateAdminUserInput = z.output<typeof createAdminUserInputSchema>;

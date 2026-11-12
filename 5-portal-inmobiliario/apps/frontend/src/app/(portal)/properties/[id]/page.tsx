@@ -1,10 +1,19 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { PropertyDetail } from "@/components/properties/PropertyDetail";
+import { buildFallbackMetadata, buildPropertyMetadata } from "@/lib/seo";
+import { loadPropertyForMetadata } from "@/lib/server-property";
 
-export const metadata: Metadata = {
-  title: "Detalle de propiedad | Portal Inmobiliario",
-};
+/** Metadata dinámica: título, descripción, Open Graph e imagen principal de la propiedad. */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const property = await loadPropertyForMetadata(id);
+  return property ? buildPropertyMetadata(property) : buildFallbackMetadata();
+}
 
 async function PropertyDetailRoute({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

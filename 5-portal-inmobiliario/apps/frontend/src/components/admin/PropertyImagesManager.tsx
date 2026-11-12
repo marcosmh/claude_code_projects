@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { imageLoaderFor } from "@/lib/image-loader";
 import { useId, useRef, useState } from "react";
 import {
   ApiRequestError,
@@ -173,6 +174,7 @@ export function PropertyImagesManager({
               <div className="relative aspect-4/3 bg-foreground/5">
                 <Image
                   src={image.url}
+                  loader={imageLoaderFor(image.url)}
                   alt={`${title}: imagen ${index + 1}`}
                   fill
                   sizes="(min-width: 768px) 220px, 50vw"

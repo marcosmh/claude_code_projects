@@ -215,25 +215,31 @@
 
 ## Fase 5 — Calidad y finalización
 
-- [ ] **Paso 31 — SEO y metadata**
+- [x] **Paso 31 — SEO y metadata**
   - Metadata dinámica.
   - Título.
   - Descripción.
   - Open Graph.
+  - Imagen principal en `og:image`; `noindex` en páginas privadas y de administración.
+  - Pruebas, lint, typecheck y build pasan.
 
-- [ ] **Paso 32 — Optimización**
+- [x] **Paso 32 — Optimización**
   - Optimizar imágenes Next.js/Cloudinary.
   - Evitar imágenes sobredimensionadas.
   - Revisar solicitudes duplicadas.
   - Revisar consultas PostgreSQL.
+  - Cargador de Cloudinary por imagen, índices de orden de administración (spec §51).
+  - Pruebas, lint, typecheck y build pasan.
 
-- [ ] **Paso 33 — Responsive y accesibilidad**
+- [x] **Paso 33 — Responsive y accesibilidad**
   - Desktop.
   - Tablet.
   - Móvil.
   - Labels, teclado, foco, alt y semántica.
+  - Auditoría en 1280/820/390 px y correcciones (spec §52).
+  - Pruebas, lint, typecheck y build pasan.
 
-- [ ] **Paso 34 — Seguridad**
+- [x] **Paso 34 — Seguridad**
   - Autenticación.
   - Autorización.
   - Validación REST.
@@ -242,15 +248,19 @@
   - Cloudinary.
   - Web3Forms.
   - Endpoints ADMIN.
+  - Matriz de autorización automatizada, `Content-Length` en subidas y cabeceras de seguridad (spec §53).
+  - Pruebas, lint, typecheck y build pasan.
 
-- [ ] **Paso 35 — QA integral**
+- [x] **Paso 35 — QA integral**
   - Flujos visitante.
   - Flujos USER.
   - Flujos ADMIN.
   - Errores y códigos HTTP.
   - Corregir defectos bloqueantes.
+  - 72/72 comprobaciones de API y flujos de interfaz verificados (spec §54).
+  - Pruebas, lint, typecheck y build pasan.
 
-- [ ] **Paso 36 — Cumplimiento arquitectónico**
+- [x] **Paso 36 — Cumplimiento arquitectónico**
   - Confirmar que no existen Server Actions.
   - Confirmar comunicación REST.
   - Confirmar PostgreSQL.
@@ -258,7 +268,7 @@
   - Confirmar permisos backend.
   - Confirmar integraciones externas.
 
-- [ ] **Paso 37 — Convergencia final del SDD**
+- [x] **Paso 37 — Convergencia final del SDD**
   - Releer `spec.md`.
   - Releer `plan.md`.
   - Comparar implementación con requisitos.
@@ -348,4 +358,9 @@
 - [x] **Extra O — Filtros avanzados en la administración de propiedades**
   - API `GET /api/admin/properties` con operación, tipo, estado, precio y fecha de publicación.
   - Panel de filtros derecho colapsable en `/admin/properties`, aplicación dinámica y «Limpiar filtros».
+  - Pruebas, lint, typecheck y build pasan.
+
+- [x] **Extra P — Alta de usuarios por un administrador**
+  - `POST /api/admin/users` (USER o ADMIN, 201/400/409, solo ADMIN).
+  - Botón «Nuevo usuario» y formulario en `/admin/users/new`.
   - Pruebas, lint, typecheck y build pasan.

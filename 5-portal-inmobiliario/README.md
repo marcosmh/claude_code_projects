@@ -20,7 +20,7 @@ Panel `/admin` con indicadores (Paso 22) y CRUD REST de propiedades solo para AD
 
 Área de administración independiente (Extra L): `/admin/**` tiene su propio layout (sidebar colapsable, paleta corporativa, menú de módulos; los aún no construidos aparecen como «Próximamente») y no comparte el header ni el pie del portal. Un ADMIN solo usa el área de administración: `/account` lo redirige a `/admin`, favoritos y consultas propias responden 403 y su header no muestra cuenta ni favoritos.
 
-Pendiente: **Paso 31 — SEO y metadata** y el resto de la administración.
+Estado: Pasos 1–37 completados; no quedan tareas pendientes en `tasks.md`.
 
 ## Estructura
 
@@ -97,6 +97,7 @@ Para ver pgAdmin en desarrollo: `docker compose up -d` (puerto 5050; credenciale
 | `apps/frontend/.env.local` | `BACKEND_URL` | Destino del proxy `/api/**` |
 | | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Mapa del detalle |
 | | `NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY` | Clave de Web3Forms para el aviso por correo de las consultas (se envía desde el navegador; el plan gratuito rechaza envíos desde servidores) |
+| | `NEXT_PUBLIC_SITE_URL` | (Opcional) URL pública del sitio; base de las URLs de Open Graph y canonical (por defecto `http://localhost:3000`) |
 | | `NEXT_PUBLIC_APP_URL` | URL pública de la aplicación |
 | `.env` (raíz) | `PGADMIN_DEFAULT_EMAIL`, `PGADMIN_DEFAULT_PASSWORD` | Solo pgAdmin |
 
@@ -139,6 +140,7 @@ Sirven en `/login`, en `resources/postman/postman-api.json` y en `resources/rest
 | POST | `/api/admin/features` | Crea una característica (`{ "name" }`, slug generado; 201/400/409; solo ADMIN) |
 | PUT | `/api/admin/properties/{id}/features` | Reemplaza las características de la propiedad (`{ "featureIds": [...] }`; 200/400/404; solo ADMIN) |
 | GET | `/api/admin/users` | Lista paginada de usuarios (`page`, `pageSize`, `search`, `role`, `status=all\|active\|inactive`; 200/400; solo ADMIN) |
+| POST | `/api/admin/users` | Da de alta una cuenta activa (`{ "name", "email", "password", "role"?: "USER"\|"ADMIN" }`; 201/400/409; solo ADMIN) |
 | GET | `/api/admin/users/{id}` | Detalle de un usuario con sus conteos de consultas y favoritos (200/404; solo ADMIN) |
 | PATCH | `/api/admin/users/{id}` | Activa/desactiva y/o cambia el rol (`{ "isActive"?, "role"? }`; 200/400/403 si es la cuenta propia/404; solo ADMIN) |
 | GET | `/api/admin/inquiries` | Todas las consultas con propiedad, usuario, contacto y mensaje (`page`, `pageSize`, `search`, `propertyId`; 200/400; solo ADMIN) |

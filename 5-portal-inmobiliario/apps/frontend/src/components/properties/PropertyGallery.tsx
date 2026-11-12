@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { imageLoaderFor } from "@/lib/image-loader";
 import { useState, type KeyboardEvent, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { sortGalleryImages, wrapIndex } from "@/lib/gallery";
@@ -47,6 +48,7 @@ export function PropertyGallery({ images, propertyTitle, overlay }: PropertyGall
           <Image
             key={currentImage.id}
             src={currentImage.url}
+            loader={imageLoaderFor(currentImage.url)}
             alt={`Fotografía ${currentIndex + 1} de ${total} de ${propertyTitle}`}
             fill
             priority={currentIndex === 0}
@@ -99,7 +101,14 @@ export function PropertyGallery({ images, propertyTitle, overlay }: PropertyGall
                     : "border-transparent opacity-70 hover:opacity-100",
                 )}
               >
-                <Image src={image.url} alt="" fill sizes="112px" className="object-cover" />
+                <Image
+                  src={image.url}
+                  loader={imageLoaderFor(image.url)}
+                  alt=""
+                  fill
+                  sizes="112px"
+                  className="object-cover"
+                />
               </button>
             </li>
           ))}

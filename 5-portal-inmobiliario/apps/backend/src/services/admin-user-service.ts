@@ -1,8 +1,9 @@
-import { ForbiddenError, NotFoundError } from "@/lib/errors";
+import { ConflictError, ForbiddenError, NotFoundError } from "@/lib/errors";
 import type { AdminUserRecord, AdminUserRepository } from "@/repositories/admin-user-repository";
 import type {
   AdminUserDto,
   AdminUserListQuery,
+  CreateAdminUserInput,
   PaginatedResponse,
   UpdateAdminUserInput,
 } from "@portal/shared-types";
@@ -20,9 +21,35 @@ function toDto(record: AdminUserRecord): AdminUserDto {
   };
 }
 
+type AdminUserServiceDependencies = {
+  repository: AdminUserRepository;
+  hashPassword(password: string): Promise<string>;
+  /** Cuenta que ya usa ese email, o null. */
+  findEmailOwner(email: string): Promise<unknown | null>;
+};
+
 /** Administración de usuarios para ADMIN. La autorización se aplica en las rutas con `withRole`. */
-export function createAdminUserService(repository: AdminUserRepository) {
+export function createAdminUserService({
+  repository,
+  hashPassword,
+  findEmailOwner,
+}: AdminUserServiceDependencies) {
   return {
+    /** Alta de una cuenta activa, normal o de administración. Nunca devuelve la contraseña. */
+    async createUser(input: CreateAdminUserInput): Promise<AdminUserDto> {
+      if ((await findEmailOwner(input.email)) !== null) {
+        throw new ConflictError("Ya existe una cuenta con este email");
+      }
+      return toDto(
+        await repository.create({
+          name: input.name,
+          email: input.email,
+          passwordHash: await hashPassword(input.password),
+          role: input.role,
+        }),
+      );
+    },
+
     async listUsers(query: AdminUserListQuery): Promise<PaginatedResponse<AdminUserDto>> {
       const { records, total } = await repository.findPage({
         skip: (query.page - 1) * query.pageSize,

@@ -83,7 +83,9 @@ export function AdminTopBar({
             <path d={isCollapsed ? "m14 9 3 3-3 3" : "m17 9-3 3 3 3"} />
           </svg>
         </button>
-        <p className="text-sm font-semibold text-foreground/70">Panel de administración</p>
+        <p className="hidden text-sm font-semibold text-foreground/70 sm:block">
+          Panel de administración
+        </p>
       </div>
 
       <div className="flex items-center gap-3">

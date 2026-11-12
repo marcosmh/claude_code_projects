@@ -116,7 +116,7 @@ describe("AdminPropertiesList", () => {
 
     await waitFor(() => expect(deleteAdminProperty).toHaveBeenCalledWith("a"));
     await waitFor(() => expect(swr.mutateMatching).toHaveBeenCalled());
-    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByRole("alertdialog")).toBeNull();
   });
 
   it("cancelar no elimina nada", () => {

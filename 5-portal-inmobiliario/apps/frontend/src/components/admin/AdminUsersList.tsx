@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
 import {
@@ -116,6 +117,14 @@ export function AdminUsersList() {
         title="Administrar usuarios"
         description="Cuentas registradas: busca, activa o desactiva y cambia el rol."
         breadcrumbs={[{ label: "Administración", href: "/admin" }, { label: "Usuarios" }]}
+        actions={
+          <Link
+            href="/admin/users/new"
+            className={`inline-flex h-10 items-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 ${focusClassName}`}
+          >
+            Nuevo usuario
+          </Link>
+        }
       />
 
       <div className="mt-6 flex flex-wrap items-end gap-3">

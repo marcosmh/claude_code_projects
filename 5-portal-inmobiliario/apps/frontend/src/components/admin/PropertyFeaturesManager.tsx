@@ -120,7 +120,7 @@ export function PropertyFeaturesManager({
                     type="checkbox"
                     checked={selectedIds.includes(feature.id)}
                     onChange={(event) => void toggle(feature.id, event.target.checked)}
-                    className={`size-4 ${focusClassName}`}
+                    className={`size-5 accent-primary ${focusClassName}`}
                   />
                   {feature.name}
                 </label>

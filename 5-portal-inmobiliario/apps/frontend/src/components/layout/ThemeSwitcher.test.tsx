@@ -44,8 +44,12 @@ describe("ThemeSwitcher (desplegable)", () => {
     render(<ThemeSwitcher />);
     await userEvent.setup().click(getTrigger());
 
-    expect(screen.getByRole("menuitemradio", { name: "Claro" }).getAttribute("aria-checked")).toBe("true");
-    expect(screen.getByRole("menuitemradio", { name: "Oscuro" }).getAttribute("aria-checked")).toBe("false");
+    expect(screen.getByRole("menuitemradio", { name: "Claro" }).getAttribute("aria-checked")).toBe(
+      "true",
+    );
+    expect(screen.getByRole("menuitemradio", { name: "Oscuro" }).getAttribute("aria-checked")).toBe(
+      "false",
+    );
   });
 
   it("al elegir una opción aplica el tema, lo recuerda, cierra la lista y actualiza el botón", async () => {

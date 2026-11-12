@@ -563,3 +563,33 @@ Decisiones que concretan la sección 10 de este plan:
 
 - Contratos (`admin-inquiry.ts`): `AdminInquiryDto` y `adminInquiryListQuerySchema`. Backend: `admin-inquiry-repository` (búsqueda `unaccent`+`ILIKE` por términos), `admin-inquiry-service` y ruta `api/admin/inquiries` (GET) con `withRole("ADMIN")`.
 - api-client: `admin-inquiries-client.ts`. Frontend: `AdminInquiriesList` en `app/admin/inquiries/page.tsx`; el menú activa «Administrar consultas».
+
+## 47. Alta de usuarios por un administrador (Extra P)
+
+- Contratos: `createAdminUserInputSchema` (reutiliza las reglas de `registerInputSchema` y suma `role`). Backend: `adminUserRepository.create` (rol explícito; el conflicto de email por la restricción única), `adminUserService.createUser` con `passwordHasher` inyectado (composición en `services.ts`) y `POST /api/admin/users`.
+- api-client: `createAdminUser`. Frontend: `AdminUserForm` (React Hook Form + Zod) en `app/admin/users/new/page.tsx` y botón «Nuevo usuario» en `AdminUsersList`.
+
+## 48. SEO y metadata (Paso 31)
+
+- `lib/seo.ts`: `buildPropertyMetadata(property)` y `buildFallbackMetadata()` (puras, probadas). `lib/server-property.ts`: `loadPropertyForMetadata(id)` con `'use cache'` + `cacheLife` que usa `fetchPropertyDetail` con URL absoluta (`BACKEND_URL`) y devuelve `null` ante cualquier fallo.
+- `app/(portal)/properties/[id]/page.tsx` exporta `generateMetadata`; el layout raíz suma `metadataBase` y Open Graph por defecto; las páginas privadas suman `robots: noindex`.
+
+## 49. Optimización (Paso 32)
+
+- `lib/image-loader.ts` (`buildCloudinaryUrl`, `cloudinaryLoader`, `imageLoaderFor`) y su uso en `PropertyCard`, `PropertyGallery`, `InquiredSection` y `PropertyImagesManager`. Migración `add_listing_order_indexes` con los índices `properties(updatedAt)` y `users(createdAt)`.
+
+## 50. Responsive y accesibilidad (Paso 33)
+
+- Correcciones puntuales sobre `AdminTopBar`, `AdminPageHeader`, `PropertySection`, `AlreadySignedIn`, `FiltersSidebar`, `AdminPropertyFilters` y `PropertyFeaturesManager`. Sin componentes ni dependencias nuevas.
+
+## 51. Seguridad (Paso 34)
+
+- `admin-routes-authorization.test.ts` (matriz 401/403 de todas las rutas de administración), comprobación de `Content-Length` en la subida de imágenes y `headers()` de seguridad en `next.config.ts` del frontend y del backend.
+
+## 52. QA integral (Paso 35)
+
+- Sin código de producto nuevo: recorrido manual/automatizado de los flujos (spec §54), `testTimeout`/`hookTimeout` de 30 s en `apps/backend/vitest.config.ts` y corrección de aserciones de `alertdialog` en las pruebas de frontend.
+
+## 53. Cumplimiento arquitectónico (Paso 36)
+
+- Sin código de producto nuevo: `apps/backend/src/architecture.test.ts` convierte las reglas de arquitectura (spec §55) en pruebas que fallan si un cambio futuro las rompe.

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   buildAdminUsersUrl,
+  createAdminUser,
   fetchAdminUser,
   fetchAdminUsers,
   updateAdminUser,
@@ -40,5 +41,21 @@ describe("admin-users-client", () => {
       message: "No puedes",
       status: 403,
     });
+  });
+
+  it("da de alta con POST y cuerpo JSON", async () => {
+    fetchMock.mockResolvedValue(Response.json({ id: "u9" }, { status: 201 }));
+    await expect(
+      createAdminUser({
+        name: "Ana",
+        email: "a@example.com",
+        password: "clave-segura-1",
+        role: "ADMIN",
+      }),
+    ).resolves.toEqual({ id: "u9" });
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("/api/admin/users");
+    expect(init.method).toBe("POST");
+    expect(JSON.parse(init.body as string)).toMatchObject({ role: "ADMIN" });
   });
 });

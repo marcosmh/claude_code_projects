@@ -14,8 +14,17 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  // Base para resolver las URLs relativas de Open Graph y canonical.
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
   title: "Portal Inmobiliario",
   description: "Descubre propiedades en venta y arriendo en México",
+  openGraph: {
+    type: "website",
+    siteName: "Portal Inmobiliario",
+    locale: "es_MX",
+    title: "Portal Inmobiliario",
+    description: "Descubre propiedades en venta y arriendo en México",
+  },
 };
 
 // Color de la barra del navegador según el esquema del sistema (Claro/Oscuro).

@@ -139,7 +139,9 @@ describe.skipIf(!databaseUrl)("API REST: administración de consultas", () => {
     };
     expect(byProperty.total).toBe(2);
 
-    const accents = (await (await list(adminToken, "search=visitante%20nono")).json()) as {
+    const accents = (await (
+      await list(adminToken, `search=visitante%20nono%20${runIdentifier}`)
+    ).json()) as {
       items: { name: string }[];
     };
     expect(accents.items.map((item) => item.name)).toEqual(["Visitante Ñoño"]);

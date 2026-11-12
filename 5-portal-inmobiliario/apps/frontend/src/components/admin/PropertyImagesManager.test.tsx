@@ -92,7 +92,7 @@ describe("PropertyImagesManager", () => {
     fireEvent.click(screen.getByRole("button", { name: "Sí, eliminar" }));
     await waitFor(() => expect(api.deletePropertyImage).toHaveBeenCalledWith("p1", "b"));
     await waitFor(() => expect(onChanged).toHaveBeenCalled());
-    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByRole("alertdialog")).toBeNull();
   });
 
   it("cancelar no elimina nada", () => {

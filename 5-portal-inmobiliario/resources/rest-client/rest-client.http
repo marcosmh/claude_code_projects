@@ -452,6 +452,18 @@ Content-Type: application/json
 GET {{baseUrl}}/api/admin/users?page=1&search=&status=all
 Accept: application/json
 
+### Crear un usuario (201; role USER por defecto o ADMIN; 400 si es inválido; 409 si el email ya existe)
+# @name createAdminUser
+POST {{baseUrl}}/api/admin/users
+Content-Type: application/json
+
+{
+  "name": "Usuario de prueba",
+  "email": "prueba.alta@example.com",
+  "password": "clave-segura-1",
+  "role": "USER"
+}
+
 ### Consultar un usuario (200; 404 si no existe)
 GET {{baseUrl}}/api/admin/users/{{adminUserId}}
 Accept: application/json

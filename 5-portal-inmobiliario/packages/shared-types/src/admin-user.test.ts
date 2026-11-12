@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { adminUserListQuerySchema, updateAdminUserInputSchema } from "./admin-user";
+import {
+  adminUserListQuerySchema,
+  createAdminUserInputSchema,
+  updateAdminUserInputSchema,
+} from "./admin-user";
 
 describe("adminUserListQuerySchema", () => {
   it("aplica valores por defecto y limpia la búsqueda vacía", () => {
@@ -31,4 +35,25 @@ describe("updateAdminUserInputSchema", () => {
   it.each([{}, { role: "ROOT" }, { isActive: "no" }])("rechaza %j", (body) => {
     expect(updateAdminUserInputSchema.safeParse(body).success).toBe(false);
   });
+});
+
+describe("createAdminUserInputSchema", () => {
+  const base = { name: "Ana", email: " ANA@Example.com ", password: "clave-segura-1" };
+
+  it("usa USER por defecto y normaliza el email", () => {
+    expect(createAdminUserInputSchema.parse(base)).toEqual({
+      name: "Ana",
+      email: "ana@example.com",
+      password: "clave-segura-1",
+      role: "USER",
+    });
+    expect(createAdminUserInputSchema.parse({ ...base, role: "ADMIN" }).role).toBe("ADMIN");
+  });
+
+  it.each([{ role: "ROOT" }, { password: "corta" }, { email: "x" }, { name: "A" }])(
+    "rechaza %j",
+    (override) => {
+      expect(createAdminUserInputSchema.safeParse({ ...base, ...override }).success).toBe(false);
+    },
+  );
 });

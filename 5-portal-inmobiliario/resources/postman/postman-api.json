@@ -3082,6 +3082,50 @@
           ]
         },
         {
+          "name": "Crear usuario (USER o ADMIN)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Usuario de prueba\",\n  \"email\": \"prueba.alta@example.com\",\n  \"password\": \"clave-segura-1\",\n  \"role\": \"USER\"\n}"
+            },
+            "description": "Alta de una cuenta activa. role: USER (por defecto) o ADMIN. 400 si los datos son inválidos; 409 si el email ya existe (cambia el email para repetir la prueba)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", function () { pm.response.to.have.status(201); });",
+                  "if (pm.response.code === 201) { pm.collectionVariables.set(\"adminUserId\", pm.response.json().id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Consultar usuario",
           "request": {
             "method": "GET",

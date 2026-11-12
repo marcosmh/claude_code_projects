@@ -75,6 +75,9 @@ describe("AdminUsersList", () => {
     render(<AdminUsersList />);
     expect(screen.getByRole("heading", { level: 1, name: "Administrar usuarios" })).toBeTruthy();
     expect(screen.getByRole("status").textContent).toBe("Cargando usuarios…");
+    expect(screen.getByRole("link", { name: "Nuevo usuario" }).getAttribute("href")).toBe(
+      "/admin/users/new",
+    );
   });
 
   it("lista los usuarios con rol, estado y conteos", () => {
@@ -116,10 +119,11 @@ describe("AdminUsersList", () => {
     render(<AdminUsersList />);
     fireEvent.click(screen.getByRole("button", { name: "Desactivar a Usuario a" }));
     expect(updateAdminUser).not.toHaveBeenCalled();
+    expect(screen.getByRole("alertdialog")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Sí, desactivar" }));
     await waitFor(() => expect(updateAdminUser).toHaveBeenCalledWith("a", { isActive: false }));
     await waitFor(() => expect(swr.mutateMatching).toHaveBeenCalled());
-    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByRole("alertdialog")).toBeNull();
   });
 
   it("activa una cuenta desactivada y cambia el rol con confirmación", async () => {
