@@ -55,7 +55,12 @@ describe.skipIf(!databaseUrl)("API REST pública de propiedades", () => {
         images: {
           create: [
             { url: "https://example.com/b.jpg", publicId: `${testRunIdentifier}-b`, position: 1 },
-            { url: "https://example.com/a.jpg", publicId: `${testRunIdentifier}-a`, position: 0, isPrimary: true },
+            {
+              url: "https://example.com/a.jpg",
+              publicId: `${testRunIdentifier}-a`,
+              position: 0,
+              isPrimary: true,
+            },
           ],
         },
         features: {
@@ -169,11 +174,15 @@ describe.skipIf(!databaseUrl)("API REST pública de propiedades", () => {
         buildListRequest(`?search=${encodeURIComponent(city)}&operation=SALE`),
       );
       // La propiedad de prueba es de arriendo (RENT): con operation=SALE no aparece.
-      expect(((await response.json()) as ListBody).items.map((item) => item.id)).not.toContain(accentedId);
+      expect(((await response.json()) as ListBody).items.map((item) => item.id)).not.toContain(
+        accentedId,
+      );
     });
 
     it("devuelve el total correcto de coincidencias", async () => {
-      const response = await listProperties(buildListRequest(`?search=${encodeURIComponent(city)}`));
+      const response = await listProperties(
+        buildListRequest(`?search=${encodeURIComponent(city)}`),
+      );
       const body = (await response.json()) as ListBody;
       expect(body.total).toBe(1);
       expect(body.items).toHaveLength(1);
@@ -314,7 +323,8 @@ describe.skipIf(!databaseUrl)("API REST pública de propiedades", () => {
     });
 
     it("combina todos los filtros y la búsqueda de texto", async () => {
-      const query = "&operation=SALE&type=HOUSE&minPrice=1000000&maxPrice=5000000&bedrooms=3&bathrooms=1&minUsableArea=100&commune=alamos&city=Querétaro&search=filtros";
+      const query =
+        "&operation=SALE&type=HOUSE&minPrice=1000000&maxPrice=5000000&bedrooms=3&bathrooms=1&minUsableArea=100&commune=alamos&city=Querétaro&search=filtros";
       expect(await filterIds(query)).toEqual([matchingId]);
       expect(await filterIds(`${query}&bedrooms=5`)).toEqual([]);
     });
@@ -326,7 +336,13 @@ describe.skipIf(!databaseUrl)("API REST pública de propiedades", () => {
     });
 
     it("responde 400 con filtros inválidos", async () => {
-      for (const query of ["?type=CASTLE", "?operation=SALE,LEASE", "?minPrice=-1", "?bedrooms=abc", "?minPrice=10&maxPrice=5"]) {
+      for (const query of [
+        "?type=CASTLE",
+        "?operation=SALE,LEASE",
+        "?minPrice=-1",
+        "?bedrooms=abc",
+        "?minPrice=10&maxPrice=5",
+      ]) {
         const response = await listProperties(buildListRequest(query));
         expect(response.status).toBe(400);
       }

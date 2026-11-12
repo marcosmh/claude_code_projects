@@ -41,6 +41,11 @@
       "type": "string"
     },
     {
+      "key": "adminFeatureId",
+      "value": "",
+      "type": "string"
+    },
+    {
       "key": "inquiryId",
       "value": "",
       "type": "string"
@@ -2892,6 +2897,130 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Status 204\", function () { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar características",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/features",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "features"
+              ]
+            },
+            "description": "Catálogo completo ordenado por nombre."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear característica",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/features",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "features"
+              ]
+            },
+            "description": "Genera el slug del nombre. 409 si ya existe (sin distinguir mayúsculas ni acentos).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Cancha de pádel\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", function () { pm.response.to.have.status(201); });",
+                  "if (pm.response.code === 201) { pm.collectionVariables.set(\"adminFeatureId\", pm.response.json().id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Asignar características a la propiedad",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/properties/{{adminPropertyId}}/features",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "properties",
+                "{{adminPropertyId}}",
+                "features"
+              ]
+            },
+            "description": "Reemplaza el conjunto completo (puede ser vacío). 400 si algún id no existe; 404 si la propiedad no existe.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"featureIds\": [\n    \"{{adminFeatureId}}\"\n  ]\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });"
                 ]
               }
             }

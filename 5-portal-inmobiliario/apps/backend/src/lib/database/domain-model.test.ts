@@ -82,9 +82,9 @@ describe.skipIf(!databaseUrl)("modelo de dominio (PostgreSQL)", () => {
 
   it("rechaza favoritos duplicados para el mismo usuario y propiedad", async () => {
     await client.favorite.create({ data: { userId, propertyId } });
-    await expect(
-      client.favorite.create({ data: { userId, propertyId } }),
-    ).rejects.toMatchObject({ code: "P2002" });
+    await expect(client.favorite.create({ data: { userId, propertyId } })).rejects.toMatchObject({
+      code: "P2002",
+    });
   });
 
   it("permite consultas de visitantes sin usuario", async () => {

@@ -5,6 +5,7 @@ import useSWR from "swr";
 import { ApiRequestError, fetchAdminProperty } from "@portal/api-client";
 import { AdminPageHeader } from "./AdminPageHeader";
 import { PropertyForm } from "./PropertyForm";
+import { PropertyFeaturesManager } from "./PropertyFeaturesManager";
 import { PropertyImagesManager } from "./PropertyImagesManager";
 
 type AdminPropertyEditorProps = {
@@ -55,6 +56,13 @@ export function AdminPropertyEditor({ propertyId }: AdminPropertyEditorProps) {
         ) : (
           <div className="space-y-8">
             <PropertyForm key={data?.id ?? "new"} property={data} />
+            {data && (
+              <PropertyFeaturesManager
+                propertyId={data.id}
+                features={data.features}
+                onChanged={() => mutate()}
+              />
+            )}
             {data && (
               <PropertyImagesManager
                 propertyId={data.id}

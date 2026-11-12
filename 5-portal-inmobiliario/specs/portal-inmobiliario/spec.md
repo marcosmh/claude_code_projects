@@ -747,3 +747,12 @@ Requisitos:
   - `PATCH /api/admin/properties/{id}/images/{imageId}` con `{ "isPrimary": true }` → 200 con la lista actualizada. Solo hay una principal por propiedad.
   - `PUT /api/admin/properties/{id}/images` con `{ "imageIds": [...] }` → 200 con la lista en el nuevo orden; debe incluir exactamente las imágenes de la propiedad, sin repetir (400 si no). La posición de cada una pasa a ser su lugar en la lista.
 - La imagen principal es la que muestran las tarjetas del catálogo; la galería del detalle sigue el orden por posición.
+
+## 46. Administración de características (Paso 28)
+
+- Modelo flexible (§4): el catálogo de características es la tabla `Feature` (relación muchos a muchos con `Property`); agregar una nueva es agregar una fila, nunca una columna.
+- API (solo ADMIN):
+  - `GET /api/admin/features` → 200 con todas las características por nombre.
+  - `POST /api/admin/features` con `{ "name": "Cancha de pádel" }` → 201. El `slug` se genera del nombre (minúsculas, sin acentos, guiones). 400 si el nombre es inválido (1–60 caracteres) y 409 si ya existe una con el mismo nombre o slug (sin distinguir mayúsculas ni acentos).
+  - `PUT /api/admin/properties/{id}/features` con `{ "featureIds": [...] }` → 200 con las características de la propiedad. Reemplaza el conjunto completo (puede ser vacío; los repetidos se ignoran). 400 si algún id no existe; 404 si la propiedad no existe o fue eliminada.
+- En `/admin/properties/{id}/edit` hay una sección «Características» con una casilla por característica del catálogo (se guardan al marcar o desmarcar) y un campo para crear una nueva y asignarla en el momento. El detalle público ya muestra las características de la propiedad.

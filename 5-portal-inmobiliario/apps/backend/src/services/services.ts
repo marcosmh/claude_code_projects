@@ -4,6 +4,7 @@ import { createAuthorizer } from "@/lib/auth/authorizer";
 import { hashPassword, spendVerificationTime, verifyPassword } from "@/lib/auth/password";
 import { adminPropertyRepository } from "@/repositories/admin-property-repository";
 import { adminRepository } from "@/repositories/admin-repository";
+import { featureRepository } from "@/repositories/feature-repository";
 import { favoriteRepository } from "@/repositories/favorite-repository";
 import { inquiryRepository } from "@/repositories/inquiry-repository";
 import { propertyImageRepository } from "@/repositories/property-image-repository";
@@ -12,6 +13,7 @@ import { userRepository } from "@/repositories/user-repository";
 import { createAdminService } from "./admin-service";
 import { createAdminPropertyService } from "./admin-property-service";
 import { createAuthService } from "./auth-service";
+import { createFeatureService } from "./feature-service";
 import { createFavoriteService } from "./favorite-service";
 import { createInquiryService } from "./inquiry-service";
 import { createPropertyImageService } from "./property-image-service";
@@ -32,4 +34,8 @@ export const propertyImageService = createPropertyImageService({
   properties: adminPropertyRepository,
   images: propertyImageRepository,
   storage: createCloudinaryStorage(),
+});
+export const featureService = createFeatureService({
+  features: featureRepository,
+  properties: adminPropertyRepository,
 });

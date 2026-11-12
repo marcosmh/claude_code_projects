@@ -191,10 +191,12 @@
   - `DELETE`/`PATCH` `/images/{imageId}` y `PUT /images` (orden); gestor en `/admin/properties/{id}/edit`.
   - Pruebas, lint, typecheck y build pasan.
 
-- [ ] **Paso 28 — Características**
+- [x] **Paso 28 — Características**
   - Múltiples características por propiedad.
   - Modelo flexible.
   - Permitir nuevas características sin modificar columnas de Property.
+  - `GET`/`POST` `/api/admin/features` y `PUT /api/admin/properties/{id}/features`; sección en `/admin/properties/{id}/edit`.
+  - Pruebas, lint, typecheck y build pasan.
 
 - [ ] **Paso 29 — Usuarios**
   - Crear `/admin/users`.

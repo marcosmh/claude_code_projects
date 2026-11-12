@@ -11,8 +11,6 @@ describe("checkDatabaseConnection", () => {
   });
 
   it("falla con una URL inalcanzable", async () => {
-    await expect(
-      checkDatabaseConnection("postgresql://x:y@127.0.0.1:1/none"),
-    ).rejects.toThrow();
+    await expect(checkDatabaseConnection("postgresql://x:y@127.0.0.1:1/none")).rejects.toThrow();
   });
 });

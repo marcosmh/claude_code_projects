@@ -546,3 +546,9 @@ Decisiones que concretan la sección 10 de este plan:
 - Repositorio de imágenes: `findOwned`, `delete` (promueve una principal y compacta posiciones en una transacción), `setPrimary` y `reorder` (valida el conjunto exacto de ids). Servicio: `deleteImage` (Cloudinary → PostgreSQL), `setPrimaryImage`, `reorderImages`.
 - Rutas: `images/[imageId]/route.ts` (PATCH, DELETE) y PUT en `images/route.ts`, todas con `withRole("ADMIN")`.
 - Frontend: `@portal/api-client` (`admin-images-client.ts`: subir, eliminar, principal y ordenar), componente `PropertyImagesManager` (subida múltiple con validación previa, iconos de acción, `ConfirmDialog` al eliminar) dentro de `AdminPropertyEditor`; al crear una propiedad se navega a su edición.
+
+## 44. Administración de características (Paso 28)
+
+- Contratos (`feature.ts`): `featureInputSchema` y `setPropertyFeaturesInputSchema`.
+- Backend: `feature-repository` (listar, crear con slug único, ids existentes, reemplazar las de una propiedad) y `feature-service` (`slugifyFeatureName`, 409 en duplicados, 400 en ids desconocidos). Rutas `api/admin/features` (GET, POST) y `api/admin/properties/[id]/features` (PUT), con `withRole("ADMIN")`.
+- api-client: `admin-features-client.ts`. Frontend: `PropertyFeaturesManager` dentro de `AdminPropertyEditor`, bajo el gestor de imágenes.

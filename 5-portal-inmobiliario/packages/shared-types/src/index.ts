@@ -6,3 +6,4 @@ export * from "./auth";
 export * from "./admin";
 export * from "./property-admin";
 export * from "./property-image";
+export * from "./feature";

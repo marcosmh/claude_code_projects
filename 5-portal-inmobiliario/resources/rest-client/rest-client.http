@@ -430,6 +430,23 @@ Content-Type: application/json
 ### Eliminar una imagen de Cloudinary y de PostgreSQL (204; 404 si no existe; 502 si Cloudinary falla)
 DELETE {{baseUrl}}/api/admin/properties/{{adminPropertyId}}/images/{{adminImageId}}
 
+### Listar el catálogo de características
+GET {{baseUrl}}/api/admin/features
+Accept: application/json
+
+### Crear una característica (201; 409 si ya existe; 400 si el nombre es inválido)
+# @name createAdminFeature
+POST {{baseUrl}}/api/admin/features
+Content-Type: application/json
+
+{ "name": "Cancha de pádel" }
+
+### Asignar características a la propiedad (200; reemplaza el conjunto; 400 si algún id no existe)
+PUT {{baseUrl}}/api/admin/properties/{{adminPropertyId}}/features
+Content-Type: application/json
+
+{ "featureIds": ["{{adminFeatureId}}"] }
+
 ### 400 — filtros de administración inválidos (rango de precio invertido)
 GET {{baseUrl}}/api/admin/properties?minPrice=10&maxPrice=5
 Accept: application/json
@@ -464,6 +481,7 @@ Content-Type: application/json
 ###
 @adminPropertyId = {{createAdminProperty.response.body.$.id}}
 @adminImageId = {{uploadAdminImage.response.body.$.id}}
+@adminFeatureId = {{createAdminFeature.response.body.$.id}}
 
 ### Obtener la propiedad creada (cualquier estado)
 GET {{baseUrl}}/api/admin/properties/{{adminPropertyId}}
