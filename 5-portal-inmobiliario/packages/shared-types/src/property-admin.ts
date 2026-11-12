@@ -1,5 +1,11 @@
 import { z } from "zod";
-import { propertyTypeValues } from "./property-list-query";
+import {
+  advancedFilterShape,
+  priceRangeCheck,
+  propertyAvailabilityValues,
+  propertyTypeValues,
+  publishedRangeCheck,
+} from "./property-list-query";
 import type { PropertyDetailDto, PropertySummaryDto } from "./property";
 
 const requiredText = (label: string, maximum: number) => {
@@ -34,6 +40,9 @@ export const propertyInputSchema = z
       .positive("El precio debe ser mayor que cero")
       .max(999_999_999_999, "Precio demasiado alto"),
     currency: z.enum(["MXN", "USD"], { error: "Moneda no válida" }).default("MXN"),
+    availability: z
+      .enum(propertyAvailabilityValues, { error: "Estado no válido" })
+      .default("AVAILABLE"),
     usableArea: optionalNumber(z.number().positive("Debe ser mayor que cero").max(1_000_000)),
     totalArea: optionalNumber(z.number().positive("Debe ser mayor que cero").max(1_000_000)),
     bedrooms: optionalNumber(z.number().int("Debe ser un entero").min(0).max(50)),
@@ -61,17 +70,21 @@ export const adminPropertyStatusValues = ["all", "published", "draft"] as const;
 export type AdminPropertyStatus = (typeof adminPropertyStatusValues)[number];
 
 /** Parámetros de GET /api/admin/properties. */
-export const adminPropertyListQuerySchema = z.object({
-  page: z.coerce.number().int().min(1).default(1),
-  pageSize: z.coerce.number().int().min(1).max(50).default(ADMIN_PROPERTIES_PAGE_SIZE),
-  search: z
-    .string()
-    .trim()
-    .max(100, "Máximo 100 caracteres")
-    .transform((value) => (value === "" ? undefined : value))
-    .optional(),
-  status: z.enum(adminPropertyStatusValues).default("all"),
-});
+export const adminPropertyListQuerySchema = z
+  .object({
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(50).default(ADMIN_PROPERTIES_PAGE_SIZE),
+    search: z
+      .string()
+      .trim()
+      .max(100, "Máximo 100 caracteres")
+      .transform((value) => (value === "" ? undefined : value))
+      .optional(),
+    status: z.enum(adminPropertyStatusValues).default("all"),
+    ...advancedFilterShape,
+  })
+  .refine(priceRangeCheck.check, priceRangeCheck.params)
+  .refine(publishedRangeCheck.check, publishedRangeCheck.params);
 
 export type AdminPropertyListQuery = z.output<typeof adminPropertyListQuerySchema>;
 

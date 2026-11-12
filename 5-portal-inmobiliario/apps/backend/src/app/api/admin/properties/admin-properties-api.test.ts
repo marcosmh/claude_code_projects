@@ -199,6 +199,59 @@ describe.skipIf(!databaseUrl)("API REST de propiedades de administración", () =
     expect((await list("?status=otro")).status).toBe(400);
   });
 
+  it("filtra por operación, tipo, estado, precio y fecha de publicación (Extra O)", async () => {
+    const tag = `${runIdentifier} Filtros`;
+    const make = async (suffix: string, overrides: Record<string, unknown>) =>
+      (
+        (await (
+          await create({ ...validBody, title: `${tag} ${suffix}`, ...overrides })
+        ).json()) as { id: string }
+      ).id;
+    const soldHouse = await make("casa vendida", {
+      operation: "SALE",
+      type: "HOUSE",
+      price: 5_000_000,
+      availability: "SOLD",
+    });
+    const rentedFlat = await make("depto rentado", {
+      operation: "RENT",
+      type: "APARTMENT",
+      price: 20_000,
+      availability: "RENTED",
+      isPublished: true,
+    });
+    await client.property.update({
+      where: { id: soldHouse },
+      data: { createdAt: new Date("2025-03-15T12:00:00.000Z") },
+    });
+    await client.property.update({
+      where: { id: rentedFlat },
+      data: { createdAt: new Date("2025-08-01T12:00:00.000Z") },
+    });
+
+    const ids = async (query: string) =>
+      (
+        (await (await list(`?search=${encodeURIComponent(tag)}&pageSize=50${query}`)).json()) as {
+          items: { id: string }[];
+        }
+      ).items.map((item) => item.id);
+
+    expect(await ids("&operation=SALE")).toEqual([soldHouse]);
+    expect(await ids("&type=APARTMENT")).toEqual([rentedFlat]);
+    expect(await ids("&availability=SOLD")).toEqual([soldHouse]);
+    expect((await ids("&availability=SOLD,RENTED")).sort()).toEqual([soldHouse, rentedFlat].sort());
+    expect(await ids("&minPrice=1000000")).toEqual([soldHouse]);
+    expect(await ids("&maxPrice=100000")).toEqual([rentedFlat]);
+    expect(await ids("&publishedFrom=2025-07-01")).toEqual([rentedFlat]);
+    expect(await ids("&publishedTo=2025-03-15")).toEqual([soldHouse]);
+    expect(await ids("&status=published&operation=RENT")).toEqual([rentedFlat]);
+    expect(await ids("&status=draft&operation=RENT")).toEqual([]);
+
+    expect((await list("?minPrice=10&maxPrice=5")).status).toBe(400);
+    expect((await list("?publishedFrom=2026-05-01&publishedTo=2026-04-01")).status).toBe(400);
+    expect((await list("?availability=GONE")).status).toBe(400);
+  });
+
   it("elimina de forma lógica (204): conserva la fila, la oculta y luego responde 404", async () => {
     const created = (await (
       await create({ ...validBody, isPublished: true, isFeatured: true })

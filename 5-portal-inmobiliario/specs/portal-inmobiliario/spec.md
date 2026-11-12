@@ -273,7 +273,7 @@ Permitir combinar:
 
 Los filtros deben representarse en la URL.
 
-Presentación (extensión, sección 28 del plan): los filtros viven en un sidebar lateral izquierdo colapsable. Tipo de propiedad y operación admiten selección múltiple (checkboxes); ciudad y región son de selección única (listas desplegables con los valores existentes).
+Presentación (extensión, secciones 28 y 40 del plan): los filtros viven en un sidebar lateral izquierdo colapsable (spec §42), con estado y fecha de publicación además de los anteriores. Tipo de propiedad y operación admiten selección múltiple (checkboxes); ciudad y región son de selección única (listas desplegables con los valores existentes).
 
 ```text
 /properties?operation=SALE&commune=las-condes&bedrooms=3
@@ -709,3 +709,22 @@ Requisitos:
 - Las reglas son las de `propertyInputSchema` (las mismas que valida la API); los campos numéricos opcionales pueden quedar vacíos. No hay latitud ni longitud manual (spec §6).
 - Crear usa `POST /api/admin/properties` y editar `PUT /api/admin/properties/{id}`; al guardar vuelve al listado. Si la API responde error se muestra el mensaje sin perder lo escrito.
 - Las imágenes y las etiquetas de características se administran en los Pasos 26–28, no en este formulario.
+
+## 42. Filtros avanzados en panel lateral (extensión, Extra N)
+
+> Solicitada por el usuario. Amplía la sección 10.
+
+- Los filtros del catálogo siguen en un panel lateral **izquierdo** colapsable (se probó a la derecha y se revirtió por indicación del usuario) (en móvil se muestra sobre los resultados y se oculta con el botón «Ocultar filtros»).
+- Filtros nuevos: **estado de la propiedad** (Disponible, Vendida, Rentada; selección múltiple) y **fecha de publicación** (desde / hasta, sobre la fecha de alta). Se suman a los existentes: rango de precio, tipo, operación, ubicación, dormitorios, baños y superficie.
+- Cada propiedad tiene un estado `availability` (`AVAILABLE` por defecto, `SOLD`, `RENTED`) que el administrador elige en el formulario. Las propiedades publicadas siguen apareciendo en el catálogo sea cual sea su estado; las no disponibles muestran una etiqueta («Vendida», «Rentada»).
+- Los filtros se aplican **dinámicamente**: al marcar una casilla o elegir una opción el catálogo se actualiza al momento y, al escribir en un campo, tras una breve pausa; no hay botón «Aplicar». Siguen representados en la URL (`availability=SOLD,RENTED&publishedFrom=2026-01-01&publishedTo=2026-03-31`) y se resuelven en PostgreSQL. «Limpiar filtros» los quita todos.
+- API: `GET /api/properties` acepta `availability` (lista separada por comas), `publishedFrom` y `publishedTo` (`AAAA-MM-DD`, inclusivos, en UTC; 400 si el formato es inválido o `publishedFrom` > `publishedTo`).
+
+## 43. Filtros avanzados en la administración de propiedades (extensión, Extra O)
+
+> Solicitada por el usuario: los filtros avanzados también (y sobre todo) son para administrar propiedades.
+
+- `/admin/properties` suma un panel de filtros **lateral derecho colapsable** (botón «Filtros» con el número de filtros activos; en pantallas estrechas se muestra bajo la barra de búsqueda).
+- Filtros: rango de precio (mínimo y máximo), estado de la propiedad (Disponible, Vendida, Rentada), tipo, operación (venta/arriendo) y fecha de publicación (desde/hasta). Se combinan con la búsqueda de texto y el estado de publicación (Todas/Publicadas/Borradores) que ya existían.
+- Se aplican de forma dinámica (al instante en casillas; con una breve pausa al escribir) y «Limpiar filtros» los quita todos. Al cambiar un filtro la lista vuelve a la página 1.
+- API: `GET /api/admin/properties` acepta además `operation`, `type`, `availability` (listas separadas por comas), `minPrice`, `maxPrice`, `publishedFrom` y `publishedTo` con las mismas reglas que `GET /api/properties` (400 si son inválidos). El catálogo público conserva su panel izquierdo (spec §42).

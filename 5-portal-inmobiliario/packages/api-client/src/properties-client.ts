@@ -1,4 +1,5 @@
 import type {
+  PropertyAvailability,
   InquiryResponseDto,
   PaginatedResponse,
   PropertyDetailDto,
@@ -17,6 +18,11 @@ export type PropertyListParams = {
   operation?: PropertyOperation | readonly PropertyOperation[];
   /** Uno o varios tipos (se envían separados por comas). */
   type?: PropertyType | readonly PropertyType[];
+  /** Uno o varios estados (se envían separados por comas). */
+  availability?: PropertyAvailability | readonly PropertyAvailability[];
+  /** Fecha de publicación desde / hasta (`AAAA-MM-DD`). */
+  publishedFrom?: string;
+  publishedTo?: string;
   minPrice?: number;
   maxPrice?: number;
   bedrooms?: number;
@@ -52,6 +58,10 @@ export function buildPropertiesUrl(params: PropertyListParams = {}): string {
   if (operations) searchParams.set("operation", operations);
   const types = joinValues(params.type);
   if (types) searchParams.set("type", types);
+  const availabilities = joinValues(params.availability);
+  if (availabilities) searchParams.set("availability", availabilities);
+  if (params.publishedFrom) searchParams.set("publishedFrom", params.publishedFrom);
+  if (params.publishedTo) searchParams.set("publishedTo", params.publishedTo);
   for (const key of numericFilterKeys) {
     const value = params[key];
     if (value !== undefined) searchParams.set(key, String(value));

@@ -24,11 +24,21 @@ export function createAdminPropertyService(repository: AdminPropertyRepository) 
     async listProperties(
       query: AdminPropertyListQuery,
     ): Promise<PaginatedResponse<AdminPropertyListItemDto>> {
+      const filters = {
+        ...(query.operation !== undefined && { operations: query.operation }),
+        ...(query.type !== undefined && { types: query.type }),
+        ...(query.availability !== undefined && { availabilities: query.availability }),
+        ...(query.minPrice !== undefined && { minPrice: query.minPrice }),
+        ...(query.maxPrice !== undefined && { maxPrice: query.maxPrice }),
+        ...(query.publishedFrom !== undefined && { publishedFrom: query.publishedFrom }),
+        ...(query.publishedTo !== undefined && { publishedTo: query.publishedTo }),
+      };
       const { records, total } = await repository.findPage({
         skip: (query.page - 1) * query.pageSize,
         take: query.pageSize,
         status: query.status,
         ...(query.search !== undefined && { searchText: query.search }),
+        ...(Object.keys(filters).length > 0 && { filters }),
       });
       return {
         items: records.map((record) => ({

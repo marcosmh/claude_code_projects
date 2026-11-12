@@ -13,7 +13,7 @@ import {
   updateAdminProperty,
 } from "@portal/api-client";
 import type { AdminPropertyDto } from "@portal/shared-types";
-import { formatOperation, formatPropertyType } from "@/lib/format";
+import { formatAvailability, formatOperation, formatPropertyType } from "@/lib/format";
 import {
   emptyPropertyFormValues,
   propertyFormSchema,
@@ -35,6 +35,10 @@ const operationOptions = (["SALE", "RENT"] as const).map((value) => ({
 const typeOptions = (["HOUSE", "APARTMENT", "LAND", "OFFICE", "COMMERCIAL", "OTHER"] as const).map(
   (value) => ({ value, label: formatPropertyType(value) }),
 );
+const availabilityOptions = (["AVAILABLE", "SOLD", "RENTED"] as const).map((value) => ({
+  value,
+  label: formatAvailability(value),
+}));
 const currencyOptions = [
   { value: "MXN", label: "Pesos mexicanos (MXN)" },
   { value: "USD", label: "Dólares (USD)" },
@@ -248,6 +252,13 @@ export function PropertyForm({ property }: PropertyFormProps) {
       </FormSection>
 
       <FormSection title="Publicación">
+        <SelectField
+          id="property-availability"
+          label="Estado de la propiedad"
+          options={availabilityOptions}
+          errorMessage={errors.availability?.message}
+          {...register("availability")}
+        />
         <CheckboxField
           id="property-published"
           label="Publicada"

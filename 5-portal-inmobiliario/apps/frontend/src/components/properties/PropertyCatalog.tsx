@@ -29,7 +29,7 @@ const FILTERS_PANEL_ID = "catalog-filters";
 
 /** Cuenta cada valor seleccionado; la búsqueda de texto y el orden no son filtros del panel. */
 function countActiveFilters(filters: CatalogFilters): number {
-  const { operation, type } = filters;
+  const { operation, type, availability } = filters;
   const singleValueKeys = [
     "city",
     "region",
@@ -39,10 +39,13 @@ function countActiveFilters(filters: CatalogFilters): number {
     "bedrooms",
     "bathrooms",
     "minUsableArea",
+    "publishedFrom",
+    "publishedTo",
   ] as const;
   return (
     (operation?.length ?? 0) +
     (type?.length ?? 0) +
+    (availability?.length ?? 0) +
     singleValueKeys.filter((key) => filters[key] !== undefined).length
   );
 }
@@ -97,17 +100,16 @@ export function PropertyCatalog() {
         <CatalogSearchBar key={search ?? ""} filters={filters} />
       </div>
 
-      <div className="mt-6 gap-8 lg:flex lg:items-start">
+      <div className="mt-6 flex flex-col gap-8 lg:flex-row lg:items-start">
+        {/* Panel izquierdo: antes de los resultados (encima en móvil, a la izquierda en escritorio). */}
         <div hidden={!isPanelOpen} className="mb-6 lg:sticky lg:top-20 lg:mb-0 lg:w-72 lg:shrink-0">
           <FiltersSidebar
-            key={JSON.stringify(filters)}
             id={FILTERS_PANEL_ID}
             filters={filters}
             cities={cities}
             regions={regions}
           />
         </div>
-
         <div className="min-w-0 flex-1">
           {!isLoading && !hasError && total > 0 && (
             <div className="flex flex-wrap items-center justify-between gap-3">

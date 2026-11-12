@@ -24,6 +24,7 @@ const property: PropertySummaryDto = {
   type: "APARTMENT",
   price: 24500,
   currency: "MXN",
+  availability: "AVAILABLE",
   usableArea: 68,
   bedrooms: 2,
   bathrooms: 1,
@@ -118,5 +119,21 @@ describe("PropertyCard favoritos", () => {
     const button = screen.getByTestId("favorite-button");
     expect(button.textContent).toBe("fav-p1");
     expect(button.closest("a")).toBeNull();
+  });
+});
+
+describe("PropertyCard: estado de la propiedad (Extra N)", () => {
+  it("no muestra etiqueta de estado si está disponible", () => {
+    render(<PropertyCard property={property} />);
+    expect(screen.queryByText("Vendida")).toBeNull();
+    expect(screen.queryByText("Rentada")).toBeNull();
+  });
+
+  it("muestra «Vendida» o «Rentada» cuando ya no está disponible", () => {
+    render(<PropertyCard property={{ ...property, availability: "SOLD" }} />);
+    expect(screen.getByText("Vendida")).toBeTruthy();
+    cleanup();
+    render(<PropertyCard property={{ ...property, availability: "RENTED" }} />);
+    expect(screen.getByText("Rentada")).toBeTruthy();
   });
 });

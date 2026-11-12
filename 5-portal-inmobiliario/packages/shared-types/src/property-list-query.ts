@@ -40,6 +40,19 @@ export const propertyTypeValues = [
   "OTHER",
 ] as const;
 
+export const propertyAvailabilityValues = ["AVAILABLE", "SOLD", "RENTED"] as const;
+
+/** Fecha `AAAA-MM-DD` opcional: la cadena vacía equivale a "sin filtro". */
+const optionalDate = z
+  .union([
+    z.literal("").transform(() => undefined),
+    z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida (AAAA-MM-DD)"),
+  ])
+  .refine((value) => value === undefined || !Number.isNaN(Date.parse(`${value}T00:00:00Z`)), {
+    message: "Fecha inválida (AAAA-MM-DD)",
+  })
+  .optional();
+
 export const propertySortValues = [
   "newest",
   "price_asc",
@@ -48,6 +61,40 @@ export const propertySortValues = [
   "area_desc",
 ] as const;
 export type PropertySort = (typeof propertySortValues)[number];
+
+/** Filtros avanzados compartidos por el catálogo público y la administración de propiedades. */
+export const advancedFilterShape = {
+  /** Una o varias operaciones: `SALE`, `RENT` o `SALE,RENT`. */
+  operation: commaSeparatedEnum(["SALE", "RENT"]),
+  /** Uno o varios tipos separados por comas. */
+  type: commaSeparatedEnum(propertyTypeValues),
+  /** Uno o varios estados separados por comas. */
+  availability: commaSeparatedEnum(propertyAvailabilityValues),
+  /** Fecha de publicación (alta) desde / hasta, inclusivas. */
+  publishedFrom: optionalDate,
+  publishedTo: optionalDate,
+  minPrice: optionalNumber(z.coerce.number().min(0)),
+  maxPrice: optionalNumber(z.coerce.number().min(0)),
+};
+
+/** Validaciones de rango (precio y fechas) comunes a las consultas con filtros avanzados. */
+export const priceRangeCheck = {
+  check: (query: { minPrice?: number; maxPrice?: number }) =>
+    query.minPrice === undefined ||
+    query.maxPrice === undefined ||
+    query.minPrice <= query.maxPrice,
+  params: { message: "El precio mínimo no puede superar al máximo", path: ["minPrice"] },
+};
+export const publishedRangeCheck = {
+  check: (query: { publishedFrom?: string; publishedTo?: string }) =>
+    query.publishedFrom === undefined ||
+    query.publishedTo === undefined ||
+    query.publishedFrom <= query.publishedTo,
+  params: {
+    message: "La fecha inicial no puede ser posterior a la final",
+    path: ["publishedFrom"],
+  },
+};
 
 export const propertyListQuerySchema = z
   .object({
@@ -59,12 +106,7 @@ export const propertyListQuerySchema = z
       .max(100)
       .transform((value) => (value === "" ? undefined : value))
       .optional(),
-    /** Una o varias operaciones: `SALE`, `RENT` o `SALE,RENT`. */
-    operation: commaSeparatedEnum(["SALE", "RENT"]),
-    /** Uno o varios tipos separados por comas. */
-    type: commaSeparatedEnum(propertyTypeValues),
-    minPrice: optionalNumber(z.coerce.number().min(0)),
-    maxPrice: optionalNumber(z.coerce.number().min(0)),
+    ...advancedFilterShape,
     /** Mínimo de dormitorios (3 = "3 o más"). */
     bedrooms: optionalNumber(z.coerce.number().int().min(0).max(20)),
     /** Mínimo de baños. */
@@ -79,12 +121,7 @@ export const propertyListQuerySchema = z
       .transform((value) => value === "true")
       .optional(),
   })
-  .refine(
-    (query) =>
-      query.minPrice === undefined ||
-      query.maxPrice === undefined ||
-      query.minPrice <= query.maxPrice,
-    { message: "El precio mínimo no puede superar al máximo", path: ["minPrice"] },
-  );
+  .refine(priceRangeCheck.check, priceRangeCheck.params)
+  .refine(publishedRangeCheck.check, publishedRangeCheck.params);
 
 export type PropertyListQuery = z.infer<typeof propertyListQuerySchema>;

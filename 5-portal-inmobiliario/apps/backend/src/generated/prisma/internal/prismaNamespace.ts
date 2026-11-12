@@ -927,6 +927,7 @@ export const PropertyScalarFieldEnum = {
   type: 'type',
   price: 'price',
   currency: 'currency',
+  availability: 'availability',
   usableArea: 'usableArea',
   totalArea: 'totalArea',
   bedrooms: 'bedrooms',
@@ -1126,6 +1127,20 @@ export type EnumCurrencyFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaM
  * Reference to a field of type 'Currency[]'
  */
 export type ListEnumCurrencyFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Currency[]'>
+    
+
+
+/**
+ * Reference to a field of type 'PropertyAvailability'
+ */
+export type EnumPropertyAvailabilityFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PropertyAvailability'>
+    
+
+
+/**
+ * Reference to a field of type 'PropertyAvailability[]'
+ */
+export type ListEnumPropertyAvailabilityFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PropertyAvailability[]'>
     
 
 

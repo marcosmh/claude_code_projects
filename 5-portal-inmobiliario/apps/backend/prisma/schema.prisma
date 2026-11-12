@@ -26,6 +26,12 @@ enum PropertyType {
   OTHER
 }
 
+enum PropertyAvailability {
+  AVAILABLE
+  SOLD
+  RENTED
+}
+
 enum Currency {
   MXN
   USD
@@ -48,13 +54,15 @@ model User {
 }
 
 model Property {
-  id          String            @id @default(cuid())
-  title       String
-  description String
-  operation   PropertyOperation
-  type        PropertyType
-  price       Decimal           @db.Decimal(14, 2)
-  currency    Currency          @default(MXN)
+  id           String               @id @default(cuid())
+  title        String
+  description  String
+  operation    PropertyOperation
+  type         PropertyType
+  price        Decimal              @db.Decimal(14, 2)
+  currency     Currency             @default(MXN)
+  // Estado comercial: una propiedad publicada puede figurar como vendida o rentada.
+  availability PropertyAvailability @default(AVAILABLE)
 
   // Campos opcionales: pueden no aplicar al tipo de propiedad (p. ej. terrenos).
   usableArea   Decimal? @db.Decimal(10, 2)
@@ -70,10 +78,10 @@ model Property {
   city    String
   region  String
 
-  isPublished Boolean  @default(false)
-  isFeatured  Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  isPublished Boolean   @default(false)
+  isFeatured  Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   // Borrado lógico: no nulo = eliminada por un administrador (no se borra ninguna fila).
   deletedAt   DateTime?
 
@@ -84,6 +92,7 @@ model Property {
 
   @@index([isPublished, operation, type])
   @@index([isPublished, createdAt])
+  @@index([isPublished, availability])
   @@index([isPublished, isFeatured])
   @@index([deletedAt])
   @@index([price])

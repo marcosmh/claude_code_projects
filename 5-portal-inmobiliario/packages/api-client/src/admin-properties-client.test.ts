@@ -72,3 +72,24 @@ describe("cliente de propiedades de administración", () => {
     expect(error).toMatchObject({ status: 404, message: "Propiedad no encontrada" });
   });
 });
+
+describe("buildAdminPropertiesUrl: filtros avanzados", () => {
+  it("serializa operación, tipo, estado, precio y fechas", () => {
+    expect(
+      buildAdminPropertiesUrl({
+        operation: ["SALE", "RENT"],
+        type: ["HOUSE"],
+        availability: ["SOLD"],
+        minPrice: 1000,
+        maxPrice: 5000,
+        publishedFrom: "2026-01-01",
+        publishedTo: "2026-02-01",
+      }),
+    ).toBe(
+      "/api/admin/properties?page=1&operation=SALE%2CRENT&type=HOUSE&availability=SOLD&minPrice=1000&maxPrice=5000&publishedFrom=2026-01-01&publishedTo=2026-02-01",
+    );
+    expect(buildAdminPropertiesUrl({ operation: [], availability: [] })).toBe(
+      "/api/admin/properties?page=1",
+    );
+  });
+});

@@ -115,9 +115,7 @@ describe("submitInquiry", () => {
   };
 
   it("hace POST con el cuerpo JSON y devuelve la respuesta", async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValue(new Response(JSON.stringify({ id: "i1" })));
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ id: "i1" })));
     vi.stubGlobal("fetch", fetchMock);
 
     expect(await submitInquiry(request)).toEqual({ id: "i1" });
@@ -159,5 +157,19 @@ describe("filtros multivalor y ubicaciones", () => {
   it("propaga el error si la API falla", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("{}", { status: 500 })));
     await expect(fetchPropertyLocations("/api/locations")).rejects.toMatchObject({ status: 500 });
+  });
+});
+
+describe("buildPropertiesUrl: estado y fecha de publicación", () => {
+  it("serializa availability, publishedFrom y publishedTo", () => {
+    expect(
+      buildPropertiesUrl({
+        availability: ["SOLD", "RENTED"],
+        publishedFrom: "2026-01-01",
+        publishedTo: "2026-03-31",
+      }),
+    ).toBe(
+      "/api/properties?availability=SOLD%2CRENTED&publishedFrom=2026-01-01&publishedTo=2026-03-31",
+    );
   });
 });

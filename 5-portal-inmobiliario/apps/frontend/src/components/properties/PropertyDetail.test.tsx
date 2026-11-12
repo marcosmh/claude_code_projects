@@ -32,6 +32,7 @@ const property: PropertyDetailDto = {
   type: "HOUSE",
   price: 5000000,
   currency: "MXN",
+  availability: "AVAILABLE",
   usableArea: 120,
   totalArea: 200,
   bedrooms: 3,

@@ -131,4 +131,34 @@ describe("createProperty / updateProperty / deleteProperty", () => {
     );
     await expect(missing.deleteProperty("x")).rejects.toBeInstanceOf(NotFoundError);
   });
+
+  it("traduce los filtros avanzados a filtros del repositorio", async () => {
+    const repository = buildRepository();
+    await createAdminPropertyService(repository).listProperties({
+      page: 2,
+      pageSize: 10,
+      status: "published",
+      operation: ["RENT"],
+      type: ["HOUSE", "APARTMENT"],
+      availability: ["SOLD"],
+      minPrice: 1000,
+      maxPrice: 5000,
+      publishedFrom: "2026-01-01",
+      publishedTo: "2026-02-01",
+    });
+    expect(repository.findPage).toHaveBeenCalledWith({
+      skip: 10,
+      take: 10,
+      status: "published",
+      filters: {
+        operations: ["RENT"],
+        types: ["HOUSE", "APARTMENT"],
+        availabilities: ["SOLD"],
+        minPrice: 1000,
+        maxPrice: 5000,
+        publishedFrom: "2026-01-01",
+        publishedTo: "2026-02-01",
+      },
+    });
+  });
 });

@@ -25,19 +25,19 @@ describe("propertyListQuerySchema", () => {
   });
 
   it("acepta operation y featured", () => {
-    expect(
-      propertyListQuerySchema.parse({ operation: "SALE", featured: "true" }),
-    ).toMatchObject({ operation: ["SALE"], featured: true });
+    expect(propertyListQuerySchema.parse({ operation: "SALE", featured: "true" })).toMatchObject({
+      operation: ["SALE"],
+      featured: true,
+    });
     expect(propertyListQuerySchema.parse({ featured: "false" }).featured).toBe(false);
   });
 
-  it.each([
-    { operation: "sale" },
-    { operation: "OTHER" },
-    { featured: "yes" },
-  ])("rechaza filtro inválido %j", (input) => {
-    expect(propertyListQuerySchema.safeParse(input).success).toBe(false);
-  });
+  it.each([{ operation: "sale" }, { operation: "OTHER" }, { featured: "yes" }])(
+    "rechaza filtro inválido %j",
+    (input) => {
+      expect(propertyListQuerySchema.safeParse(input).success).toBe(false);
+    },
+  );
 
   it.each([
     { page: "0" },
@@ -117,3 +117,31 @@ describe("propertyListQuerySchema", () => {
   });
 });
 
+describe("propertyListQuerySchema: estado y fecha de publicación", () => {
+  it("acepta varios estados y fechas AAAA-MM-DD", () => {
+    const result = propertyListQuerySchema.parse({
+      availability: "SOLD,RENTED",
+      publishedFrom: "2026-01-01",
+      publishedTo: "2026-03-31",
+    });
+    expect(result.availability).toEqual(["SOLD", "RENTED"]);
+    expect(result.publishedFrom).toBe("2026-01-01");
+    expect(result.publishedTo).toBe("2026-03-31");
+  });
+
+  it("trata las fechas vacías como ausentes", () => {
+    const result = propertyListQuerySchema.parse({ publishedFrom: "", availability: "" });
+    expect(result.publishedFrom).toBeUndefined();
+    expect(result.availability).toBeUndefined();
+  });
+
+  it("rechaza estados, formatos de fecha y rangos inválidos", () => {
+    expect(propertyListQuerySchema.safeParse({ availability: "GONE" }).success).toBe(false);
+    expect(propertyListQuerySchema.safeParse({ publishedFrom: "01/01/2026" }).success).toBe(false);
+    expect(propertyListQuerySchema.safeParse({ publishedFrom: "2026-13-45" }).success).toBe(false);
+    expect(
+      propertyListQuerySchema.safeParse({ publishedFrom: "2026-05-01", publishedTo: "2026-04-01" })
+        .success,
+    ).toBe(false);
+  });
+});

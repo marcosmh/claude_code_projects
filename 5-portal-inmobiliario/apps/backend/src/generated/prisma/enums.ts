@@ -37,6 +37,15 @@ export const PropertyType = {
 export type PropertyType = (typeof PropertyType)[keyof typeof PropertyType]
 
 
+export const PropertyAvailability = {
+  AVAILABLE: 'AVAILABLE',
+  SOLD: 'SOLD',
+  RENTED: 'RENTED'
+} as const
+
+export type PropertyAvailability = (typeof PropertyAvailability)[keyof typeof PropertyAvailability]
+
+
 export const Currency = {
   MXN: 'MXN',
   USD: 'USD'

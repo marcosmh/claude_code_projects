@@ -518,3 +518,16 @@ Decisiones que concretan la sección 10 de este plan:
 - `schemas/property-form.ts`: esquema del formulario con valores de texto (los `input` HTML) que se transforman a números y se validan con `propertyInputSchema` (`transform` + `pipe`); `propertyToFormValues` rellena la edición.
 - `components/admin/PropertyForm.tsx` (RHF + `zodResolver`) y `property-form-fields.tsx` (select, textarea y checkbox accesibles). `AdminPropertyEditor` lo monta (crear sin datos; editar con la propiedad cargada).
 - Al guardar se invalidan las cachés SWR de administración y se navega a `/admin/properties`.
+
+## 40. Filtros avanzados en panel lateral (Extra N)
+
+- Prisma: enum `PropertyAvailability` y columna `Property.availability` (default `AVAILABLE`, índice con `isPublished`); migración propia.
+- Contratos: `propertyAvailabilityValues`, `availability` en `PropertySummaryDto` y en `propertyInputSchema`; `availability`, `publishedFrom` y `publishedTo` en `propertyListQuerySchema` y en `buildPropertiesUrl`.
+- Backend: `PropertyFilters` suma `availabilities`, `publishedFrom`, `publishedTo` (rango sobre `createdAt`); el servicio los traduce desde la consulta.
+- Frontend: el panel queda a la izquierda (antes de los resultados); `FiltersSidebar` aplica los cambios con `router.replace` (inmediato en casillas/listas, con *debounce* en texto, números y fechas) y sincroniza el formulario solo ante cambios externos de la URL; `PropertyCard` muestra la etiqueta de estado; el formulario de administración incluye el selector de estado.
+
+## 41. Filtros avanzados en la administración (Extra O)
+
+- `property-list-query.ts` exporta `advancedFilterShape` (operación, tipo, estado, fechas y precio) que reutilizan la consulta pública y `adminPropertyListQuerySchema`, con las mismas validaciones de rango.
+- `adminPropertyRepository.findPage` aplica los filtros en PostgreSQL (`buildCommonWhere` compartido con el repositorio público). `buildAdminPropertiesUrl` los serializa.
+- UI: `AdminPropertiesList` usa un panel derecho colapsable (`AdminPropertyFilters`) con estado local; se aplica dinámicamente con *debounce* en los campos escritos.

@@ -33,6 +33,10 @@ Accept: application/json
 GET {{baseUrl}}/api/properties?operation=SALE&pageSize=50
 Accept: application/json
 
+### Filtrar por estado (SOLD, RENTED, AVAILABLE; varios con comas) y fecha de publicación (AAAA-MM-DD; 400 si es inválida)
+GET {{baseUrl}}/api/properties?availability=SOLD,RENTED&publishedFrom=2026-01-01&publishedTo=2026-12-31
+Accept: application/json
+
 ### Solo propiedades en arriendo
 GET {{baseUrl}}/api/properties?operation=RENT&pageSize=50
 Accept: application/json
@@ -384,6 +388,10 @@ Accept: application/json
 
 ### Listar propiedades con borradores (status: all | published | draft)
 GET {{baseUrl}}/api/admin/properties?page=1&pageSize=10&status=all&search=casa
+Accept: application/json
+
+### Filtros avanzados: operación, tipo, estado (AVAILABLE/SOLD/RENTED), precio y fecha de publicación (400 si son inválidos)
+GET {{baseUrl}}/api/admin/properties?operation=SALE&type=HOUSE&availability=SOLD&minPrice=1000000&maxPrice=9000000&publishedFrom=2026-01-01&publishedTo=2026-12-31
 Accept: application/json
 
 ### Crear una propiedad (201); no se envían latitud ni longitud

@@ -330,3 +330,13 @@
 - [x] **Extra M — Punto de entrada según rol**
   - `/` redirige a `/admin` (ADMIN) o a `/portal` (USER y visitantes); la landing vive en `/portal`.
   - Pruebas, lint, typecheck y build pasan.
+
+- [x] **Extra N — Filtros avanzados en panel lateral**
+  - Campo `availability` (migración), filtro por estado y por fecha de publicación en la API.
+  - Panel de filtros lateral izquierdo, aplicación dinámica, etiqueta de estado en tarjetas y selector en el formulario de administración.
+  - Pruebas, lint, typecheck y build pasan.
+
+- [x] **Extra O — Filtros avanzados en la administración de propiedades**
+  - API `GET /api/admin/properties` con operación, tipo, estado, precio y fecha de publicación.
+  - Panel de filtros derecho colapsable en `/admin/properties`, aplicación dinámica y «Limpiar filtros».
+  - Pruebas, lint, typecheck y build pasan.

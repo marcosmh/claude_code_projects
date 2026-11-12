@@ -83,3 +83,53 @@ describe("adminPropertyListQuerySchema", () => {
     expect(adminPropertyListQuerySchema.safeParse({ page: "0" }).success).toBe(false);
   });
 });
+
+describe("propertyInputSchema: estado de la propiedad (Extra N)", () => {
+  it("usa AVAILABLE por defecto y acepta SOLD y RENTED", () => {
+    expect(propertyInputSchema.parse(valid).availability).toBe("AVAILABLE");
+    expect(propertyInputSchema.parse({ ...valid, availability: "SOLD" }).availability).toBe("SOLD");
+    expect(propertyInputSchema.parse({ ...valid, availability: "RENTED" }).availability).toBe(
+      "RENTED",
+    );
+  });
+
+  it("rechaza un estado desconocido", () => {
+    expect(propertyInputSchema.safeParse({ ...valid, availability: "GONE" }).success).toBe(false);
+  });
+});
+
+describe("adminPropertyListQuerySchema: filtros avanzados (Extra O)", () => {
+  it("acepta operación, tipo, estado, precio y fechas", () => {
+    const result = adminPropertyListQuerySchema.parse({
+      operation: "SALE,RENT",
+      type: "HOUSE",
+      availability: "SOLD",
+      minPrice: "1000",
+      maxPrice: "5000",
+      publishedFrom: "2026-01-01",
+      publishedTo: "2026-02-01",
+    });
+    expect(result).toMatchObject({
+      operation: ["SALE", "RENT"],
+      type: ["HOUSE"],
+      availability: ["SOLD"],
+      minPrice: 1000,
+      maxPrice: 5000,
+      publishedFrom: "2026-01-01",
+      publishedTo: "2026-02-01",
+    });
+  });
+
+  it("rechaza rangos invertidos y valores desconocidos", () => {
+    expect(adminPropertyListQuerySchema.safeParse({ minPrice: "10", maxPrice: "5" }).success).toBe(
+      false,
+    );
+    expect(
+      adminPropertyListQuerySchema.safeParse({
+        publishedFrom: "2026-05-01",
+        publishedTo: "2026-04-01",
+      }).success,
+    ).toBe(false);
+    expect(adminPropertyListQuerySchema.safeParse({ availability: "GONE" }).success).toBe(false);
+  });
+});

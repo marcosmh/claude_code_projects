@@ -31,6 +31,7 @@ const sampleProperty: PropertySummaryDto = {
   type: "APARTMENT",
   price: 24500,
   currency: "MXN",
+  availability: "AVAILABLE",
   usableArea: 68,
   bedrooms: 2,
   bathrooms: 1,

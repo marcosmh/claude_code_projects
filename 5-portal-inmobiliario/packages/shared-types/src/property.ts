@@ -1,12 +1,8 @@
 export type PropertyOperation = "SALE" | "RENT";
-export type PropertyType =
-  | "HOUSE"
-  | "APARTMENT"
-  | "LAND"
-  | "OFFICE"
-  | "COMMERCIAL"
-  | "OTHER";
+export type PropertyType = "HOUSE" | "APARTMENT" | "LAND" | "OFFICE" | "COMMERCIAL" | "OTHER";
 export type Currency = "MXN" | "USD";
+/** Estado comercial de una propiedad publicada. */
+export type PropertyAvailability = "AVAILABLE" | "SOLD" | "RENTED";
 
 export type PropertyImageDto = {
   id: string;
@@ -29,6 +25,7 @@ export type PropertySummaryDto = {
   type: PropertyType;
   price: number;
   currency: Currency;
+  availability: PropertyAvailability;
   usableArea: number | null;
   bedrooms: number | null;
   bathrooms: number | null;

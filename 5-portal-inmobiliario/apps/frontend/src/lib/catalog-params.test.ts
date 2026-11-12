@@ -123,3 +123,29 @@ describe("selección múltiple en la URL", () => {
     expect(buildCatalogHref({ page: 1, operation: [], type: [] })).toBe("/properties");
   });
 });
+
+describe("estado y fecha de publicación (Extra N)", () => {
+  it("lee estados válidos y fechas, e ignora lo inválido", () => {
+    expect(
+      parseCatalogParams(
+        new URLSearchParams(
+          "availability=SOLD,foo,RENTED&publishedFrom=2026-01-01&publishedTo=31-12-2026",
+        ),
+      ),
+    ).toEqual({ page: 1, availability: ["SOLD", "RENTED"], publishedFrom: "2026-01-01" });
+    expect(parseCatalogParams(new URLSearchParams("publishedFrom=2026-13-45"))).toEqual({
+      page: 1,
+    });
+  });
+
+  it("los serializa en la URL", () => {
+    expect(
+      buildCatalogHref({
+        page: 1,
+        availability: ["SOLD"],
+        publishedFrom: "2026-01-01",
+        publishedTo: "2026-03-31",
+      }),
+    ).toBe("/properties?availability=SOLD&publishedFrom=2026-01-01&publishedTo=2026-03-31");
+  });
+});

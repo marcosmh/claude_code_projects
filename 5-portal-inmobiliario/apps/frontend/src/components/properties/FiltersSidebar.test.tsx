@@ -4,12 +4,12 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { FiltersSidebar } from "./FiltersSidebar";
 
-const push = vi.fn();
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
+const replace = vi.fn();
+vi.mock("next/navigation", () => ({ useRouter: () => ({ replace }) }));
 
 afterEach(() => {
   cleanup();
-  push.mockReset();
+  replace.mockReset();
 });
 
 const cities = ["Mérida", "Querétaro"];
@@ -41,10 +41,13 @@ describe("FiltersSidebar", () => {
     await user.click(screen.getByRole("checkbox", { name: "Arriendo" }));
     await user.click(screen.getByRole("checkbox", { name: "Casa" }));
     await user.click(screen.getByRole("checkbox", { name: "Departamento" }));
-    await user.click(screen.getByRole("button", { name: "Aplicar filtros" }));
 
+    // Se aplica solo, sin botón: la última URL tiene todas las selecciones.
     await waitFor(() =>
-      expect(push).toHaveBeenCalledWith("/properties?operation=SALE%2CRENT&type=HOUSE%2CAPARTMENT"),
+      expect(replace).toHaveBeenLastCalledWith(
+        "/properties?operation=SALE%2CRENT&type=HOUSE%2CAPARTMENT",
+        { scroll: false },
+      ),
     );
   });
 
@@ -97,10 +100,13 @@ describe("FiltersSidebar", () => {
         name: "2 o más",
       }),
     );
-    await user.click(screen.getByRole("button", { name: "Aplicar filtros" }));
 
-    await waitFor(() => expect(push).toHaveBeenCalledOnce());
-    const url = new URL(push.mock.calls[0]?.[0] as string, "http://localhost");
+    await waitFor(() => {
+      const lastUrl = replace.mock.calls.at(-1)?.[0] as string;
+      expect(lastUrl).toContain("maxPrice=5000000");
+      expect(lastUrl).toContain("bedrooms=2");
+    });
+    const url = new URL(replace.mock.calls.at(-1)?.[0] as string, "http://localhost");
     expect(Object.fromEntries(url.searchParams)).toEqual({
       search: "casa",
       sort: "price_asc",
@@ -122,14 +128,15 @@ describe("FiltersSidebar", () => {
     renderSidebar();
     await user.type(screen.getByLabelText("Precio mínimo"), "900");
     await user.type(screen.getByLabelText("Precio máximo"), "100");
-    await user.click(screen.getByRole("button", { name: "Aplicar filtros" }));
     expect(await screen.findByText(/no puede superar/)).toBeTruthy();
 
     await user.clear(screen.getByLabelText("Precio mínimo"));
     await user.type(screen.getByLabelText("Precio mínimo"), "abc");
-    await user.click(screen.getByRole("button", { name: "Aplicar filtros" }));
     expect(await screen.findByText("Ingresa un número válido")).toBeTruthy();
-    expect(push).not.toHaveBeenCalled();
+    expect(replace).not.toHaveBeenCalledWith(
+      expect.stringContaining("minPrice=abc"),
+      expect.anything(),
+    );
   });
 
   it("'Limpiar filtros' conserva solo la búsqueda", () => {
@@ -137,5 +144,57 @@ describe("FiltersSidebar", () => {
     expect(screen.getByRole("link", { name: "Limpiar filtros" }).getAttribute("href")).toBe(
       "/properties?search=M%C3%A9rida%20centro",
     );
+  });
+
+  it("no tiene botón «Aplicar filtros»", () => {
+    renderSidebar();
+    expect(screen.queryByRole("button", { name: "Aplicar filtros" })).toBeNull();
+  });
+
+  it("filtra por estado de la propiedad con casillas", async () => {
+    const user = userEvent.setup();
+    renderSidebar();
+    const states = within(screen.getByRole("group", { name: "Estado de la propiedad" }));
+    expect(states.getAllByRole("checkbox")).toHaveLength(3);
+    await user.click(states.getByRole("checkbox", { name: "Vendida" }));
+    await user.click(states.getByRole("checkbox", { name: "Rentada" }));
+
+    await waitFor(() =>
+      expect(replace).toHaveBeenLastCalledWith("/properties?availability=SOLD%2CRENTED", {
+        scroll: false,
+      }),
+    );
+  });
+
+  it("filtra por fecha de publicación y rechaza un rango invertido", async () => {
+    const user = userEvent.setup();
+    renderSidebar();
+    const group = within(screen.getByRole("group", { name: "Fecha de publicación" }));
+    await user.type(group.getByLabelText("Desde"), "2026-01-01");
+    await user.type(group.getByLabelText("Hasta"), "2026-03-31");
+
+    await waitFor(() =>
+      expect(replace).toHaveBeenLastCalledWith(
+        "/properties?publishedFrom=2026-01-01&publishedTo=2026-03-31",
+        { scroll: false },
+      ),
+    );
+
+    replace.mockReset();
+    await user.clear(group.getByLabelText("Hasta"));
+    await user.type(group.getByLabelText("Hasta"), "2025-12-31");
+    expect(await screen.findByText(/fecha inicial no puede ser posterior/)).toBeTruthy();
+    expect(replace).not.toHaveBeenCalledWith(
+      expect.stringContaining("publishedTo=2025-12-31"),
+      expect.anything(),
+    );
+  });
+
+  it("precarga estado y fechas de la URL", () => {
+    renderSidebar({ availability: ["SOLD"], publishedFrom: "2026-02-01" });
+    expect((screen.getByRole("checkbox", { name: "Vendida" }) as HTMLInputElement).checked).toBe(
+      true,
+    );
+    expect((screen.getByLabelText("Desde") as HTMLInputElement).value).toBe("2026-02-01");
   });
 });

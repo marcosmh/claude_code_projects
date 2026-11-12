@@ -4,6 +4,7 @@ import { memo } from "react";
 import { FavoriteButton } from "@/components/favorites/FavoriteButton";
 import {
   formatArea,
+  formatAvailability,
   formatBathrooms,
   formatOperation,
   formatPrice,
@@ -56,6 +57,11 @@ export const PropertyCard = memo(function PropertyCard({
           <span className="absolute left-3 top-3 rounded-full bg-badge px-3 py-1 text-xs font-semibold text-badge-foreground">
             {formatOperation(property.operation)}
           </span>
+          {property.availability !== "AVAILABLE" && (
+            <span className="absolute bottom-3 left-3 rounded-full bg-warning-surface px-3 py-1 text-xs font-semibold text-warning">
+              {formatAvailability(property.availability)}
+            </span>
+          )}
         </div>
         <div className="flex flex-1 flex-col p-4">
           <p className="text-xl font-bold tabular-nums">

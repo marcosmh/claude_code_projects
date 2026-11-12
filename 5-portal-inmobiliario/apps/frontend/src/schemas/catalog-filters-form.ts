@@ -1,4 +1,4 @@
-import { propertyTypeValues } from "@portal/shared-types";
+import { propertyAvailabilityValues, propertyTypeValues } from "@portal/shared-types";
 import { z } from "zod";
 import { buildCatalogHref, type CatalogFilters } from "@/lib/catalog-params";
 
@@ -6,6 +6,10 @@ const optionalNumberText = z
   .string()
   .trim()
   .regex(/^(\d+(\.\d+)?)?$/, "Ingresa un número válido");
+const optionalDateText = z
+  .string()
+  .trim()
+  .regex(/^(\d{4}-\d{2}-\d{2})?$/, "Ingresa una fecha válida");
 const optionalLocationText = z.string().trim().max(100, "Máximo 100 caracteres");
 
 /** Filtros del sidebar. La búsqueda de texto y el orden se gestionan fuera de este formulario. */
@@ -13,6 +17,9 @@ export const catalogFiltersFormSchema = z
   .object({
     operation: z.array(z.enum(["SALE", "RENT"])),
     type: z.array(z.enum(propertyTypeValues)),
+    availability: z.array(z.enum(propertyAvailabilityValues)),
+    publishedFrom: optionalDateText,
+    publishedTo: optionalDateText,
     city: optionalLocationText,
     region: optionalLocationText,
     commune: optionalLocationText,
@@ -26,6 +33,11 @@ export const catalogFiltersFormSchema = z
     ({ minPrice, maxPrice }) =>
       minPrice === "" || maxPrice === "" || Number(minPrice) <= Number(maxPrice),
     { message: "El precio mínimo no puede superar al máximo", path: ["minPrice"] },
+  )
+  .refine(
+    ({ publishedFrom, publishedTo }) =>
+      publishedFrom === "" || publishedTo === "" || publishedFrom <= publishedTo,
+    { message: "La fecha inicial no puede ser posterior a la final", path: ["publishedFrom"] },
   );
 
 export type CatalogFiltersFormValues = z.infer<typeof catalogFiltersFormSchema>;
@@ -36,6 +48,9 @@ export function toFormValues(filters: CatalogFilters): CatalogFiltersFormValues 
   return {
     operation: filters.operation ?? [],
     type: filters.type ?? [],
+    availability: filters.availability ?? [],
+    publishedFrom: filters.publishedFrom ?? "",
+    publishedTo: filters.publishedTo ?? "",
     city: filters.city ?? "",
     region: filters.region ?? "",
     commune: filters.commune ?? "",
@@ -58,6 +73,9 @@ export function buildCatalogFiltersHref(
   const filters: CatalogFilters = { ...current };
   if (values.operation.length > 0) filters.operation = values.operation;
   if (values.type.length > 0) filters.type = values.type;
+  if (values.availability.length > 0) filters.availability = values.availability;
+  if (values.publishedFrom) filters.publishedFrom = values.publishedFrom;
+  if (values.publishedTo) filters.publishedTo = values.publishedTo;
   if (values.city) filters.city = values.city;
   if (values.region) filters.region = values.region;
   if (values.commune) filters.commune = values.commune;

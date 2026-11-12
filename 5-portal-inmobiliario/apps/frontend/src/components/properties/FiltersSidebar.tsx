@@ -3,16 +3,17 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
-import type { CatalogFilters } from "@/lib/catalog-params";
-import { formatOperation, formatPropertyType } from "@/lib/format";
+import { buildCatalogHref, type CatalogFilters } from "@/lib/catalog-params";
+import { formatAvailability, formatOperation, formatPropertyType } from "@/lib/format";
 import {
   buildCatalogFiltersHref,
   catalogFiltersFormSchema,
   toFormValues,
   type CatalogFiltersFormValues,
 } from "@/schemas/catalog-filters-form";
-import { propertyTypeValues } from "@portal/shared-types";
+import { propertyAvailabilityValues, propertyTypeValues } from "@portal/shared-types";
 
 type FiltersSidebarProps = {
   id: string;
@@ -20,6 +21,20 @@ type FiltersSidebarProps = {
   cities: string[];
   regions: string[];
 };
+
+/** Pausa antes de aplicar cambios escritos a mano (texto, números y fechas). */
+const TYPING_DEBOUNCE_MS = 400;
+
+/** Campos que se aplican al instante; el resto espera a que la persona termine de escribir. */
+const instantFields = new Set([
+  "operation",
+  "type",
+  "availability",
+  "city",
+  "region",
+  "bedrooms",
+  "bathrooms",
+]);
 
 const inputClassName =
   "h-10 w-full rounded-md border border-foreground/20 bg-surface px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring aria-[invalid=true]:border-danger";
@@ -39,11 +54,46 @@ export function FiltersSidebar({ id, filters, cities, regions }: FiltersSidebarP
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm<CatalogFiltersFormValues>({
     resolver: zodResolver(catalogFiltersFormSchema),
     defaultValues: toFormValues(filters),
   });
+
+  // URL con los filtros actuales y última URL que escribió este panel (para distinguir cambios propios).
+  const currentHref = buildCatalogHref({ page: 1, ...filters });
+  const lastAppliedHref = useRef(currentHref);
+  const { search, sort } = filters;
+
+  const applyValues = () =>
+    handleSubmit((values) => {
+      const href = buildCatalogFiltersHref(values, { search, sort });
+      if (href === lastAppliedHref.current) return;
+      lastAppliedHref.current = href;
+      router.replace(href, { scroll: false });
+    })();
+
+  // Aplica los cambios dinámicamente: al instante en casillas y listas, con pausa al escribir.
+  // El evento `change` de los controles sube hasta el formulario, cuando RHF ya guardó el valor.
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const scheduleApply = (fieldName: string) => {
+    clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(
+      () => void applyValues(),
+      instantFields.has(fieldName) ? 0 : TYPING_DEBOUNCE_MS,
+    );
+  };
+  useEffect(() => () => clearTimeout(timerRef.current), []);
+
+  // Si la URL cambia por otro medio (limpiar filtros, atrás del navegador), el formulario la sigue.
+  useEffect(() => {
+    if (currentHref === lastAppliedHref.current) return;
+    lastAppliedHref.current = currentHref;
+    reset(toFormValues(filters));
+    // `filters` se resume en `currentHref`.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentHref, reset]);
 
   const numberField = (
     name: "minPrice" | "maxPrice" | "minUsableArea",
@@ -59,6 +109,27 @@ export function FiltersSidebar({ id, filters, cities, regions }: FiltersSidebarP
         inputMode="decimal"
         placeholder={placeholder}
         autoComplete="off"
+        aria-invalid={errors[name] ? "true" : "false"}
+        aria-describedby={errors[name] ? `filter-${name}-error` : undefined}
+        className={inputClassName}
+        {...register(name)}
+      />
+      {errors[name] && (
+        <p id={`filter-${name}-error`} role="alert" className="mt-1 text-xs text-danger">
+          {errors[name]?.message}
+        </p>
+      )}
+    </div>
+  );
+
+  const dateField = (name: "publishedFrom" | "publishedTo", label: string) => (
+    <div>
+      <label htmlFor={`filter-${name}`} className="mb-1 block text-sm font-medium">
+        {label}
+      </label>
+      <input
+        id={`filter-${name}`}
+        type="date"
         aria-invalid={errors[name] ? "true" : "false"}
         aria-describedby={errors[name] ? `filter-${name}-error` : undefined}
         className={inputClassName}
@@ -112,11 +183,12 @@ export function FiltersSidebar({ id, filters, cities, regions }: FiltersSidebarP
       id={id}
       aria-label="Filtros de propiedades"
       noValidate
-      onSubmit={handleSubmit((values) =>
-        router.push(
-          buildCatalogFiltersHref(values, { search: filters.search, sort: filters.sort }),
-        ),
-      )}
+      onChange={(event) => scheduleApply((event.target as unknown as { name?: string }).name ?? "")}
+      onSubmit={(event) => {
+        event.preventDefault();
+        clearTimeout(timerRef.current);
+        void applyValues();
+      }}
       className="space-y-5 rounded-xl border border-foreground/10 bg-surface p-4 shadow-sm"
     >
       <fieldset>
@@ -130,6 +202,21 @@ export function FiltersSidebar({ id, filters, cities, regions }: FiltersSidebarP
               {...register("operation")}
             />
             {formatOperation(value)}
+          </label>
+        ))}
+      </fieldset>
+
+      <fieldset>
+        <legend className={legendClassName}>Estado de la propiedad</legend>
+        {propertyAvailabilityValues.map((value) => (
+          <label key={value} className={checkboxLabelClassName}>
+            <input
+              type="checkbox"
+              value={value}
+              className={checkboxClassName}
+              {...register("availability")}
+            />
+            {formatAvailability(value)}
           </label>
         ))}
       </fieldset>
@@ -168,17 +255,18 @@ export function FiltersSidebar({ id, filters, cities, regions }: FiltersSidebarP
         {numberField("minPrice", "Precio mínimo", "0")}
         {numberField("maxPrice", "Precio máximo", "Sin límite")}
       </div>
+      <fieldset>
+        <legend className={legendClassName}>Fecha de publicación</legend>
+        <div className="grid grid-cols-2 gap-3">
+          {dateField("publishedFrom", "Desde")}
+          {dateField("publishedTo", "Hasta")}
+        </div>
+      </fieldset>
       {numberField("minUsableArea", "Superficie útil mínima (m²)", "0")}
       {radioGroup("bedrooms", "Dormitorios", 5)}
       {radioGroup("bathrooms", "Baños", 4)}
 
       <div className="flex flex-col gap-2">
-        <button
-          type="submit"
-          className="h-10 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-        >
-          Aplicar filtros
-        </button>
         <Link
           href={
             filters.search

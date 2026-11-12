@@ -22,6 +22,8 @@
   --link: #155dfc;
   --ring: #155dfc;
   --danger: #e7000b;
+  --warning: #92400e;
+  --warning-surface: #fef3c7;
   --badge: #ffffff;
   --badge-foreground: #171717;
   --hero-tint: #155dfc;
@@ -39,6 +41,8 @@
   --link: #5b9bff;
   --ring: #5b9bff;
   --danger: #ff6467;
+  --warning: #fcd34d;
+  --warning-surface: #78350f;
   --badge: #0a0a0a;
   --badge-foreground: #ededed;
   --hero-tint: #155dfc;
@@ -57,6 +61,8 @@
     --link: #5b9bff;
     --ring: #5b9bff;
     --danger: #ff6467;
+    --warning: #fcd34d;
+    --warning-surface: #78350f;
     --badge: #0a0a0a;
     --badge-foreground: #ededed;
     --hero-tint: #155dfc;
@@ -75,6 +81,8 @@
   --link: #8db8ff;
   --ring: #ffc300;
   --danger: #ff8a96;
+  --warning: #fcd34d;
+  --warning-surface: #78350f;
   --badge: #ffc300;
   --badge-foreground: #0a1a3a;
   --hero-tint: #2f6fed;

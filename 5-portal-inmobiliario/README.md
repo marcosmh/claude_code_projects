@@ -118,7 +118,7 @@ Sirven en `/login`, en `resources/postman/postman-api.json` y en `resources/rest
 
 | Método | Ruta | Descripción |
 | --- | --- | --- |
-| GET | `/api/properties` | Listado paginado de propiedades publicadas |
+| GET | `/api/properties` | Listado paginado de propiedades publicadas (filtros: `operation`, `type`, `availability`=AVAILABLE,SOLD,RENTED, `publishedFrom`/`publishedTo`=AAAA-MM-DD, precio, dormitorios, baños, ubicación…) |
 | GET | `/api/properties/{id}` | Detalle con imágenes y características |
 | GET | `/api/locations` | Ciudades y regiones disponibles |
 | POST | `/api/inquiries` | Registra una consulta en PostgreSQL (asociada al usuario si hay sesión); el correo lo envía el navegador con Web3Forms |
@@ -129,7 +129,7 @@ Sirven en `/login`, en `resources/postman/postman-api.json` y en `resources/rest
 | POST | `/api/auth/logout` | Cierra la sesión borrando la cookie (204) |
 | GET | `/api/auth/me` | Usuario de la sesión actual (200; 401 sin sesión válida) |
 | GET | `/api/admin/dashboard` | Indicadores del panel (solo ADMIN: 200; 401; 403) |
-| GET | `/api/admin/properties` | Lista paginada con borradores (`page`, `pageSize`, `search`, `status`=all/published/draft) (solo ADMIN) |
+| GET | `/api/admin/properties` | Lista paginada con borradores (`page`, `pageSize`, `search`, `status`=all/published/draft y los filtros `operation`, `type`, `availability`, `minPrice`, `maxPrice`, `publishedFrom`, `publishedTo`) (solo ADMIN) |
 | POST | `/api/admin/properties` | Crea una propiedad (201; 400; solo ADMIN) |
 | GET | `/api/admin/properties/{id}` | Propiedad en cualquier estado (200; 404; solo ADMIN) |
 | PUT | `/api/admin/properties/{id}` | Reemplaza los campos editables (200; 400; 404; solo ADMIN) |

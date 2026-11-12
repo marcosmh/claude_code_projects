@@ -1,5 +1,8 @@
 import type {
   AdminPropertyDto,
+  PropertyAvailability,
+  PropertyOperation,
+  PropertyType,
   AdminPropertyListItemDto,
   PaginatedResponse,
   PropertyInput,
@@ -13,6 +16,14 @@ export type AdminPropertiesQuery = {
   pageSize?: number;
   search?: string;
   status?: "all" | "published" | "draft";
+  operation?: readonly PropertyOperation[];
+  type?: readonly PropertyType[];
+  availability?: readonly PropertyAvailability[];
+  minPrice?: number;
+  maxPrice?: number;
+  /** Fecha de publicación desde / hasta (`AAAA-MM-DD`). */
+  publishedFrom?: string;
+  publishedTo?: string;
 };
 
 /** URL de la lista de administración; sirve también como clave de caché de SWR. */
@@ -21,11 +32,25 @@ export function buildAdminPropertiesUrl({
   pageSize,
   search,
   status = "all",
+  operation,
+  type,
+  availability,
+  minPrice,
+  maxPrice,
+  publishedFrom,
+  publishedTo,
 }: AdminPropertiesQuery = {}): string {
   const params = new URLSearchParams({ page: String(page) });
   if (pageSize !== undefined) params.set("pageSize", String(pageSize));
   if (search && search.trim() !== "") params.set("search", search.trim());
   if (status !== "all") params.set("status", status);
+  if (operation?.length) params.set("operation", operation.join(","));
+  if (type?.length) params.set("type", type.join(","));
+  if (availability?.length) params.set("availability", availability.join(","));
+  if (minPrice !== undefined) params.set("minPrice", String(minPrice));
+  if (maxPrice !== undefined) params.set("maxPrice", String(maxPrice));
+  if (publishedFrom) params.set("publishedFrom", publishedFrom);
+  if (publishedTo) params.set("publishedTo", publishedTo);
   return `${adminPropertiesUrl}?${params.toString()}`;
 }
 

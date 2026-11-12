@@ -10,9 +10,7 @@ import { createPropertyService } from "./property-service";
 
 const baseDate = new Date("2026-01-15T10:00:00.000Z");
 
-function buildSummaryRecord(
-  overrides: Partial<PropertySummaryRecord> = {},
-): PropertySummaryRecord {
+function buildSummaryRecord(overrides: Partial<PropertySummaryRecord> = {}): PropertySummaryRecord {
   return {
     id: "prop-1",
     title: "Casa de prueba",
@@ -21,6 +19,7 @@ function buildSummaryRecord(
     type: "HOUSE",
     price: new Decimal("4850000.00"),
     currency: "MXN",
+    availability: "AVAILABLE",
     usableArea: new Decimal("210.50"),
     totalArea: null,
     bedrooms: 4,
@@ -41,9 +40,7 @@ function buildSummaryRecord(
   };
 }
 
-function buildDetailRecord(
-  overrides: Partial<PropertyDetailRecord> = {},
-): PropertyDetailRecord {
+function buildDetailRecord(overrides: Partial<PropertyDetailRecord> = {}): PropertyDetailRecord {
   return {
     ...buildSummaryRecord(),
     totalArea: new Decimal("280.00"),
@@ -76,9 +73,7 @@ describe("listPublishedProperties", () => {
   it("convierte decimales a números y expone la imagen principal", async () => {
     const service = createPropertyService(
       buildRepository({
-        findPublishedPage: vi
-          .fn()
-          .mockResolvedValue({ records: [buildSummaryRecord()], total: 1 }),
+        findPublishedPage: vi.fn().mockResolvedValue({ records: [buildSummaryRecord()], total: 1 }),
       }),
     );
 
@@ -115,7 +110,12 @@ describe("listPublishedProperties", () => {
 
     const result = await service.listPublishedProperties({ page: 3, pageSize: 10, sort: "newest" });
 
-    expect(findPublishedPage).toHaveBeenCalledWith({ skip: 20, take: 10, filters: {}, sort: "newest" });
+    expect(findPublishedPage).toHaveBeenCalledWith({
+      skip: 20,
+      take: 10,
+      filters: {},
+      sort: "newest",
+    });
     expect(result).toMatchObject({ page: 3, pageSize: 10, total: 25, totalPages: 3 });
   });
 });
@@ -147,6 +147,45 @@ describe("listPublishedProperties con filtros", () => {
       filters: expectedFilters,
       sort: "price_desc",
     });
+  });
+});
+
+describe("listPublishedProperties con estado y fecha de publicación", () => {
+  it("traduce availability, publishedFrom y publishedTo a filtros del repositorio", async () => {
+    const findPublishedPage = vi.fn().mockResolvedValue({ records: [], total: 0 });
+    const service = createPropertyService(buildRepository({ findPublishedPage }));
+
+    await service.listPublishedProperties({
+      page: 1,
+      pageSize: 12,
+      sort: "newest",
+      availability: ["SOLD", "RENTED"],
+      publishedFrom: "2026-01-01",
+      publishedTo: "2026-03-31",
+    });
+
+    expect(findPublishedPage).toHaveBeenCalledWith({
+      skip: 0,
+      take: 12,
+      filters: {
+        availabilities: ["SOLD", "RENTED"],
+        publishedFrom: "2026-01-01",
+        publishedTo: "2026-03-31",
+      },
+      sort: "newest",
+    });
+  });
+
+  it("expone el estado en el DTO", async () => {
+    const service = createPropertyService(
+      buildRepository({
+        findPublishedPage: vi
+          .fn()
+          .mockResolvedValue({ records: [buildSummaryRecord({ availability: "SOLD" })], total: 1 }),
+      }),
+    );
+    const result = await service.listPublishedProperties({ page: 1, pageSize: 12, sort: "newest" });
+    expect(result.items[0].availability).toBe("SOLD");
   });
 });
 
@@ -189,4 +228,3 @@ describe("listPublishedLocations", () => {
     expect(await service.listPublishedLocations()).toEqual(locations);
   });
 });
-

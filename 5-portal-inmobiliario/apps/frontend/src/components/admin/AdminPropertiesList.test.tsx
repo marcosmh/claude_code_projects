@@ -24,11 +24,14 @@ vi.mock("@portal/api-client", () => ({
     page,
     search,
     status,
+    availability = [],
   }: {
     page: number;
     search?: string;
     status: string;
-  }) => `/api/admin/properties?page=${page}&search=${search ?? ""}&status=${status}`,
+    availability?: string[];
+  }) =>
+    `/api/admin/properties?page=${page}&search=${search ?? ""}&status=${status}&availability=${availability.join(",")}`,
   fetchAdminProperties: vi.fn(),
   deleteAdminProperty,
 }));
@@ -146,5 +149,30 @@ describe("AdminPropertiesList", () => {
     render(<AdminPropertiesList />);
     fireEvent.click(screen.getByRole("button", { name: "Reintentar" }));
     expect(swr.mutate).toHaveBeenCalled();
+  });
+
+  it("tiene un panel de filtros colapsable que cuenta los filtros activos", () => {
+    swr.data = { items: [], totalPages: 1 };
+    render(<AdminPropertiesList />);
+
+    const toggle = screen.getByRole("button", { name: /Ocultar filtros/ });
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    expect(screen.getByRole("form", { name: "Filtros avanzados de propiedades" })).toBeTruthy();
+
+    fireEvent.click(toggle);
+    expect(
+      screen.getByRole("button", { name: /Mostrar filtros/ }).getAttribute("aria-expanded"),
+    ).toBe("false");
+  });
+
+  it("pide la lista con los filtros avanzados y vuelve a la página 1", async () => {
+    swr.data = { items: [], totalPages: 3 };
+    render(<AdminPropertiesList />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente →" }));
+    expect(swr.key).toContain("page=2");
+    fireEvent.click(screen.getByRole("checkbox", { name: "Vendida" }));
+    await waitFor(() => expect(swr.key).toContain("page=1"));
+    expect(screen.getByRole("button", { name: /Ocultar filtros, 1 activos/ })).toBeTruthy();
   });
 });

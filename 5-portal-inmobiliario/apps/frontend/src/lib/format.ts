@@ -1,4 +1,9 @@
-import type { Currency, PropertyOperation, PropertyType } from "@portal/shared-types";
+import type {
+  Currency,
+  PropertyAvailability,
+  PropertyOperation,
+  PropertyType,
+} from "@portal/shared-types";
 
 export function formatPrice(
   price: number,
@@ -36,4 +41,14 @@ export function formatPropertyType(type: PropertyType): string {
 
 export function formatOperation(operation: PropertyOperation): string {
   return operation === "SALE" ? "Venta" : "Arriendo";
+}
+
+const availabilityLabels: Record<PropertyAvailability, string> = {
+  AVAILABLE: "Disponible",
+  SOLD: "Vendida",
+  RENTED: "Rentada",
+};
+
+export function formatAvailability(availability: PropertyAvailability): string {
+  return availabilityLabels[availability];
 }

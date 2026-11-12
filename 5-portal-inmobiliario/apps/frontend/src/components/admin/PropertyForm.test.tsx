@@ -97,6 +97,7 @@ describe("PropertyForm", () => {
           type: "APARTMENT",
           price: 18000,
           currency: "MXN",
+          availability: "AVAILABLE",
           usableArea: 70,
           totalArea: null,
           bedrooms: 2,

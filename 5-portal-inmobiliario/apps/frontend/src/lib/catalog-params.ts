@@ -1,5 +1,14 @@
-import type { PropertyOperation, PropertySort, PropertyType } from "@portal/shared-types";
-import { propertySortValues, propertyTypeValues } from "@portal/shared-types";
+import type {
+  PropertyAvailability,
+  PropertyOperation,
+  PropertySort,
+  PropertyType,
+} from "@portal/shared-types";
+import {
+  propertyAvailabilityValues,
+  propertySortValues,
+  propertyTypeValues,
+} from "@portal/shared-types";
 
 export const catalogPageSize = 12;
 
@@ -11,6 +20,8 @@ const numericFilterKeys = [
   "minUsableArea",
 ] as const;
 const locationFilterKeys = ["commune", "city", "region"] as const;
+const dateFilterKeys = ["publishedFrom", "publishedTo"] as const;
+const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 export type CatalogFilters = {
   search?: string;
@@ -18,6 +29,11 @@ export type CatalogFilters = {
   operation?: PropertyOperation[];
   /** Uno o varios tipos (selección múltiple). */
   type?: PropertyType[];
+  /** Uno o varios estados (selección múltiple). */
+  availability?: PropertyAvailability[];
+  /** Fecha de publicación desde / hasta (`AAAA-MM-DD`). */
+  publishedFrom?: string;
+  publishedTo?: string;
   minPrice?: number;
   maxPrice?: number;
   /** Mínimo de dormitorios. */
@@ -72,6 +88,14 @@ export function parseCatalogParams(searchParams: URLSearchParams): CatalogParams
   if (operation.length > 0) parsed.operation = operation;
   const type = readList(searchParams, "type", propertyTypeValues);
   if (type.length > 0) parsed.type = type;
+  const availability = readList(searchParams, "availability", propertyAvailabilityValues);
+  if (availability.length > 0) parsed.availability = availability;
+  for (const key of dateFilterKeys) {
+    const value = readText(searchParams, key);
+    if (value && DATE_PATTERN.test(value) && !Number.isNaN(Date.parse(`${value}T00:00:00Z`))) {
+      parsed[key] = value;
+    }
+  }
   const sort = propertySortValues.find((candidate) => candidate === searchParams.get("sort"));
   if (sort && sort !== "newest") parsed.sort = sort;
   for (const key of numericFilterKeys) {
@@ -91,6 +115,11 @@ export function buildCatalogHref(params: CatalogParams): string {
   if (params.search) searchParams.set("search", params.search);
   if (params.operation?.length) searchParams.set("operation", params.operation.join(","));
   if (params.type?.length) searchParams.set("type", params.type.join(","));
+  if (params.availability?.length) searchParams.set("availability", params.availability.join(","));
+  for (const key of dateFilterKeys) {
+    const value = params[key];
+    if (value) searchParams.set(key, value);
+  }
   if (params.sort && params.sort !== "newest") searchParams.set("sort", params.sort);
   for (const key of numericFilterKeys) {
     const value = params[key];

@@ -180,6 +180,71 @@ describe.skipIf(!databaseUrl)("API REST pública de propiedades", () => {
     });
   });
 
+  describe("estado y fecha de publicación (Extra N)", () => {
+    const region = `${testRunIdentifier} Región Estado`;
+    let soldId: string;
+    let rentedId: string;
+
+    const filterIds = async (query: string): Promise<string[]> => {
+      const response = await listProperties(
+        buildListRequest(`?pageSize=50&region=${encodeURIComponent(region)}${query}`),
+      );
+      expect(response.status).toBe(200);
+      return ((await response.json()) as ListBody).items.map((item) => item.id);
+    };
+
+    beforeAll(async () => {
+      const sold = await client.property.create({
+        data: {
+          ...propertyData("vendida", true),
+          region,
+          availability: "SOLD",
+          createdAt: new Date("2025-02-10T15:00:00.000Z"),
+        },
+      });
+      const rented = await client.property.create({
+        data: {
+          ...propertyData("rentada", true),
+          region,
+          availability: "RENTED",
+          createdAt: new Date("2025-06-20T03:00:00.000Z"),
+        },
+      });
+      soldId = sold.id;
+      rentedId = rented.id;
+    });
+
+    it("filtra por uno o varios estados y expone el estado", async () => {
+      expect(await filterIds("&availability=SOLD")).toEqual([soldId]);
+      expect((await filterIds("&availability=SOLD,RENTED")).sort()).toEqual(
+        [soldId, rentedId].sort(),
+      );
+      expect(await filterIds("&availability=AVAILABLE")).toEqual([]);
+      const response = await listProperties(
+        buildListRequest(`?region=${encodeURIComponent(region)}&availability=SOLD`),
+      );
+      const body = (await response.json()) as { items: { availability: string }[] };
+      expect(body.items[0]?.availability).toBe("SOLD");
+    });
+
+    it("filtra por fecha de publicación con límites inclusivos", async () => {
+      expect(await filterIds("&publishedFrom=2025-02-10&publishedTo=2025-02-10")).toEqual([soldId]);
+      expect(await filterIds("&publishedFrom=2025-06-01")).toEqual([rentedId]);
+      expect(await filterIds("&publishedTo=2025-03-01")).toEqual([soldId]);
+      expect(await filterIds("&publishedFrom=2030-01-01")).toEqual([]);
+    });
+
+    it("responde 400 con fechas inválidas o un rango invertido", async () => {
+      for (const query of [
+        "?publishedFrom=ayer",
+        "?availability=GONE",
+        "?publishedFrom=2026-05-01&publishedTo=2026-04-01",
+      ]) {
+        expect((await listProperties(buildListRequest(query))).status).toBe(400);
+      }
+    });
+  });
+
   describe("filtros combinables", () => {
     const region = `${testRunIdentifier} Región Ñandú`;
     let matchingId: string;

@@ -7,6 +7,8 @@ export type SeedProperty = {
   type: "HOUSE" | "APARTMENT" | "LAND" | "OFFICE" | "COMMERCIAL" | "OTHER";
   price: number;
   currency: "MXN" | "USD";
+  /** Estado comercial; si se omite, la propiedad está disponible. */
+  availability?: "AVAILABLE" | "SOLD" | "RENTED";
   usableArea?: number;
   totalArea?: number;
   bedrooms?: number;
@@ -136,6 +138,7 @@ export const seedProperties: SeedProperty[] = [
     type: "HOUSE",
     price: 7200000,
     currency: "MXN",
+    availability: "SOLD",
     usableArea: 245,
     totalArea: 300,
     bedrooms: 4,
@@ -325,6 +328,7 @@ export const seedProperties: SeedProperty[] = [
     type: "APARTMENT",
     price: 14800,
     currency: "MXN",
+    availability: "RENTED",
     usableArea: 38,
     totalArea: 40,
     bedrooms: 1,

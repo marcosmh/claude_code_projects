@@ -3,10 +3,12 @@ import { Prisma } from "@/generated/prisma/client";
 import { database } from "@/lib/database/client";
 import type { AdminPropertyStatus, PropertyInput } from "@portal/shared-types";
 import {
+  buildAttributeWhere,
   buildTextConditions,
   detailInclude,
   summaryInclude,
   type PropertyDetailRecord,
+  type PropertyFilters,
   type PropertySummaryRecord,
 } from "./property-repository";
 
@@ -15,6 +17,8 @@ export type AdminPropertyPageOptions = {
   take: number;
   searchText?: string;
   status: AdminPropertyStatus;
+  /** Filtros avanzados (operación, tipo, estado, precio y fecha de publicación). */
+  filters?: Omit<PropertyFilters, "searchText">;
 };
 
 export type AdminPropertyRepository = {
@@ -32,8 +36,12 @@ export type AdminPropertyRepository = {
 async function buildWhere({
   searchText,
   status,
-}: Pick<AdminPropertyPageOptions, "searchText" | "status">): Promise<Prisma.PropertyWhereInput> {
-  const where: Prisma.PropertyWhereInput = { deletedAt: null };
+  filters = {},
+}: Pick<
+  AdminPropertyPageOptions,
+  "searchText" | "status" | "filters"
+>): Promise<Prisma.PropertyWhereInput> {
+  const where: Prisma.PropertyWhereInput = { deletedAt: null, ...buildAttributeWhere(filters) };
   if (status !== "all") where.isPublished = status === "published";
 
   const conditions = buildTextConditions({ searchText });
@@ -48,8 +56,8 @@ async function buildWhere({
 }
 
 export const adminPropertyRepository: AdminPropertyRepository = {
-  async findPage({ skip, take, searchText, status }) {
-    const where = await buildWhere({ searchText, status });
+  async findPage({ skip, take, searchText, status, filters }) {
+    const where = await buildWhere({ searchText, status, filters });
     const [records, total] = await Promise.all([
       database.property.findMany({
         where,

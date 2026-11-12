@@ -22,9 +22,9 @@ function extractTokens(selector: string): Tokens {
 }
 
 const themes: Record<string, Tokens> = {
-  "Claro": extractTokens(":root"),
-  "Oscuro": extractTokens(':root[data-theme="dark"]'),
-  "Smallville": extractTokens(':root[data-theme="smallville"]'),
+  Claro: extractTokens(":root"),
+  Oscuro: extractTokens(':root[data-theme="dark"]'),
+  Smallville: extractTokens(':root[data-theme="smallville"]'),
 };
 
 type Rgb = [number, number, number];
@@ -67,8 +67,20 @@ const INTERFACE_MINIMUM = 3;
 describe.each(Object.entries(themes))("contraste del tema %s", (_themeName, tokens) => {
   it("define todos los tokens requeridos", () => {
     for (const name of [
-      "background", "foreground", "surface", "primary", "primary-hover", "primary-foreground",
-      "link", "ring", "danger", "badge", "badge-foreground", "hero-tint",
+      "background",
+      "foreground",
+      "surface",
+      "primary",
+      "primary-hover",
+      "primary-foreground",
+      "link",
+      "ring",
+      "danger",
+      "warning",
+      "warning-surface",
+      "badge",
+      "badge-foreground",
+      "hero-tint",
     ]) {
       expect(tokens[name], `falta --${name}`).toBeDefined();
     }
@@ -84,6 +96,7 @@ describe.each(Object.entries(themes))("contraste del tema %s", (_themeName, toke
     ["mensajes de error sobre el fondo", "danger", "background"],
     ["mensajes de error sobre superficies", "danger", "surface"],
     ["etiqueta de operación", "badge-foreground", "badge"],
+    ["etiqueta de estado (vendida/rentada)", "warning", "warning-surface"],
     ["botón claro de la llamada a la acción", "primary", "primary-foreground"],
   ])("%s cumple 4.5:1", (_description, foregroundToken, backgroundToken) => {
     const ratio = contrastRatio(toRgb(tokens[foregroundToken]), toRgb(tokens[backgroundToken]));
@@ -100,10 +113,13 @@ describe.each(Object.entries(themes))("contraste del tema %s", (_themeName, toke
     expect(ratio).toBeGreaterThanOrEqual(TEXT_MINIMUM);
   });
 
-  it.each(["background", "surface"])("el indicador de foco (ring) sobre %s cumple 3:1", (backgroundToken) => {
-    const ratio = contrastRatio(toRgb(tokens.ring), toRgb(tokens[backgroundToken]));
-    expect(ratio).toBeGreaterThanOrEqual(INTERFACE_MINIMUM);
-  });
+  it.each(["background", "surface"])(
+    "el indicador de foco (ring) sobre %s cumple 3:1",
+    (backgroundToken) => {
+      const ratio = contrastRatio(toRgb(tokens.ring), toRgb(tokens[backgroundToken]));
+      expect(ratio).toBeGreaterThanOrEqual(INTERFACE_MINIMUM);
+    },
+  );
 });
 
 const adminThemes: Record<string, Tokens> = {

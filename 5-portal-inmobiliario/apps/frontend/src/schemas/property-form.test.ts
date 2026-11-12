@@ -73,6 +73,7 @@ describe("propertyToFormValues", () => {
       type: "APARTMENT",
       price: 15000,
       currency: "USD",
+      availability: "AVAILABLE",
       usableArea: null,
       totalArea: 90,
       bedrooms: 2,

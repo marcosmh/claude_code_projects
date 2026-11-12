@@ -1,6 +1,6 @@
 import "server-only";
 import { Prisma } from "@/generated/prisma/client";
-import type { PropertyType } from "@/generated/prisma/client";
+import type { PropertyAvailability, PropertyType } from "@/generated/prisma/client";
 import { database } from "@/lib/database/client";
 import { escapeLikePattern, splitSearchTerms } from "@/lib/search";
 
@@ -31,6 +31,11 @@ export type PropertyFilters = {
   operations?: ("SALE" | "RENT")[];
   /** Cualquiera de los tipos indicados. */
   types?: PropertyType[];
+  /** Cualquiera de los estados indicados. */
+  availabilities?: PropertyAvailability[];
+  /** Fecha de alta desde / hasta (`AAAA-MM-DD`, inclusivas, en UTC). */
+  publishedFrom?: string;
+  publishedTo?: string;
   minPrice?: number;
   maxPrice?: number;
   /** Mínimo de dormitorios. */
@@ -107,17 +112,26 @@ async function findPublishedIdsMatching(conditions: Prisma.Sql[]): Promise<strin
   return rows.map((row) => row.id);
 }
 
-async function buildPublishedWhere(filters: PropertyFilters): Promise<Prisma.PropertyWhereInput> {
-  const textConditions = buildTextConditions(filters);
-  const matchingIds =
-    textConditions.length > 0 ? await findPublishedIdsMatching(textConditions) : undefined;
+/** Condiciones sobre columnas (no de texto) comunes al catálogo público y a la administración. */
+export function buildAttributeWhere(filters: PropertyFilters): Prisma.PropertyWhereInput {
+  const hasPublishedRange =
+    filters.publishedFrom !== undefined || filters.publishedTo !== undefined;
   const hasPriceRange = filters.minPrice !== undefined || filters.maxPrice !== undefined;
 
   return {
-    isPublished: true,
-    ...(matchingIds !== undefined && { id: { in: matchingIds } }),
     ...(filters.operations !== undefined && { operation: { in: filters.operations } }),
     ...(filters.types !== undefined && { type: { in: filters.types } }),
+    ...(filters.availabilities !== undefined && { availability: { in: filters.availabilities } }),
+    ...(hasPublishedRange && {
+      createdAt: {
+        ...(filters.publishedFrom !== undefined && {
+          gte: new Date(`${filters.publishedFrom}T00:00:00.000Z`),
+        }),
+        ...(filters.publishedTo !== undefined && {
+          lte: new Date(`${filters.publishedTo}T23:59:59.999Z`),
+        }),
+      },
+    }),
     ...(hasPriceRange && {
       price: {
         ...(filters.minPrice !== undefined && { gte: filters.minPrice }),
@@ -128,6 +142,18 @@ async function buildPublishedWhere(filters: PropertyFilters): Promise<Prisma.Pro
     ...(filters.minBathrooms !== undefined && { bathrooms: { gte: filters.minBathrooms } }),
     ...(filters.minUsableArea !== undefined && { usableArea: { gte: filters.minUsableArea } }),
     ...(filters.isFeatured !== undefined && { isFeatured: filters.isFeatured }),
+  };
+}
+
+async function buildPublishedWhere(filters: PropertyFilters): Promise<Prisma.PropertyWhereInput> {
+  const textConditions = buildTextConditions(filters);
+  const matchingIds =
+    textConditions.length > 0 ? await findPublishedIdsMatching(textConditions) : undefined;
+
+  return {
+    isPublished: true,
+    ...(matchingIds !== undefined && { id: { in: matchingIds } }),
+    ...buildAttributeWhere(filters),
   };
 }
 
