@@ -52,11 +52,14 @@ describe("AdminShell: menú", () => {
     expect(screen.getByRole("link", { name: /Administrar usuarios/ }).getAttribute("href")).toBe(
       "/admin/users",
     );
+    expect(screen.getByRole("link", { name: /Administrar consultas/ }).getAttribute("href")).toBe(
+      "/admin/inquiries",
+    );
     for (const label of ["Auditoría y logs", "Reportes y estadísticas"]) {
       expect(screen.queryByRole("link", { name: new RegExp(label) })).toBeNull();
     }
-    expect(document.querySelectorAll('[aria-disabled="true"]')).toHaveLength(4);
-    expect(screen.getAllByText("Próximamente")).toHaveLength(4);
+    expect(document.querySelectorAll('[aria-disabled="true"]')).toHaveLength(3);
+    expect(screen.getAllByText("Próximamente")).toHaveLength(3);
   });
 
   it("no ofrece ninguna opción de usuario final", () => {

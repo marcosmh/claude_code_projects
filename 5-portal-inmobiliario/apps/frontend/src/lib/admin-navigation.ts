@@ -22,7 +22,7 @@ export const adminNavigation: readonly AdminNavigationItem[] = [
     icon: "properties",
     href: "/admin/properties",
   },
-  { id: "inquiries", label: "Administrar consultas", icon: "inquiries", href: null },
+  { id: "inquiries", label: "Administrar consultas", icon: "inquiries", href: "/admin/inquiries" },
   { id: "reports", label: "Reportes y estadísticas", icon: "reports", href: null },
   { id: "settings", label: "Configuración del sistema", icon: "settings", href: null },
   { id: "audit", label: "Auditoría y logs", icon: "audit", href: null },

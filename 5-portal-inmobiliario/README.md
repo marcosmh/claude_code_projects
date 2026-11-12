@@ -20,7 +20,7 @@ Panel `/admin` con indicadores (Paso 22) y CRUD REST de propiedades solo para AD
 
 Área de administración independiente (Extra L): `/admin/**` tiene su propio layout (sidebar colapsable, paleta corporativa, menú de módulos; los aún no construidos aparecen como «Próximamente») y no comparte el header ni el pie del portal. Un ADMIN solo usa el área de administración: `/account` lo redirige a `/admin`, favoritos y consultas propias responden 403 y su header no muestra cuenta ni favoritos.
 
-Pendiente: **Paso 30 — Consultas** y el resto de la administración.
+Pendiente: **Paso 31 — SEO y metadata** y el resto de la administración.
 
 ## Estructura
 
@@ -141,6 +141,7 @@ Sirven en `/login`, en `resources/postman/postman-api.json` y en `resources/rest
 | GET | `/api/admin/users` | Lista paginada de usuarios (`page`, `pageSize`, `search`, `role`, `status=all\|active\|inactive`; 200/400; solo ADMIN) |
 | GET | `/api/admin/users/{id}` | Detalle de un usuario con sus conteos de consultas y favoritos (200/404; solo ADMIN) |
 | PATCH | `/api/admin/users/{id}` | Activa/desactiva y/o cambia el rol (`{ "isActive"?, "role"? }`; 200/400/403 si es la cuenta propia/404; solo ADMIN) |
+| GET | `/api/admin/inquiries` | Todas las consultas con propiedad, usuario, contacto y mensaje (`page`, `pageSize`, `search`, `propertyId`; 200/400; solo ADMIN) |
 | GET | `/api/admin/properties/{id}` | Propiedad en cualquier estado (200; 404; solo ADMIN) |
 | PUT | `/api/admin/properties/{id}` | Reemplaza los campos editables (200; 400; 404; solo ADMIN) |
 | DELETE | `/api/admin/properties/{id}` | Borrado lógico: marca `deletedAt`, despublica y oculta la propiedad sin borrar filas (204; 404; solo ADMIN) |

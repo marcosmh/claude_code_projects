@@ -8,3 +8,4 @@ export * from "./property-admin";
 export * from "./property-image";
 export * from "./feature";
 export * from "./admin-user";
+export * from "./admin-inquiry";

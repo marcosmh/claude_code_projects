@@ -3162,6 +3162,56 @@
           ]
         },
         {
+          "name": "Listar consultas",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/inquiries?page=1&search=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "inquiries"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "propertyId",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Todas las consultas (incluye visitantes sin sesión y propiedades eliminadas), la más reciente primero. Búsqueda sin acentos en nombre, email, mensaje y título."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "400 — subir imagen sin archivo",
           "request": {
             "method": "POST",

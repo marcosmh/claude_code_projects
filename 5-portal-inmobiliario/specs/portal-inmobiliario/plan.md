@@ -558,3 +558,8 @@ Decisiones que concretan la sección 10 de este plan:
 - Contratos (`admin-user.ts`): `AdminUserDto`, `adminUserListQuerySchema`, `updateAdminUserInputSchema`.
 - Backend: `admin-user-repository` (página con búsqueda `unaccent`+`ILIKE`, por id, actualización) y `admin-user-service` (regla de no modificarse a sí mismo → 403). Rutas `api/admin/users` (GET), `api/admin/users/[id]` (GET, PATCH) con `withRole("ADMIN")`.
 - api-client: `admin-users-client.ts`. Frontend: `AdminUsersList` en `app/admin/users/page.tsx`; el menú lateral activa «Administrar usuarios».
+
+## 46. Administración de consultas (Paso 30)
+
+- Contratos (`admin-inquiry.ts`): `AdminInquiryDto` y `adminInquiryListQuerySchema`. Backend: `admin-inquiry-repository` (búsqueda `unaccent`+`ILIKE` por términos), `admin-inquiry-service` y ruta `api/admin/inquiries` (GET) con `withRole("ADMIN")`.
+- api-client: `admin-inquiries-client.ts`. Frontend: `AdminInquiriesList` en `app/admin/inquiries/page.tsx`; el menú activa «Administrar consultas».

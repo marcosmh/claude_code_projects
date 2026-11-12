@@ -3,6 +3,7 @@ import { createCloudinaryStorage } from "@/lib/cloudinary/cloudinary-storage";
 import { createAuthorizer } from "@/lib/auth/authorizer";
 import { hashPassword, spendVerificationTime, verifyPassword } from "@/lib/auth/password";
 import { adminPropertyRepository } from "@/repositories/admin-property-repository";
+import { adminInquiryRepository } from "@/repositories/admin-inquiry-repository";
 import { adminUserRepository } from "@/repositories/admin-user-repository";
 import { adminRepository } from "@/repositories/admin-repository";
 import { featureRepository } from "@/repositories/feature-repository";
@@ -11,6 +12,7 @@ import { inquiryRepository } from "@/repositories/inquiry-repository";
 import { propertyImageRepository } from "@/repositories/property-image-repository";
 import { propertyRepository } from "@/repositories/property-repository";
 import { userRepository } from "@/repositories/user-repository";
+import { createAdminInquiryService } from "./admin-inquiry-service";
 import { createAdminUserService } from "./admin-user-service";
 import { createAdminService } from "./admin-service";
 import { createAdminPropertyService } from "./admin-property-service";
@@ -42,3 +44,4 @@ export const featureService = createFeatureService({
   properties: adminPropertyRepository,
 });
 export const adminUserService = createAdminUserService(adminUserRepository);
+export const adminInquiryService = createAdminInquiryService(adminInquiryRepository);

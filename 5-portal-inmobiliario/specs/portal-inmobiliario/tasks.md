@@ -206,10 +206,12 @@
   - `GET /api/admin/users`, `GET`/`PATCH` `/api/admin/users/{id}`; un ADMIN no se modifica a sí mismo.
   - Pruebas, lint, typecheck y build pasan.
 
-- [ ] **Paso 30 — Consultas**
+- [x] **Paso 30 — Consultas**
   - Crear `/admin/inquiries`.
   - Mostrar propiedad, usuario, contacto, mensaje y fecha.
   - Enlazar propiedad asociada.
+  - `GET /api/admin/inquiries` con búsqueda y paginación.
+  - Pruebas, lint, typecheck y build pasan.
 
 ## Fase 5 — Calidad y finalización
 

@@ -682,7 +682,7 @@ Requisitos:
 
 **Diseño**
 - Las rutas `/admin/**` usan un layout propio, sin el header ni el pie del portal: barra lateral izquierda colapsable (iconos solos cuando se colapsa; en móvil es un panel que se abre desde un botón), barra superior con el nombre de la persona y «Cerrar sesión», paleta corporativa propia con una variante por cada tema del selector (Claro, Oscuro y Smallville), selector de tema en la barra superior e iconografía de gestión. El botón de colapsar la barra lateral está en la barra superior.
-- Menú: Dashboard, Administrar usuarios, Administrar propiedades, Administrar consultas, Reportes y estadísticas, Configuración del sistema y Auditoría y logs. Solo el Dashboard existe hoy; los módulos aún no construidos aparecen deshabilitados con la etiqueta «Próximamente» y se activan al implementarse (Pasos 24, 29 y 30; los demás no están planificados). «Administrar usuarios» ya está activo (§47).
+- Menú: Dashboard, Administrar usuarios, Administrar propiedades, Administrar consultas, Reportes y estadísticas, Configuración del sistema y Auditoría y logs. Solo el Dashboard existe hoy; los módulos aún no construidos aparecen deshabilitados con la etiqueta «Próximamente» y se activan al implementarse (Pasos 24, 29 y 30; los demás no están planificados). «Administrar usuarios» (§47) y «Administrar consultas» (§48) ya están activos.
 - El Dashboard muestra los indicadores y una tabla de propiedades recientes con filtro de estado.
 
 **Restricciones del rol ADMIN**
@@ -765,3 +765,9 @@ Requisitos:
   - `PATCH /api/admin/users/{id}` con `{ "isActive"?: boolean, "role"?: "USER" | "ADMIN" }` (al menos un campo) → 200 con el usuario actualizado; 400 si el cuerpo es inválido; 404 si no existe.
 - Reglas «cuando corresponda»: un ADMIN **no puede cambiar su propio rol ni desactivarse** (403); así siempre queda al menos un ADMIN activo. Una cuenta desactivada no inicia sesión y su sesión actual deja de ser válida (§17).
 - Interfaz `/admin/users` («Administrar usuarios» en el menú): buscador, filtros de rol y estado, paginación y una tabla con rol, estado, alta y consultas/favoritos. Cada fila tiene iconos para activar/desactivar (con confirmación al desactivar) y para cambiar el rol (con confirmación); en la cuenta propia se deshabilitan.
+
+## 48. Administración de consultas (Paso 30)
+
+- API (solo ADMIN): `GET /api/admin/inquiries?page&pageSize&search&propertyId` → lista paginada (10 por página, máximo 50), la más reciente primero. `search` busca por palabras, sin distinguir mayúsculas ni acentos, en nombre, email, mensaje y título de la propiedad; `propertyId` limita a una propiedad. 400 si los parámetros son inválidos.
+- Cada consulta incluye: `id`, `createdAt`, `message`, contacto (`name`, `email`, `phone` o null), propiedad (`propertyId`, `propertyTitle`, `propertyDeleted`) y usuario asociado (`userId`, `userName`, ambos null si la envió un visitante sin sesión). Incluye consultas de propiedades despublicadas o eliminadas (borrado lógico, §37).
+- Interfaz `/admin/inquiries` («Administrar consultas» en el menú): buscador, paginación y una tabla con propiedad, contacto (email y teléfono como enlaces `mailto:`/`tel:`), usuario («Visitante» si no tiene cuenta), mensaje y fecha. El título de la propiedad enlaza a `/admin/properties/{id}/edit`; si fue eliminada se muestra con la etiqueta «Eliminada» y sin enlace.

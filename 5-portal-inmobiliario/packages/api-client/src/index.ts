@@ -7,3 +7,4 @@ export * from "./admin-properties-client";
 export * from "./admin-images-client";
 export * from "./admin-features-client";
 export * from "./admin-users-client";
+export * from "./admin-inquiries-client";

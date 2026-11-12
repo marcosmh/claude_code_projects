@@ -462,6 +462,10 @@ Content-Type: application/json
 
 { "isActive": true, "role": "USER" }
 
+### Listar todas las consultas (búsqueda sin acentos; propertyId opcional; 400 si los parámetros son inválidos)
+GET {{baseUrl}}/api/admin/inquiries?page=1&search=&propertyId={{adminPropertyId}}
+Accept: application/json
+
 ### 400 — filtros de administración inválidos (rango de precio invertido)
 GET {{baseUrl}}/api/admin/properties?minPrice=10&maxPrice=5
 Accept: application/json
