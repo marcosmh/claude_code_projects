@@ -20,7 +20,7 @@ Panel `/admin` con indicadores (Paso 22) y CRUD REST de propiedades solo para AD
 
 Área de administración independiente (Extra L): `/admin/**` tiene su propio layout (sidebar colapsable, paleta corporativa, menú de módulos; los aún no construidos aparecen como «Próximamente») y no comparte el header ni el pie del portal. Un ADMIN solo usa el área de administración: `/account` lo redirige a `/admin`, favoritos y consultas propias responden 403 y su header no muestra cuenta ni favoritos.
 
-Pendiente: **Paso 26 — Subida a Cloudinary** y el resto de la administración.
+Pendiente: **Paso 27 — Administración de imágenes** y el resto de la administración.
 
 ## Estructura
 
@@ -131,6 +131,7 @@ Sirven en `/login`, en `resources/postman/postman-api.json` y en `resources/rest
 | GET | `/api/admin/dashboard` | Indicadores del panel (solo ADMIN: 200; 401; 403) |
 | GET | `/api/admin/properties` | Lista paginada con borradores (`page`, `pageSize`, `search`, `status`=all/published/draft y los filtros `operation`, `type`, `availability`, `minPrice`, `maxPrice`, `publishedFrom`, `publishedTo`) (solo ADMIN) |
 | POST | `/api/admin/properties` | Crea una propiedad (201; 400; solo ADMIN) |
+| POST | `/api/admin/properties/{id}/images` | Sube una imagen (`multipart/form-data`, campo `file`; JPEG/PNG/WebP hasta 5 MB) a Cloudinary (carpeta `propiedades-claude`) y guarda URL y `publicId` (201; 400/404/413/415; 502/503; solo ADMIN) |
 | GET | `/api/admin/properties/{id}` | Propiedad en cualquier estado (200; 404; solo ADMIN) |
 | PUT | `/api/admin/properties/{id}` | Reemplaza los campos editables (200; 400; 404; solo ADMIN) |
 | DELETE | `/api/admin/properties/{id}` | Borrado lógico: marca `deletedAt`, despublica y oculta la propiedad sin borrar filas (204; 404; solo ADMIN) |

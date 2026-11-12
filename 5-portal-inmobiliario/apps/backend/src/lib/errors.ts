@@ -28,3 +28,43 @@ export class ForbiddenError extends Error {
     this.name = "ForbiddenError";
   }
 }
+
+/** La solicitud es inválida por un motivo concreto (400). */
+export class ValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ValidationError";
+  }
+}
+
+/** El archivo supera el tamaño permitido (413). */
+export class PayloadTooLargeError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "PayloadTooLargeError";
+  }
+}
+
+/** El tipo de archivo no está permitido (415). */
+export class UnsupportedMediaTypeError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "UnsupportedMediaTypeError";
+  }
+}
+
+/** Un servicio externo falló o respondió algo inválido (502). */
+export class BadGatewayError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "BadGatewayError";
+  }
+}
+
+/** Una integración necesaria no está configurada o disponible (503). */
+export class ServiceUnavailableError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ServiceUnavailableError";
+  }
+}

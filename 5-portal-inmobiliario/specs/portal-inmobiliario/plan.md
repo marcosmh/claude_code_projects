@@ -531,3 +531,11 @@ Decisiones que concretan la sección 10 de este plan:
 - `property-list-query.ts` exporta `advancedFilterShape` (operación, tipo, estado, fechas y precio) que reutilizan la consulta pública y `adminPropertyListQuerySchema`, con las mismas validaciones de rango.
 - `adminPropertyRepository.findPage` aplica los filtros en PostgreSQL (`buildCommonWhere` compartido con el repositorio público). `buildAdminPropertiesUrl` los serializa.
 - UI: `AdminPropertiesList` usa un panel derecho colapsable (`AdminPropertyFilters`) con estado local; se aplica dinámicamente con *debounce* en los campos escritos.
+
+## 42. Subida a Cloudinary (Paso 26)
+
+- `lib/cloudinary/cloudinary-storage.ts`: `loadCloudinaryConfig(env)`, `signParameters` (SHA-1 de los parámetros ordenados + secreto) y `createCloudinaryStorage(getConfig, fetch)` con `upload` y `remove` sobre la API REST de Cloudinary (sin SDK); la configuración se lee al usarse.
+- `repositories/property-image-repository.ts` (`create` calcula `position` y `isPrimary` en una transacción) y `services/property-image-service.ts` (valida tipo, firma real y tamaño; sube; guarda; compensa borrando de Cloudinary si falla PostgreSQL).
+- Route Handler `app/api/admin/properties/[id]/images/route.ts` (POST, `withRole("ADMIN")`).
+- Errores de dominio nuevos: `ValidationError` (400), `PayloadTooLargeError` (413), `UnsupportedMediaTypeError` (415), `BadGatewayError` (502) y `ServiceUnavailableError` (503).
+- Contratos en `@portal/shared-types` (`property-image.ts`): tipos permitidos y tamaño máximo, para reutilizarlos en el Paso 27.

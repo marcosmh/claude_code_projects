@@ -5,3 +5,4 @@ export * from "./inquiry";
 export * from "./auth";
 export * from "./admin";
 export * from "./property-admin";
+export * from "./property-image";

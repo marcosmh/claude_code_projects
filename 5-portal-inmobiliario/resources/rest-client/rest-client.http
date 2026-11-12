@@ -37,6 +37,14 @@ Accept: application/json
 GET {{baseUrl}}/api/properties?availability=SOLD,RENTED&publishedFrom=2026-01-01&publishedTo=2026-12-31
 Accept: application/json
 
+### 400 — estado, fecha o rango de fechas inválidos
+GET {{baseUrl}}/api/properties?availability=GONE
+Accept: application/json
+
+###
+GET {{baseUrl}}/api/properties?publishedFrom=2026-05-01&publishedTo=2026-04-01
+Accept: application/json
+
 ### Solo propiedades en arriendo
 GET {{baseUrl}}/api/properties?operation=RENT&pageSize=50
 Accept: application/json
@@ -394,6 +402,22 @@ Accept: application/json
 GET {{baseUrl}}/api/admin/properties?operation=SALE&type=HOUSE&availability=SOLD&minPrice=1000000&maxPrice=9000000&publishedFrom=2026-01-01&publishedTo=2026-12-31
 Accept: application/json
 
+### Subir una imagen a Cloudinary (201; 413 si pesa más de 5 MB; 415 si no es JPEG/PNG/WebP). Usa una propiedad creada antes
+# Cambia la ruta del archivo por una imagen de tu equipo.
+POST {{baseUrl}}/api/admin/properties/{{adminPropertyId}}/images
+Content-Type: multipart/form-data; boundary=FrontierDeSubida
+
+--FrontierDeSubida
+Content-Disposition: form-data; name="file"; filename="casa.jpg"
+Content-Type: image/jpeg
+
+< ./casa.jpg
+--FrontierDeSubida--
+
+### 400 — filtros de administración inválidos (rango de precio invertido)
+GET {{baseUrl}}/api/admin/properties?minPrice=10&maxPrice=5
+Accept: application/json
+
 ### Crear una propiedad (201); no se envían latitud ni longitud
 # @name createAdminProperty
 POST {{baseUrl}}/api/admin/properties
@@ -406,6 +430,7 @@ Content-Type: application/json
   "type": "HOUSE",
   "price": 3200000,
   "currency": "MXN",
+  "availability": "AVAILABLE",
   "usableArea": 140,
   "totalArea": 200,
   "bedrooms": 3,

@@ -728,3 +728,13 @@ Requisitos:
 - Filtros: rango de precio (mínimo y máximo), estado de la propiedad (Disponible, Vendida, Rentada), tipo, operación (venta/arriendo) y fecha de publicación (desde/hasta). Se combinan con la búsqueda de texto y el estado de publicación (Todas/Publicadas/Borradores) que ya existían.
 - Se aplican de forma dinámica (al instante en casillas; con una breve pausa al escribir) y «Limpiar filtros» los quita todos. Al cambiar un filtro la lista vuelve a la página 1.
 - API: `GET /api/admin/properties` acepta además `operation`, `type`, `availability` (listas separadas por comas), `minPrice`, `maxPrice`, `publishedFrom` y `publishedTo` con las mismas reglas que `GET /api/properties` (400 si son inválidos). El catálogo público conserva su panel izquierdo (spec §42).
+
+## 44. Subida de imágenes a Cloudinary (Paso 26)
+
+- `POST /api/admin/properties/{id}/images` (solo ADMIN, `multipart/form-data` con el campo `file`) sube una imagen a Cloudinary a través del backend y guarda su URL y `publicId` en PostgreSQL. Responde 201 con `{ id, url, position, isPrimary }`.
+- Las imágenes se guardan en la carpeta de Cloudinary **`propiedades-claude`** (configurable con `CLOUDINARY_FOLDER`, por defecto ese valor); el `publicId` incluye la carpeta (`propiedades-claude/xxxx`).
+- Validaciones: tipo JPEG, PNG o WebP (por `Content-Type` y por la firma real del archivo → 415 si no coincide) y tamaño máximo de 5 MB (413). Sin archivo, vacío o cuerpo que no sea multipart → 400. Propiedad inexistente o eliminada → 404. 401 sin sesión y 403 para un USER.
+- La subida va firmada desde el servidor; el secreto de Cloudinary (`CLOUDINARY_API_SECRET`) nunca llega al navegador. Sin credenciales configuradas responde 503; si Cloudinary falla, 502.
+- La primera imagen de una propiedad queda como principal; las siguientes se agregan al final (`position` consecutivo). Si falla el guardado en PostgreSQL, la imagen recién subida se elimina de Cloudinary para no dejar archivos huérfanos.
+- Variables de entorno (backend): `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` y opcional `CLOUDINARY_FOLDER`.
+- La interfaz para subir, eliminar, ordenar y elegir la principal es el Paso 27.

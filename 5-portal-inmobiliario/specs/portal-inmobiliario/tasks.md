@@ -175,11 +175,12 @@
   - Mismo formulario para crear y editar; validación con `propertyInputSchema`. Las etiquetas de características se administran en el Paso 28.
   - Pruebas, lint, typecheck y build pasan.
 
-- [ ] **Paso 26 — Subida a Cloudinary**
+- [x] **Paso 26 — Subida a Cloudinary**
   - Configurar Cloudinary.
   - Crear subida segura mediante REST.
   - Validar tipo y tamaño.
   - Guardar URL y `publicId`.
+  - Carpeta `propiedades-claude`; `POST /api/admin/properties/{id}/images` (solo ADMIN). La interfaz es el Paso 27.
 
 - [ ] **Paso 27 — Administración de imágenes**
   - Múltiples imágenes.

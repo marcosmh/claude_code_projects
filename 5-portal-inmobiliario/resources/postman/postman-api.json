@@ -851,6 +851,99 @@
           ]
         },
         {
+          "name": "Estado: vendidas y rentadas",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/properties?availability=SOLD,RENTED&pageSize=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "properties"
+              ],
+              "query": [
+                {
+                  "key": "availability",
+                  "value": "SOLD,RENTED"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "availability admite AVAILABLE, SOLD y RENTED (varios con comas). Las propiedades no disponibles traen su estado en cada item."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Todas no disponibles\", function () { pm.response.json().items.forEach(function (item) { pm.expect(item.availability).to.be.oneOf([\"SOLD\",\"RENTED\"]); }); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Fecha de publicación (desde/hasta)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/properties?publishedFrom=2020-01-01&publishedTo=2030-12-31&pageSize=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "properties"
+              ],
+              "query": [
+                {
+                  "key": "publishedFrom",
+                  "value": "2020-01-01"
+                },
+                {
+                  "key": "publishedTo",
+                  "value": "2030-12-31"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "Fechas AAAA-MM-DD inclusivas (UTC) sobre la fecha de alta."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Filtros combinados",
           "request": {
             "method": "GET",
@@ -2423,6 +2516,71 @@
           ]
         },
         {
+          "name": "Listar con filtros avanzados",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/properties?operation=SALE&type=HOUSE&availability=AVAILABLE,SOLD&minPrice=1000000&maxPrice=9000000&publishedFrom=2020-01-01&publishedTo=2030-12-31",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "properties"
+              ],
+              "query": [
+                {
+                  "key": "operation",
+                  "value": "SALE"
+                },
+                {
+                  "key": "type",
+                  "value": "HOUSE"
+                },
+                {
+                  "key": "availability",
+                  "value": "AVAILABLE,SOLD"
+                },
+                {
+                  "key": "minPrice",
+                  "value": "1000000"
+                },
+                {
+                  "key": "maxPrice",
+                  "value": "9000000"
+                },
+                {
+                  "key": "publishedFrom",
+                  "value": "2020-01-01"
+                },
+                {
+                  "key": "publishedTo",
+                  "value": "2030-12-31"
+                }
+              ]
+            },
+            "description": "Filtros del panel de /admin/properties: operación, tipo, estado, precio y fecha de publicación (se combinan con search y status)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Crear propiedad",
           "request": {
             "method": "POST",
@@ -2450,7 +2608,7 @@
             "description": "Requiere sesión ADMIN (carpeta Cuentas de ejemplo: admin@portal.mx).",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"Casa de prueba en Querétaro\",\n  \"description\": \"Casa de dos niveles con jardín, creada desde Postman.\",\n  \"operation\": \"SALE\",\n  \"type\": \"HOUSE\",\n  \"price\": 3200000,\n  \"currency\": \"MXN\",\n  \"usableArea\": 140,\n  \"totalArea\": 200,\n  \"bedrooms\": 3,\n  \"bathrooms\": 2,\n  \"parkingSpots\": 2,\n  \"age\": 5,\n  \"address\": \"Av. Paseo Villas Las Joya 1011\",\n  \"commune\": \"Villas Las Joya\",\n  \"city\": \"Querétaro\",\n  \"region\": \"Querétaro\",\n  \"isPublished\": false,\n  \"isFeatured\": false\n}",
+              "raw": "{\n  \"title\": \"Casa de prueba en Querétaro\",\n  \"description\": \"Casa de dos niveles con jardín, creada desde Postman.\",\n  \"operation\": \"SALE\",\n  \"type\": \"HOUSE\",\n  \"price\": 3200000,\n  \"currency\": \"MXN\",\n  \"availability\": \"AVAILABLE\",\n  \"usableArea\": 140,\n  \"totalArea\": 200,\n  \"bedrooms\": 3,\n  \"bathrooms\": 2,\n  \"parkingSpots\": 2,\n  \"age\": 5,\n  \"address\": \"Av. Paseo Villas Las Joya 1011\",\n  \"commune\": \"Villas Las Joya\",\n  \"city\": \"Querétaro\",\n  \"region\": \"Querétaro\",\n  \"isPublished\": false,\n  \"isFeatured\": false\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2557,6 +2715,146 @@
           ]
         },
         {
+          "name": "Subir imagen a Cloudinary",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/properties/{{adminPropertyId}}/images",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "properties",
+                "{{adminPropertyId}}",
+                "images"
+              ]
+            },
+            "description": "multipart/form-data con el campo file (JPEG, PNG o WebP, máx. 5 MB). Se guarda en la carpeta propiedades-claude de Cloudinary. Selecciona un archivo en Body > file. 503 si el backend no tiene credenciales de Cloudinary.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201 o 503 sin credenciales\", function () { pm.expect(pm.response.code).to.be.oneOf([201, 503]); });",
+                  "if (pm.response.code === 201) { pm.test(\"Devuelve url y posición\", function () { const body = pm.response.json(); pm.expect(body.url).to.include(\"propiedades-claude\"); pm.expect(body.position).to.be.a(\"number\"); }); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "400 — subir imagen sin archivo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/properties/{{adminPropertyId}}/images",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "properties",
+                "{{adminPropertyId}}",
+                "images"
+              ]
+            },
+            "description": "Sin el campo file responde 400.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "nota",
+                  "type": "text",
+                  "value": "sin archivo"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400\", function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "400 — filtros de administración inválidos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/properties?minPrice=10&maxPrice=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "properties"
+              ],
+              "query": [
+                {
+                  "key": "minPrice",
+                  "value": "10"
+                },
+                {
+                  "key": "maxPrice",
+                  "value": "5"
+                }
+              ]
+            },
+            "description": "Rango de precio invertido."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400\", function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "400 — datos inválidos",
           "request": {
             "method": "POST",
@@ -2640,7 +2938,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "Subir imagen requiere una propiedad creada (adminPropertyId) y credenciales de Cloudinary en el backend."
     },
     {
       "name": "Errores esperados",
@@ -2874,6 +3173,130 @@
                 }
               ]
             }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400\", function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "400 — availability inválido",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/properties?availability=GONE",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "properties"
+              ],
+              "query": [
+                {
+                  "key": "availability",
+                  "value": "GONE"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400\", function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "400 — fecha de publicación inválida",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/properties?publishedFrom=ayer",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "properties"
+              ],
+              "query": [
+                {
+                  "key": "publishedFrom",
+                  "value": "ayer"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400\", function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "400 — rango de fechas invertido",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/properties?publishedFrom=2026-05-01&publishedTo=2026-04-01",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "properties"
+              ],
+              "query": [
+                {
+                  "key": "publishedFrom",
+                  "value": "2026-05-01"
+                },
+                {
+                  "key": "publishedTo",
+                  "value": "2026-04-01"
+                }
+              ]
+            },
+            "description": ""
           },
           "event": [
             {
