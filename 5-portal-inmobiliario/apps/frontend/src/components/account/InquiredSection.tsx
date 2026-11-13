@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useUserInquiries } from "@/hooks/useUserInquiries";
+import { parsePageParam, useClampPage, useUrlQuery } from "@/hooks/useUrlQuery";
 
 const SEARCH_DELAY_MS = 300;
 const pageButtonClassName =
@@ -14,10 +15,14 @@ const dateFormatter = new Intl.DateTimeFormat("es-MX", { dateStyle: "medium" });
 
 /** «Propiedades consultadas»: lista compacta de las consultas enviadas, con opción de eliminar. */
 export function InquiredSection() {
-  const [searchInput, setSearchInput] = useState("");
-  const [searchText, setSearchText] = useState("");
-  const [page, setPage] = useState(1);
-  const { inquiries, totalPages = 1, remove } = useUserInquiries({ page, searchText });
+  // Parámetros con prefijo: la página de la cuenta tiene otras secciones.
+  const { values, update } = useUrlQuery({ inquiriesPage: "1", inquiriesSearch: "" });
+  const page = parsePageParam(values.inquiriesPage);
+  const searchText = values.inquiriesSearch;
+  const [searchInput, setSearchInput] = useState(searchText);
+  const { inquiries, totalPages: loadedTotalPages, remove } = useUserInquiries({ page, searchText });
+  const totalPages = loadedTotalPages ?? 1;
+  useClampPage(page, loadedTotalPages, (lastPage) => update({ inquiriesPage: String(lastPage) }));
   const [pendingDeletion, setPendingDeletion] = useState<{ id: string; title: string } | null>(
     null,
   );
@@ -26,11 +31,14 @@ export function InquiredSection() {
 
   // La búsqueda espera a que la persona deje de escribir y vuelve a la primera página.
   useEffect(() => {
+    const trimmedSearch = searchInput.trim();
+    if (trimmedSearch === searchText) return;
     const timer = setTimeout(() => {
-      setSearchText(searchInput.trim());
-      setPage(1);
+      update({ inquiriesPage: "1", inquiriesSearch: trimmedSearch });
     }, SEARCH_DELAY_MS);
     return () => clearTimeout(timer);
+    // `update` cambia con la URL; solo reacciona a lo que se escribe.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchInput]);
 
   async function confirmDeletion() {
@@ -41,7 +49,7 @@ export function InquiredSection() {
     try {
       await remove(inquiryId);
       // Si la página queda vacía, se retrocede a la anterior.
-      if (inquiries?.length === 1 && page > 1) setPage(page - 1);
+      if (inquiries?.length === 1 && page > 1) update({ inquiriesPage: String(page - 1) });
     } catch {
       setErrorMessage("No se pudo eliminar la consulta. Inténtalo de nuevo.");
     } finally {
@@ -169,7 +177,7 @@ export function InquiredSection() {
         >
           <button
             type="button"
-            onClick={() => setPage(page - 1)}
+            onClick={() => update({ inquiriesPage: String(page - 1) })}
             disabled={page <= 1}
             className={pageButtonClassName}
           >
@@ -180,7 +188,7 @@ export function InquiredSection() {
           </p>
           <button
             type="button"
-            onClick={() => setPage(page + 1)}
+            onClick={() => update({ inquiriesPage: String(page + 1) })}
             disabled={page >= totalPages}
             className={pageButtonClassName}
           >

@@ -632,3 +632,10 @@ Decisiones que concretan la sección 10 de este plan:
 - Migración `enable_row_level_security`: bloque `DO` que activa RLS en las tablas de la aplicación y revoca permisos de `anon`/`authenticated` solo si esos roles existen.
 - Documentación: variables de entorno (`DIRECT_URL`) y guía de migración a Supabase en README y `docs/architecture.md`.
 - Pasos operativos (con las credenciales del usuario): `pnpm db:deploy`, `pnpm db:seed`, `pnpm db:check`, pruebas y revisión de avisos de seguridad de Supabase.
+
+## 60. Paginación con parámetros en la URL (Extra X)
+
+- Frontend: hook `useUrlQuery(defaults)` (sobre `useSearchParams`, `usePathname` y `router.replace`, sin scroll) que lee los parámetros con valores por defecto y escribe varios a la vez (`update`), omitiendo los iguales al valor por defecto; las páginas de administración y la cuenta envuelven la lista en `Suspense`.
+- Las cinco listas (propiedades, usuarios, consultas, auditoría de administración y consultas de la cuenta) reemplazan el estado local de página/búsqueda/filtros por ese hook. El campo de texto sigue siendo local y se confirma al buscar.
+- Pruebas: prueba del hook, doble de prueba de `next/navigation` con estado en memoria y pruebas de cada lista (la URL conserva los parámetros al paginar).
+- Backend: auditoría de las rutas paginadas (mismo filtro en datos y conteo, `pageSize` acotado); sin cambios previstos.

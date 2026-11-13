@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+vi.mock("next/navigation", async () => (await import("@/test/fake-navigation")).fakeNavigation);
 
 const swr = vi.hoisted(() => ({
   data: undefined as unknown,
@@ -37,8 +38,10 @@ vi.mock("@portal/api-client", () => ({
 }));
 
 import { AdminPropertiesList } from "./AdminPropertiesList";
+import { getFakeSearch, setFakeSearch } from "@/test/fake-navigation";
 
 afterEach(() => {
+  setFakeSearch("");
   cleanup();
   swr.data = undefined;
   swr.error = undefined;
@@ -103,6 +106,36 @@ describe("AdminPropertiesList", () => {
     fireEvent.click(screen.getByRole("button", { name: "Siguiente →" }));
     expect(swr.key).toContain("page=2");
     expect(screen.getByText("Página 2 de 3")).toBeTruthy();
+  });
+
+  it("guarda búsqueda, estado y filtros avanzados en la URL y los conserva al paginar", async () => {
+    swr.data = { items: [property("a", true)], totalPages: 3 };
+    render(<AdminPropertiesList />);
+    fireEvent.change(screen.getByLabelText("Buscar propiedades"), { target: { value: "roma" } });
+    fireEvent.click(screen.getByRole("button", { name: "Buscar" }));
+    fireEvent.change(screen.getByLabelText("Estado"), { target: { value: "draft" } });
+    fireEvent.click(screen.getByRole("checkbox", { name: "Vendida" }));
+    await waitFor(() => expect(getFakeSearch()).toContain("availability=SOLD"));
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente →" }));
+
+    expect(Object.fromEntries(new URLSearchParams(getFakeSearch()))).toEqual({
+      search: "roma",
+      status: "draft",
+      availability: "SOLD",
+      page: "2",
+    });
+    expect(swr.key).toContain("page=2");
+    expect(swr.key).toContain("search=roma");
+  });
+
+  it("restaura los filtros avanzados desde la URL e ignora valores inválidos", () => {
+    setFakeSearch("availability=SOLD,NOPE&minPrice=abc&page=2");
+    swr.data = { items: [property("a", true)], totalPages: 3 };
+    render(<AdminPropertiesList />);
+    expect(swr.key).toContain("page=2");
+    expect(swr.key).toContain("availability=SOLD");
+    expect(swr.key).not.toContain("NOPE");
+    expect(swr.key).not.toContain("minPrice");
   });
 
   it("pide confirmación antes de eliminar y revalida la lista", async () => {

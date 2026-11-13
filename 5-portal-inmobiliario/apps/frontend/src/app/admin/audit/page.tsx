@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { AdminAuditList } from "@/components/admin/AdminAuditList";
 
 export const metadata: Metadata = {
@@ -7,5 +8,10 @@ export const metadata: Metadata = {
 };
 
 export default function AdminAuditPage() {
-  return <AdminAuditList />;
+  // useSearchParams (página y filtros en la URL) exige un límite de Suspense.
+  return (
+    <Suspense>
+      <AdminAuditList />
+    </Suspense>
+  );
 }

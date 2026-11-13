@@ -16,12 +16,13 @@ import { formatOperation, formatPrice } from "@/lib/format";
 import { AdminPageHeader } from "./AdminPageHeader";
 import {
   AdminPropertyFilters,
+  adminFiltersFromParams,
+  adminFiltersToParams,
   countAdminFilters,
-  emptyAdminFilters,
   toAdminQuery,
-  type AdminAdvancedFilters,
 } from "./AdminPropertyFilters";
 import { useFlash } from "@/hooks/useFlash";
+import { parsePageParam, useClampPage, useUrlQuery } from "@/hooks/useUrlQuery";
 
 type StatusFilter = NonNullable<AdminPropertiesQuery["status"]>;
 
@@ -53,11 +54,25 @@ const secondaryButtonClassName = `inline-flex h-9 items-center rounded-md border
 
 /** Listado de administración: todas las propiedades (incluye borradores) con búsqueda, estado y paginación. */
 export function AdminPropertiesList() {
-  const [page, setPage] = useState(1);
-  const [status, setStatus] = useState<StatusFilter>("all");
-  const [searchInput, setSearchInput] = useState("");
-  const [searchText, setSearchText] = useState("");
-  const [advancedFilters, setAdvancedFilters] = useState<AdminAdvancedFilters>(emptyAdminFilters);
+  const { values, update } = useUrlQuery({
+    page: "1",
+    search: "",
+    status: "all",
+    operation: "",
+    type: "",
+    availability: "",
+    minPrice: "",
+    maxPrice: "",
+    publishedFrom: "",
+    publishedTo: "",
+  });
+  const page = parsePageParam(values.page);
+  const searchText = values.search;
+  const status: StatusFilter = statusOptions.some((option) => option.value === values.status)
+    ? (values.status as StatusFilter)
+    : "all";
+  const advancedFilters = adminFiltersFromParams(values);
+  const [searchInput, setSearchInput] = useState(searchText);
   const [isFiltersOpen, setIsFiltersOpen] = useState(true);
   const [pendingDeletion, setPendingDeletion] = useState<AdminPropertyListItemDto | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -77,6 +92,7 @@ export function AdminPropertiesList() {
   );
 
   const totalPages = data?.totalPages ?? 1;
+  useClampPage(page, data?.totalPages, (lastPage) => update({ page: String(lastPage) }));
   const activeFilterCount = countAdminFilters(advancedFilters);
 
   async function confirmDeletion() {
@@ -86,7 +102,7 @@ export function AdminPropertiesList() {
       await deleteAdminProperty(pendingDeletion.id);
       // La propiedad eliminada también sale del dashboard y de cualquier otra página en caché.
       await mutateMatching((key) => typeof key === "string" && key.startsWith(adminPropertiesUrl));
-      if (data?.items.length === 1 && page > 1) setPage(page - 1);
+      if (data?.items.length === 1 && page > 1) update({ page: String(page - 1) });
       setDeletionError(null);
       setPendingDeletion(null);
       flash.success(`Se eliminó «${pendingDeletion.title}».`);
@@ -121,8 +137,7 @@ export function AdminPropertiesList() {
           className="flex min-w-0 flex-1 items-end gap-2"
           onSubmit={(event) => {
             event.preventDefault();
-            setPage(1);
-            setSearchText(searchInput.trim());
+            update({ page: "1", search: searchInput.trim() });
           }}
         >
           <div className="min-w-0 flex-1">
@@ -151,8 +166,7 @@ export function AdminPropertiesList() {
             id="admin-properties-status"
             value={status}
             onChange={(event) => {
-              setPage(1);
-              setStatus(event.target.value as StatusFilter);
+              update({ page: "1", status: event.target.value });
             }}
             className={`mt-1 ${controlClassName}`}
           >
@@ -336,7 +350,7 @@ export function AdminPropertiesList() {
             >
               <button
                 type="button"
-                onClick={() => setPage(page - 1)}
+                onClick={() => update({ page: String(page - 1) })}
                 disabled={page <= 1}
                 className={secondaryButtonClassName}
               >
@@ -347,7 +361,7 @@ export function AdminPropertiesList() {
               </p>
               <button
                 type="button"
-                onClick={() => setPage(page + 1)}
+                onClick={() => update({ page: String(page + 1) })}
                 disabled={page >= totalPages}
                 className={secondaryButtonClassName}
               >
@@ -363,8 +377,7 @@ export function AdminPropertiesList() {
             id={FILTERS_PANEL_ID}
             filters={advancedFilters}
             onChange={(next) => {
-              setPage(1);
-              setAdvancedFilters(next);
+              update({ page: "1", ...adminFiltersToParams(next) });
             }}
           />
         </aside>

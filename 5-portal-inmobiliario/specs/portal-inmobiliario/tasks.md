@@ -395,3 +395,8 @@
   - `DIRECT_URL` opcional para migraciones; RLS activado en todas las tablas (migración condicional).
   - Migraciones y seed aplicados en Supabase, `db:check` y pruebas contra la nueva base.
   - Documentación de variables y de la migración; lint, typecheck y build pasan.
+
+- [x] **Extra X — Paginación con parámetros en la URL**
+  - Listas de administración (propiedades, usuarios, consultas, auditoría) y consultas de la cuenta: página, búsqueda y filtros en la URL.
+  - Cambiar de página conserva búsqueda y filtros; cambiar un filtro vuelve a la página 1.
+  - Pruebas, lint, typecheck y build pasan; publicado en Vercel.

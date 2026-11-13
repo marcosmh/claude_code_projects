@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+vi.mock("next/navigation", async () => (await import("@/test/fake-navigation")).fakeNavigation);
 import type { UserInquiryDto } from "@portal/shared-types";
 
 const state = vi.hoisted(() => ({
@@ -23,8 +24,10 @@ vi.mock("next/image", () => ({
 }));
 
 import { InquiredSection } from "./InquiredSection";
+import { getFakeSearch, setFakeSearch } from "@/test/fake-navigation";
 
 afterEach(() => {
+  setFakeSearch("");
   cleanup();
   state.inquiries = undefined;
   state.remove.mockReset();
@@ -141,5 +144,16 @@ describe("InquiredSection", () => {
     fireEvent.click(screen.getByRole("button", { name: "Siguiente →" }));
     expect(screen.getByText("Página 2 de 3")).toBeTruthy();
     expect(state.query).toMatchObject({ page: 2 });
+    expect(new URLSearchParams(getFakeSearch()).get("inquiriesPage")).toBe("2");
+  });
+
+  it("restaura la página y la búsqueda desde la URL", () => {
+    setFakeSearch("inquiriesPage=2&inquiriesSearch=coyoac%C3%A1n");
+    state.inquiries = [inquiry("1", "Casa en Coyoacán")];
+    state.totalPages = 3;
+    render(<InquiredSection />);
+
+    expect(state.query).toMatchObject({ page: 2, searchText: "coyoacán" });
+    expect((screen.getByLabelText(/buscar/i) as HTMLInputElement).value).toBe("coyoacán");
   });
 });

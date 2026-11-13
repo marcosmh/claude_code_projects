@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+vi.mock("next/navigation", async () => (await import("@/test/fake-navigation")).fakeNavigation);
 
 const session = vi.hoisted(() => ({
   user: undefined as
@@ -28,8 +29,10 @@ vi.mock("./InquiredSection", () => ({
 }));
 
 import { AccountOverview } from "./AccountOverview";
+import { setFakeSearch } from "@/test/fake-navigation";
 
 afterEach(() => {
+  setFakeSearch("");
   cleanup();
   session.user = undefined;
   session.isLoading = false;

@@ -94,6 +94,51 @@ export function toAdminQuery(filters: AdminAdvancedFilters): Partial<AdminProper
   };
 }
 
+/** Claves de los filtros avanzados en la URL de la lista. */
+export const adminFilterParamKeys = [
+  "operation",
+  "type",
+  "availability",
+  "minPrice",
+  "maxPrice",
+  "publishedFrom",
+  "publishedTo",
+] as const;
+
+function parseList<TValue extends string>(raw: string, allowed: readonly TValue[]): TValue[] {
+  return raw.split(",").filter((item): item is TValue => (allowed as readonly string[]).includes(item));
+}
+
+/** Lee los filtros avanzados de los query params; ignora valores inválidos. */
+export function adminFiltersFromParams(
+  params: Record<(typeof adminFilterParamKeys)[number], string>,
+): AdminAdvancedFilters {
+  return {
+    operation: parseList(params.operation, ["SALE", "RENT"] as const),
+    type: parseList(params.type, propertyTypeValues),
+    availability: parseList(params.availability, propertyAvailabilityValues),
+    minPrice: NUMBER_PATTERN.test(params.minPrice) ? params.minPrice : "",
+    maxPrice: NUMBER_PATTERN.test(params.maxPrice) ? params.maxPrice : "",
+    publishedFrom: DATE_PATTERN.test(params.publishedFrom) ? params.publishedFrom : "",
+    publishedTo: DATE_PATTERN.test(params.publishedTo) ? params.publishedTo : "",
+  };
+}
+
+/** Convierte los filtros avanzados a query params (listas separadas por comas). */
+export function adminFiltersToParams(
+  filters: AdminAdvancedFilters,
+): Record<(typeof adminFilterParamKeys)[number], string> {
+  return {
+    operation: filters.operation.join(","),
+    type: filters.type.join(","),
+    availability: filters.availability.join(","),
+    minPrice: filters.minPrice,
+    maxPrice: filters.maxPrice,
+    publishedFrom: filters.publishedFrom,
+    publishedTo: filters.publishedTo,
+  };
+}
+
 const focusClassName =
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
 const inputClassName = `h-10 w-full rounded-md border border-foreground/20 bg-surface px-3 text-sm text-foreground aria-[invalid=true]:border-danger ${focusClassName}`;

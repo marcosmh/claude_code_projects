@@ -6,6 +6,7 @@ import useSWR from "swr";
 import { buildAdminAuditUrl, fetchAdminAudit } from "@portal/api-client";
 import { auditCategoryValues, type AuditCategory } from "@portal/shared-types";
 import { auditActionLabels, auditCategoryLabels, auditWarningActions } from "@/lib/audit-labels";
+import { parsePageParam, useClampPage, useUrlQuery } from "@/hooks/useUrlQuery";
 import { AdminPageHeader } from "./AdminPageHeader";
 
 const dateFormatter = new Intl.DateTimeFormat("es-MX", {
@@ -28,12 +29,20 @@ function entityHref(entityType: string | null, entityId: string | null): string 
 
 /** Registro de auditoría (solo lectura): quién hizo qué, cuándo y desde qué IP (spec §60). */
 export function AdminAuditList() {
-  const [page, setPage] = useState(1);
-  const [searchInput, setSearchInput] = useState("");
-  const [searchText, setSearchText] = useState("");
-  const [category, setCategory] = useState<AuditCategory | "">("");
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
+  const { values, update } = useUrlQuery({
+    page: "1",
+    search: "",
+    category: "",
+    from: "",
+    to: "",
+  });
+  const page = parsePageParam(values.page);
+  const searchText = values.search;
+  const category = (auditCategoryValues as readonly string[]).includes(values.category)
+    ? (values.category as AuditCategory)
+    : "";
+  const { from, to } = values;
+  const [searchInput, setSearchInput] = useState(searchText);
 
   const isRangeInverted = from !== "" && to !== "" && from > to;
   const activeFilterCount = [searchText, category, from, to].filter((value) => value !== "").length;
@@ -50,14 +59,11 @@ export function AdminAuditList() {
     { revalidateOnFocus: false, shouldRetryOnError: false, keepPreviousData: true },
   );
   const totalPages = data?.totalPages ?? 1;
+  useClampPage(page, data?.totalPages, (lastPage) => update({ page: String(lastPage) }));
 
   const resetFilters = () => {
-    setPage(1);
     setSearchInput("");
-    setSearchText("");
-    setCategory("");
-    setFrom("");
-    setTo("");
+    update({ page: "1", search: "", category: "", from: "", to: "" });
   };
 
   return (
@@ -84,8 +90,7 @@ export function AdminAuditList() {
         className="mt-6 flex flex-wrap items-end gap-3"
         onSubmit={(event) => {
           event.preventDefault();
-          setPage(1);
-          setSearchText(searchInput.trim());
+          update({ page: "1", search: searchInput.trim() });
         }}
       >
         <div className="min-w-56 flex-1">
@@ -110,8 +115,7 @@ export function AdminAuditList() {
             id="audit-category"
             value={category}
             onChange={(event) => {
-              setPage(1);
-              setCategory(event.target.value as AuditCategory | "");
+              update({ page: "1", category: event.target.value });
             }}
             className={`mt-1 ${controlClassName}`}
           >
@@ -135,8 +139,7 @@ export function AdminAuditList() {
             aria-invalid={isRangeInverted}
             aria-describedby={isRangeInverted ? "audit-range-error" : undefined}
             onChange={(event) => {
-              setPage(1);
-              setFrom(event.target.value);
+              update({ page: "1", from: event.target.value });
             }}
             className={`mt-1 ${controlClassName}`}
           />
@@ -152,8 +155,7 @@ export function AdminAuditList() {
             min={from || undefined}
             aria-invalid={isRangeInverted}
             onChange={(event) => {
-              setPage(1);
-              setTo(event.target.value);
+              update({ page: "1", to: event.target.value });
             }}
             className={`mt-1 ${controlClassName}`}
           />
@@ -283,7 +285,7 @@ export function AdminAuditList() {
           <button
             type="button"
             disabled={page <= 1}
-            onClick={() => setPage(page - 1)}
+            onClick={() => update({ page: String(page - 1) })}
             className={secondaryButtonClassName}
           >
             ← Anterior
@@ -294,7 +296,7 @@ export function AdminAuditList() {
           <button
             type="button"
             disabled={page >= totalPages}
-            onClick={() => setPage(page + 1)}
+            onClick={() => update({ page: String(page + 1) })}
             className={secondaryButtonClassName}
           >
             Siguiente →

@@ -907,3 +907,13 @@ La base de datos de la aplicación pasa de PostgreSQL local a **Supabase** (Post
 - **Secretos:** las cadenas de conexión viven solo en `apps/backend/.env.local` y nunca llegan al navegador (§14).
 - **Datos:** las migraciones y el seed crean el esquema y las cuentas de ejemplo; si se quieren conservar los datos locales, se copian con `pg_dump`/`psql` (solo datos).
 - **Pruebas:** las pruebas de integración usan la base de `DATABASE_URL` y limpian lo que crean; se recomienda ejecutarlas contra una base de desarrollo, no contra datos reales.
+
+## 62. Paginación con parámetros en la URL (Extra X)
+
+La paginación se resuelve siempre en el backend (PostgreSQL: `page`, `pageSize`, `total`, `totalPages`, con los mismos filtros en la consulta de datos y en la de conteo) y el frontend solo muestra la página pedida.
+
+- **Catálogo público** (`/properties`): ya guardaba página, búsqueda y filtros en la URL y el paginador los conserva en cada enlace (§8 y §12). No cambia.
+- **Listas de administración y de la cuenta** (`/admin/properties`, `/admin/users`, `/admin/inquiries`, `/admin/audit` y las consultas de `/account`): la página, la búsqueda y los filtros pasan a representarse en la URL (query params), igual que el catálogo. Cambiar de página conserva la búsqueda y los filtros; cambiar la búsqueda o un filtro vuelve a la página 1; la página 1 y los valores por defecto se omiten de la URL.
+- **Efectos:** recargar la página, usar «Atrás» o compartir el enlace restauran la misma búsqueda y página. Un valor inválido en la URL (p. ej. `page=abc`) se trata como el valor por defecto.
+- **Páginas inexistentes:** si la página pedida supera el total (p. ej. tras eliminar el último registro de la última página), la lista vuelve a la última página disponible.
+- **Fuera de alcance:** cambiar el tamaño de página desde la interfaz y la paginación infinita.

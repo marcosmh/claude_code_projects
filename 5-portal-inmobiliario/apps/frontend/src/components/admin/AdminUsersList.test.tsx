@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+vi.mock("next/navigation", async () => (await import("@/test/fake-navigation")).fakeNavigation);
 
 const swr = vi.hoisted(() => ({
   data: undefined as unknown,
@@ -48,8 +49,10 @@ vi.mock("@portal/api-client", () => ({
 
 import { ApiRequestError } from "@portal/api-client";
 import { AdminUsersList } from "./AdminUsersList";
+import { getFakeSearch, setFakeSearch } from "@/test/fake-navigation";
 
 afterEach(() => {
+  setFakeSearch("");
   cleanup();
   swr.data = undefined;
   swr.error = undefined;
@@ -111,6 +114,48 @@ describe("AdminUsersList", () => {
     fireEvent.click(screen.getByRole("button", { name: "Siguiente →" }));
     expect(swr.key).toContain("page=2");
     expect(screen.getByText("Página 2 de 3")).toBeTruthy();
+  });
+
+  it("conserva la búsqueda y los filtros al cambiar de página y los guarda en la URL", () => {
+    swr.data = { items: [user("a")], totalPages: 3 };
+    render(<AdminUsersList />);
+    fireEvent.change(screen.getByLabelText("Buscar usuarios"), { target: { value: "ana" } });
+    fireEvent.click(screen.getByRole("button", { name: "Buscar" }));
+    fireEvent.change(screen.getByLabelText("Rol"), { target: { value: "ADMIN" } });
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente →" }));
+
+    expect(swr.key).toContain("page=2");
+    expect(swr.key).toContain("search=ana");
+    expect(swr.key).toContain("role=ADMIN");
+    const params = new URLSearchParams(getFakeSearch());
+    expect(Object.fromEntries(params)).toEqual({ search: "ana", role: "ADMIN", page: "2" });
+  });
+
+  it("cambiar un filtro vuelve a la página 1 y la omite de la URL", () => {
+    setFakeSearch("page=3&search=ana");
+    swr.data = { items: [user("a")], totalPages: 5 };
+    render(<AdminUsersList />);
+    expect((screen.getByLabelText("Buscar usuarios") as HTMLInputElement).value).toBe("ana");
+    fireEvent.change(screen.getByLabelText("Rol"), { target: { value: "USER" } });
+
+    expect(swr.key).toContain("page=1");
+    expect(new URLSearchParams(getFakeSearch()).has("page")).toBe(false);
+    expect(new URLSearchParams(getFakeSearch()).get("search")).toBe("ana");
+  });
+
+  it("restaura la página de la URL y trata un valor inválido como la página 1", () => {
+    setFakeSearch("page=2&role=NOPE");
+    swr.data = { items: [user("a")], totalPages: 3 };
+    render(<AdminUsersList />);
+    expect(swr.key).toContain("page=2");
+    expect(swr.key).toContain("role=&");
+  });
+
+  it("vuelve a la última página si la pedida supera el total", () => {
+    setFakeSearch("page=9");
+    swr.data = { items: [], totalPages: 2 };
+    render(<AdminUsersList />);
+    expect(new URLSearchParams(getFakeSearch()).get("page")).toBe("2");
   });
 
   it("pide confirmación antes de desactivar y revalida", async () => {

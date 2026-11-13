@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+vi.mock("next/navigation", async () => (await import("@/test/fake-navigation")).fakeNavigation);
 
 const swr = vi.hoisted(() => ({
   data: undefined as unknown,
@@ -22,8 +23,10 @@ vi.mock("@portal/api-client", () => ({
 }));
 
 import { AdminInquiriesList } from "./AdminInquiriesList";
+import { setFakeSearch } from "@/test/fake-navigation";
 
 afterEach(() => {
+  setFakeSearch("");
   cleanup();
   swr.data = undefined;
   swr.error = undefined;

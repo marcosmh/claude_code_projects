@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+vi.mock("next/navigation", async () => (await import("@/test/fake-navigation")).fakeNavigation);
 import type { AuditLogDto } from "@portal/shared-types";
 
 const swr = vi.hoisted(() => ({
@@ -28,8 +29,10 @@ vi.mock("@portal/api-client", () => ({
 }));
 
 import { AdminAuditList } from "./AdminAuditList";
+import { getFakeSearch, setFakeSearch } from "@/test/fake-navigation";
 
 afterEach(() => {
+  setFakeSearch("");
   cleanup();
   swr.data = undefined;
   swr.error = undefined;
@@ -164,6 +167,21 @@ describe("AdminAuditList", () => {
     ).toBe(true);
     fireEvent.click(within(pagination).getByRole("button", { name: /Siguiente/ }));
     expect(swr.key).toContain("page=2");
+  });
+
+  it("conserva la búsqueda y los filtros en la URL al cambiar de página", () => {
+    swr.data = { ...page([entry()]), totalPages: 3 };
+    render(<AdminAuditList />);
+    fireEvent.change(screen.getByLabelText("Categoría"), { target: { value: "auth" } });
+    fireEvent.change(screen.getByLabelText("Desde"), { target: { value: "2026-01-01" } });
+    const pagination = screen.getByRole("navigation", { name: "Paginación" });
+    fireEvent.click(within(pagination).getByRole("button", { name: /Siguiente/ }));
+
+    expect(Object.fromEntries(new URLSearchParams(getFakeSearch()))).toEqual({
+      category: "auth",
+      from: "2026-01-01",
+      page: "2",
+    });
   });
 
   it("«Actualizar» vuelve a pedir el registro", () => {

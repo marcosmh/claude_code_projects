@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import useSWR from "swr";
 import { buildAdminInquiriesUrl, fetchAdminInquiries } from "@portal/api-client";
+import { parsePageParam, useClampPage, useUrlQuery } from "@/hooks/useUrlQuery";
 import { AdminPageHeader } from "./AdminPageHeader";
 
 const dateFormatter = new Intl.DateTimeFormat("es-MX", { dateStyle: "medium", timeStyle: "short" });
@@ -16,9 +17,10 @@ const linkClassName = `font-medium text-link underline underline-offset-2 ${focu
 
 /** Consultas recibidas: propiedad (con enlace), usuario, contacto, mensaje y fecha. */
 export function AdminInquiriesList() {
-  const [page, setPage] = useState(1);
-  const [searchInput, setSearchInput] = useState("");
-  const [searchText, setSearchText] = useState("");
+  const { values, update } = useUrlQuery({ page: "1", search: "" });
+  const page = parsePageParam(values.page);
+  const searchText = values.search;
+  const [searchInput, setSearchInput] = useState(searchText);
 
   const { data, error, mutate, isValidating } = useSWR(
     buildAdminInquiriesUrl({ page, search: searchText }),
@@ -26,6 +28,7 @@ export function AdminInquiriesList() {
     { revalidateOnFocus: false, shouldRetryOnError: false, keepPreviousData: true },
   );
   const totalPages = data?.totalPages ?? 1;
+  useClampPage(page, data?.totalPages, (lastPage) => update({ page: String(lastPage) }));
 
   return (
     <div className="mx-auto w-full max-w-7xl">
@@ -40,8 +43,7 @@ export function AdminInquiriesList() {
         className="mt-6 flex items-end gap-2"
         onSubmit={(event) => {
           event.preventDefault();
-          setPage(1);
-          setSearchText(searchInput.trim());
+          update({ page: "1", search: searchInput.trim() });
         }}
       >
         <div className="min-w-0 flex-1">
@@ -162,7 +164,7 @@ export function AdminInquiriesList() {
           <button
             type="button"
             disabled={page <= 1}
-            onClick={() => setPage(page - 1)}
+            onClick={() => update({ page: String(page - 1) })}
             className={secondaryButtonClassName}
           >
             ← Anterior
@@ -173,7 +175,7 @@ export function AdminInquiriesList() {
           <button
             type="button"
             disabled={page >= totalPages}
-            onClick={() => setPage(page + 1)}
+            onClick={() => update({ page: String(page + 1) })}
             className={secondaryButtonClassName}
           >
             Siguiente →
