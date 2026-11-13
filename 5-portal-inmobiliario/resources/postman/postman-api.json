@@ -1,13 +1,23 @@
 {
   "info": {
     "name": "Portal Inmobiliario API",
-    "description": "Colección para probar la API REST del Portal Inmobiliario.\n\nRequisitos: `pnpm dev` (frontend http://localhost:3000, que reenvía /api/** al backend en :4000) y la base con el seed cargado (`pnpm db:seed`).\n\nEjecuta primero «Listar propiedades»: guarda `propertyId` para el detalle y las consultas.\n\nLas carpetas «Consultas (contacto)» y «Autenticación» escriben en la base de desarrollo (y la primera envía un correo por Web3Forms).",
+    "description": "Colección para probar la API REST del Portal Inmobiliario.\n\nEntorno: la variable `baseUrl` apunta a `{{localUrl}}` (http://localhost:3000) o a `{{prodUrl}}` (https://claude-code-projects-zeta.vercel.app). Para cambiar de entorno, edita el valor de `baseUrl` en las variables de la colección.\n\nLocal: `pnpm dev` (frontend :3000, que reenvía /api/** al backend en :4000) y la base con el seed (`pnpm db:seed`).\n\nEjecuta primero «Listar propiedades»: guarda `propertyId` para el detalle y las consultas.\n\nLas carpetas «Consultas (contacto)» y «Autenticación» escriben en la base del entorno elegido (y la primera envía un correo por Web3Forms). Con producción, úsalas con cuidado.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     {
       "key": "baseUrl",
+      "value": "{{localUrl}}",
+      "type": "string"
+    },
+    {
+      "key": "localUrl",
       "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "prodUrl",
+      "value": "https://claude-code-projects-zeta.vercel.app",
       "type": "string"
     },
     {

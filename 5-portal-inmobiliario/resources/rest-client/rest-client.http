@@ -7,7 +7,12 @@
 ### que reutilizan las de detalle y las consultas.
 ### ============================================================
 
-@baseUrl = http://localhost:3000
+@localUrl = http://localhost:3000
+@prodUrl = https://claude-code-projects-zeta.vercel.app
+
+### Entorno activo: cambia a {{prodUrl}} para probar en producción
+##@baseUrl = {{localUrl}}
+@baseUrl = {{prodUrl}}
 
 ### ------------------------------------------------------------
 ### Propiedades públicas — solo se devuelven propiedades publicadas
