@@ -21,6 +21,7 @@ import {
   countAdminFilters,
   toAdminQuery,
 } from "./AdminPropertyFilters";
+import { Pagination } from "@/components/ui/Pagination";
 import { useFlash } from "@/hooks/useFlash";
 import { parsePageParam, useClampPage, useUrlQuery } from "@/hooks/useUrlQuery";
 
@@ -343,32 +344,12 @@ export function AdminPropertiesList() {
             )}
           </section>
 
-          {totalPages > 1 && (
-            <nav
-              aria-label="Paginación de propiedades"
-              className="mt-4 flex items-center justify-between gap-4"
-            >
-              <button
-                type="button"
-                onClick={() => update({ page: String(page - 1) })}
-                disabled={page <= 1}
-                className={secondaryButtonClassName}
-              >
-                ← Anterior
-              </button>
-              <p className="text-sm text-foreground/70" aria-live="polite">
-                Página {page} de {totalPages}
-              </p>
-              <button
-                type="button"
-                onClick={() => update({ page: String(page + 1) })}
-                disabled={page >= totalPages}
-                className={secondaryButtonClassName}
-              >
-                Siguiente →
-              </button>
-            </nav>
-          )}
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            label="Paginación de propiedades"
+            onPageChange={(targetPage) => update({ page: String(targetPage) })}
+          />
         </div>
 
         {/* Panel derecho colapsable; en pantallas estrechas queda bajo la lista. */}

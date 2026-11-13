@@ -8,6 +8,7 @@ import { auditCategoryValues, type AuditCategory } from "@portal/shared-types";
 import { auditActionLabels, auditCategoryLabels, auditWarningActions } from "@/lib/audit-labels";
 import { parsePageParam, useClampPage, useUrlQuery } from "@/hooks/useUrlQuery";
 import { AdminPageHeader } from "./AdminPageHeader";
+import { Pagination } from "@/components/ui/Pagination";
 
 const dateFormatter = new Intl.DateTimeFormat("es-MX", {
   dateStyle: "medium",
@@ -280,29 +281,12 @@ export function AdminAuditList() {
         </p>
       )}
 
-      {totalPages > 1 && (
-        <nav aria-label="Paginación" className="mt-4 flex items-center justify-between gap-3">
-          <button
-            type="button"
-            disabled={page <= 1}
-            onClick={() => update({ page: String(page - 1) })}
-            className={secondaryButtonClassName}
-          >
-            ← Anterior
-          </button>
-          <span className="text-sm text-foreground/70">
-            Página {page} de {totalPages}
-          </span>
-          <button
-            type="button"
-            disabled={page >= totalPages}
-            onClick={() => update({ page: String(page + 1) })}
-            className={secondaryButtonClassName}
-          >
-            Siguiente →
-          </button>
-        </nav>
-      )}
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        label="Paginación"
+        onPageChange={(targetPage) => update({ page: String(targetPage) })}
+      />
     </div>
   );
 }

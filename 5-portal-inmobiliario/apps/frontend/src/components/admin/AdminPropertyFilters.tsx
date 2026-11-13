@@ -106,7 +106,9 @@ export const adminFilterParamKeys = [
 ] as const;
 
 function parseList<TValue extends string>(raw: string, allowed: readonly TValue[]): TValue[] {
-  return raw.split(",").filter((item): item is TValue => (allowed as readonly string[]).includes(item));
+  return raw
+    .split(",")
+    .filter((item): item is TValue => (allowed as readonly string[]).includes(item));
 }
 
 /** Lee los filtros avanzados de los query params; ignora valores inválidos. */

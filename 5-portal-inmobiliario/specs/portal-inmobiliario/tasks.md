@@ -400,3 +400,7 @@
   - Listas de administración (propiedades, usuarios, consultas, auditoría) y consultas de la cuenta: página, búsqueda y filtros en la URL.
   - Cambiar de página conserva búsqueda y filtros; cambiar un filtro vuelve a la página 1.
   - Pruebas, lint, typecheck y build pasan; publicado en Vercel.
+
+- [x] **Extra Y — Controles de paginación con iconos**
+  - Primera página, anterior, numeración, siguiente y última página como iconos, en catálogo, administración y cuenta.
+  - Pruebas, lint, typecheck y build pasan.

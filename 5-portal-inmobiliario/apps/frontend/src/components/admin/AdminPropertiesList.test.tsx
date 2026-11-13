@@ -100,10 +100,10 @@ describe("AdminPropertiesList", () => {
     swr.data = { items: [property("a", true)], totalPages: 3 };
     render(<AdminPropertiesList />);
 
-    expect((screen.getByRole("button", { name: "← Anterior" }) as HTMLButtonElement).disabled).toBe(
+    expect((screen.getByRole("button", { name: "Anterior" }) as HTMLButtonElement).disabled).toBe(
       true,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Siguiente →" }));
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
     expect(swr.key).toContain("page=2");
     expect(screen.getByText("Página 2 de 3")).toBeTruthy();
   });
@@ -116,7 +116,7 @@ describe("AdminPropertiesList", () => {
     fireEvent.change(screen.getByLabelText("Estado"), { target: { value: "draft" } });
     fireEvent.click(screen.getByRole("checkbox", { name: "Vendida" }));
     await waitFor(() => expect(getFakeSearch()).toContain("availability=SOLD"));
-    fireEvent.click(screen.getByRole("button", { name: "Siguiente →" }));
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
 
     expect(Object.fromEntries(new URLSearchParams(getFakeSearch()))).toEqual({
       search: "roma",
@@ -202,7 +202,7 @@ describe("AdminPropertiesList", () => {
     swr.data = { items: [], totalPages: 3 };
     render(<AdminPropertiesList />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Siguiente →" }));
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
     expect(swr.key).toContain("page=2");
     fireEvent.click(screen.getByRole("checkbox", { name: "Vendida" }));
     await waitFor(() => expect(swr.key).toContain("page=1"));

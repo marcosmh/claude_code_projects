@@ -639,3 +639,8 @@ Decisiones que concretan la sección 10 de este plan:
 - Las cinco listas (propiedades, usuarios, consultas, auditoría de administración y consultas de la cuenta) reemplazan el estado local de página/búsqueda/filtros por ese hook. El campo de texto sigue siendo local y se confirma al buscar.
 - Pruebas: prueba del hook, doble de prueba de `next/navigation` con estado en memoria y pruebas de cada lista (la URL conserva los parámetros al paginar).
 - Backend: auditoría de las rutas paginadas (mismo filtro en datos y conteo, `pageSize` acotado); sin cambios previstos.
+
+## 61. Controles de paginación con iconos (Extra Y)
+
+- Componente único `components/ui/Pagination.tsx` (modo enlaces con `buildHref` y modo botones con `onPageChange`), con la función pura `buildPageItems` (numeración con elipsis); sustituye a `components/properties/Pagination.tsx` y a los `<nav>` repetidos en las cinco listas.
+- Pruebas: componente y `buildPageItems`; las pruebas de las listas usan los nuevos nombres accesibles.

@@ -14,7 +14,7 @@ import {
 } from "@/lib/catalog-params";
 import { CatalogSearchBar } from "./CatalogSearchBar";
 import { FiltersSidebar } from "./FiltersSidebar";
-import { Pagination } from "./Pagination";
+import { Pagination } from "@/components/ui/Pagination";
 import { PropertyCard } from "./PropertyCard";
 import { PropertyGrid } from "./PropertyGrid";
 import { PropertyGridSkeleton } from "./PropertyGridSkeleton";

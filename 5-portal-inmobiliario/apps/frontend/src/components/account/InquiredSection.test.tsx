@@ -138,10 +138,10 @@ describe("InquiredSection", () => {
     render(<InquiredSection />);
 
     expect(screen.getByText("Página 1 de 3")).toBeTruthy();
-    expect((screen.getByRole("button", { name: "← Anterior" }) as HTMLButtonElement).disabled).toBe(
+    expect((screen.getByRole("button", { name: "Anterior" }) as HTMLButtonElement).disabled).toBe(
       true,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Siguiente →" }));
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
     expect(screen.getByText("Página 2 de 3")).toBeTruthy();
     expect(state.query).toMatchObject({ page: 2 });
     expect(new URLSearchParams(getFakeSearch()).get("inquiriesPage")).toBe("2");

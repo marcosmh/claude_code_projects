@@ -87,7 +87,7 @@ describe("AdminInquiriesList", () => {
   it("busca y pagina volviendo a la página 1", () => {
     swr.data = { items: [], totalPages: 3 };
     render(<AdminInquiriesList />);
-    fireEvent.click(screen.getByRole("button", { name: "Siguiente →" }));
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
     expect(swr.key).toContain("page=2");
     expect(screen.getByText("Página 2 de 3")).toBeTruthy();
 

@@ -111,7 +111,7 @@ describe("AdminUsersList", () => {
   it("pagina con Anterior y Siguiente", () => {
     swr.data = { items: [user("a")], totalPages: 3 };
     render(<AdminUsersList />);
-    fireEvent.click(screen.getByRole("button", { name: "Siguiente →" }));
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
     expect(swr.key).toContain("page=2");
     expect(screen.getByText("Página 2 de 3")).toBeTruthy();
   });
@@ -122,7 +122,7 @@ describe("AdminUsersList", () => {
     fireEvent.change(screen.getByLabelText("Buscar usuarios"), { target: { value: "ana" } });
     fireEvent.click(screen.getByRole("button", { name: "Buscar" }));
     fireEvent.change(screen.getByLabelText("Rol"), { target: { value: "ADMIN" } });
-    fireEvent.click(screen.getByRole("button", { name: "Siguiente →" }));
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
 
     expect(swr.key).toContain("page=2");
     expect(swr.key).toContain("search=ana");

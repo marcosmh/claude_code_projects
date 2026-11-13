@@ -917,3 +917,12 @@ La paginación se resuelve siempre en el backend (PostgreSQL: `page`, `pageSize`
 - **Efectos:** recargar la página, usar «Atrás» o compartir el enlace restauran la misma búsqueda y página. Un valor inválido en la URL (p. ej. `page=abc`) se trata como el valor por defecto.
 - **Páginas inexistentes:** si la página pedida supera el total (p. ej. tras eliminar el último registro de la última página), la lista vuelve a la última página disponible.
 - **Fuera de alcance:** cambiar el tamaño de página desde la interfaz y la paginación infinita.
+
+## 63. Controles de paginación con iconos (Extra Y)
+
+Todos los paginadores (catálogo público, listas de administración y consultas de la cuenta) usan un mismo componente con botones de icono:
+
+- **Controles:** «Primera página», «Anterior», la numeración de páginas (1, 2, 3…), «Siguiente» y «Última página». Los controles de extremo se desactivan en la primera o la última página.
+- **Numeración:** hasta 7 páginas se muestran todas; con más, se muestran la primera, la última y las vecinas de la actual, con «…» en los saltos. La página actual se marca visualmente y con `aria-current="page"`.
+- **Accesibilidad:** al ser solo iconos, cada botón tiene nombre accesible («Primera página», «Anterior», «Página 3», «Siguiente», «Última página»), foco visible y área táctil mínima de 36 px; el texto «Página X de Y» queda para lectores de pantalla (`aria-live`).
+- **Comportamiento:** en el catálogo los controles son enlaces que conservan búsqueda y filtros (§62); en las listas de administración y de la cuenta son botones que actualizan los parámetros de la URL. No se muestra nada si hay una sola página.

@@ -7,10 +7,9 @@ import { useEffect, useState } from "react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useUserInquiries } from "@/hooks/useUserInquiries";
 import { parsePageParam, useClampPage, useUrlQuery } from "@/hooks/useUrlQuery";
+import { Pagination } from "@/components/ui/Pagination";
 
 const SEARCH_DELAY_MS = 300;
-const pageButtonClassName =
-  "rounded-md border border-foreground/20 px-4 py-2 text-sm font-semibold hover:bg-foreground/5 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
 const dateFormatter = new Intl.DateTimeFormat("es-MX", { dateStyle: "medium" });
 
 /** «Propiedades consultadas»: lista compacta de las consultas enviadas, con opción de eliminar. */
@@ -20,7 +19,11 @@ export function InquiredSection() {
   const page = parsePageParam(values.inquiriesPage);
   const searchText = values.inquiriesSearch;
   const [searchInput, setSearchInput] = useState(searchText);
-  const { inquiries, totalPages: loadedTotalPages, remove } = useUserInquiries({ page, searchText });
+  const {
+    inquiries,
+    totalPages: loadedTotalPages,
+    remove,
+  } = useUserInquiries({ page, searchText });
   const totalPages = loadedTotalPages ?? 1;
   useClampPage(page, loadedTotalPages, (lastPage) => update({ inquiriesPage: String(lastPage) }));
   const [pendingDeletion, setPendingDeletion] = useState<{ id: string; title: string } | null>(
@@ -170,32 +173,12 @@ export function InquiredSection() {
           ))}
         </ul>
       )}
-      {totalPages > 1 && (
-        <nav
-          aria-label="Paginación de consultas"
-          className="mt-4 flex items-center justify-between gap-4"
-        >
-          <button
-            type="button"
-            onClick={() => update({ inquiriesPage: String(page - 1) })}
-            disabled={page <= 1}
-            className={pageButtonClassName}
-          >
-            ← Anterior
-          </button>
-          <p className="text-sm text-foreground/70" aria-live="polite">
-            Página {page} de {totalPages}
-          </p>
-          <button
-            type="button"
-            onClick={() => update({ inquiriesPage: String(page + 1) })}
-            disabled={page >= totalPages}
-            className={pageButtonClassName}
-          >
-            Siguiente →
-          </button>
-        </nav>
-      )}
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        label="Paginación de consultas"
+        onPageChange={(targetPage) => update({ inquiriesPage: String(targetPage) })}
+      />
       {pendingDeletion && (
         <ConfirmDialog
           title="¿Deseas eliminar esta consulta?"
