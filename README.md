@@ -83,4 +83,7 @@ Claude Code Projects
 -------------------
 
 
+## Jev
+
+* https://console.typesafe.ai/home
 

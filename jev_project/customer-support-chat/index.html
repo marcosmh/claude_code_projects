@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="theme-color" content="#4f46e5" />
+  <title>Soporte inteligente con Jev</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="bg-slate-100 text-slate-800 dark:bg-slate-950 dark:text-slate-100">
+  <a href="#input" class="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-10 focus:rounded-md focus:bg-white focus:px-3 focus:py-2 focus:text-indigo-700">
+    Ir al campo de mensaje
+  </a>
+
+  <div class="mx-auto flex h-full max-w-6xl flex-col gap-4 p-4 lg:flex-row">
+
+    <!-- Chat -->
+    <main class="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-2xl bg-slate-50 shadow-lg ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+      <header class="flex items-center gap-3 bg-indigo-600 px-5 py-4 text-white">
+        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/20 text-lg" aria-hidden="true">🎧</div>
+        <div class="min-w-0">
+          <h1 class="truncate font-semibold leading-tight text-balance">Atención al cliente</h1>
+          <p class="text-xs text-indigo-100">Análisis en tiempo real con Jev</p>
+        </div>
+      </header>
+
+      <div id="messages" role="log" aria-live="polite" aria-label="Conversación"
+        class="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain p-4"></div>
+      <p id="typing" role="status" class="hidden px-5 pb-1 text-xs italic text-slate-500 dark:text-slate-400">Jev está analizando el mensaje…</p>
+      <p id="error" role="alert" class="mx-4 mb-2 hidden rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-200"></p>
+
+      <form id="form" class="flex gap-2 border-t border-slate-200 bg-white p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] dark:border-slate-800 dark:bg-slate-900">
+        <label for="input" class="sr-only">Mensaje para soporte</label>
+        <input id="input" name="message" type="text" autocomplete="off" enterkeyhint="send" spellcheck="true"
+          placeholder="Escribe tu consulta…"
+          class="min-w-0 flex-1 rounded-full border border-slate-300 bg-white px-4 py-2 text-base text-slate-900 placeholder:text-slate-500 focus-visible:border-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-400 sm:text-sm" />
+        <button id="send" type="submit"
+          class="rounded-full bg-indigo-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 focus-visible:ring-offset-2 active:bg-indigo-800 disabled:opacity-60 dark:focus-visible:ring-offset-slate-900">
+          Enviar
+        </button>
+      </form>
+    </main>
+
+    <!-- Panel de Decisiones -->
+    <aside aria-labelledby="panel-title" class="w-full shrink-0 rounded-2xl bg-white p-5 shadow-lg ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800 lg:w-80">
+      <h2 id="panel-title" class="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Panel de Decisiones</h2>
+      <dl class="space-y-4 text-sm" aria-live="polite">
+        <div><dt class="text-xs text-slate-500 dark:text-slate-400">Categoría</dt>
+          <dd id="d-category" class="break-words font-semibold">—</dd></div>
+        <div><dt class="text-xs text-slate-500 dark:text-slate-400">Prioridad</dt>
+          <dd id="d-priority" class="break-words font-semibold">—</dd></div>
+        <div><dt class="text-xs text-slate-500 dark:text-slate-400">Acción recomendada</dt>
+          <dd id="d-action" class="break-words font-semibold">—</dd></div>
+        <div>
+          <dt class="mb-1 flex items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400">
+            Riesgo de abandono
+            <span id="d-risk-value" class="text-sm font-semibold tabular-nums text-slate-500">—</span>
+          </dt>
+          <dd>
+            <div id="d-risk-track" role="progressbar" aria-label="Riesgo de abandono" aria-valuemin="0" aria-valuemax="100"
+              class="h-3 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+              <div id="d-risk-bar" class="h-3 w-full origin-left scale-x-0 rounded-full"></div>
+            </div>
+            <ul class="mt-2 flex justify-between text-[11px] text-slate-600 dark:text-slate-300">
+              <li class="flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-green-500" aria-hidden="true"></span>Bajo</li>
+              <li class="flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-yellow-400" aria-hidden="true"></span>Medio</li>
+              <li class="flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-orange-500" aria-hidden="true"></span>Alto</li>
+              <li class="flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-red-600" aria-hidden="true"></span>Crítico</li>
+            </ul>
+          </dd>
+        </div>
+        <div><dt class="text-xs text-slate-500 dark:text-slate-400">Explicación de Jev</dt>
+          <dd id="d-explanation" class="text-pretty text-slate-700 dark:text-slate-300">Envía un mensaje para ver el análisis.</dd></div>
+      </dl>
+    </aside>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
