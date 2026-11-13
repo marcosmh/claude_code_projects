@@ -6,6 +6,7 @@ import { renderMessage, renderDecision, setTyping, showError } from './ui.js';
 const form = document.getElementById('form');
 const input = document.getElementById('input');
 
+renderDecision(null);
 renderMessage(addMessage('assistant', '¡Hola! Soy el asistente de soporte. ¿En qué puedo ayudarte hoy?'));
 
 form.addEventListener('submit', async (e) => {

@@ -10,10 +10,10 @@ body {
 }
 button, a, input { touch-action: manipulation; }
 
-/* La barra de riesgo anima solo transform (no width) y respeta reduced-motion. */
-#d-risk-bar { transition: transform 0.5s ease, background-color 0.3s ease; }
+/* Las barras animan solo transform (no width) y respeta reduced-motion. */
+.bar-fill { transition: transform 0.5s ease, background-color 0.3s ease; }
 @media (prefers-reduced-motion: reduce) {
-  #d-risk-bar { transition: none; }
+  .bar-fill { transition: none; }
   #messages { scroll-behavior: auto; }
 }
 #messages { scroll-behavior: smooth; }
